@@ -10,6 +10,8 @@ namespace qnemu
 class CpuInterface
 {
 public:
+    virtual ~CpuInterface() = default;
+
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual void reset() = 0;

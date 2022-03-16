@@ -63,6 +63,7 @@ void GbMbc1::write(uint16_t address, const uint8_t& value)
 
 void GbMbc1::reset()
 {
+    (void)type;
     std::memset(&registers, 0, sizeof(registers));
 }
 

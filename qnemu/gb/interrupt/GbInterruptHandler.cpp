@@ -2,8 +2,6 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
-#pragma once
-
 #include <cassert>
 #include <cstdint>
 #include <memory>
