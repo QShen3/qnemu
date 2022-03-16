@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
-#include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
+#include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
 
 namespace qnemu

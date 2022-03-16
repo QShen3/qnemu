@@ -20,9 +20,9 @@
 #endif
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc1.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
-#include "qnemu/gb/cartridge/mbc/GbMbc1.h"
 
 namespace qnemuTest
 {
@@ -51,15 +51,13 @@ const std::tuple<uint8_t, std::type_index> typesOfMbc[] = {
 
 class GbMbcFactoryTest : public testing::TestWithParam<std::tuple<uint8_t, std::type_index>>
 {
-    public:
-        GbMbcFactoryTest() {}
-
-    protected:
-        qnemu::GbMbcFactory gbMbcFactory;
+public:
+    GbMbcFactoryTest() {}
 };
 
 TEST_P(GbMbcFactoryTest, CreateMbc)
 {
+    qnemu::GbMbcFactory gbMbcFactory;
     std::vector<std::array<uint8_t, qnemu::GbMbcInterface::romBankSize>> romBanks;
     std::vector<std::array<uint8_t, qnemu::GbMbcInterface::ramBankSize>> ramBanks;
     auto [ type, typeIndex ] = GetParam();
@@ -76,6 +74,7 @@ INSTANTIATE_TEST_SUITE_P(GbMbcFactoryCreate, GbMbcFactoryTest, testing::ValuesIn
 
 TEST_F(GbMbcFactoryTest, CreateMbcWithInvalidType)
 {
+    qnemu::GbMbcFactory gbMbcFactory;
     std::vector<std::array<uint8_t, qnemu::GbMbcInterface::romBankSize>> romBanks;
     std::vector<std::array<uint8_t, qnemu::GbMbcInterface::ramBankSize>> ramBanks;
     EXPECT_THROW({

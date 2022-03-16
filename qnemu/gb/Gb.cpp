@@ -4,10 +4,10 @@
 
 #include <memory>
 
+#include "qnemu/gb/Gb.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cpu/GbCpu.h"
-#include "qnemu/gb/Gb.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 

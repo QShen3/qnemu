@@ -5,8 +5,8 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/cpu/GbCpu.h"
 
 namespace qnemu
 {
