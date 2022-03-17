@@ -44,19 +44,28 @@ void GbMbc1::write(uint16_t address, const uint8_t& value)
 {
     if (address < romBankNumberAddress) {
         registers.ramEnable = value;
-    } else if (address >= romBankNumberAddress && address < ramBankNumberAddress) {
+        return;
+    }
+    if (address >= romBankNumberAddress && address < ramBankNumberAddress) {
         registers.romBankNumber = value & 0b11111;
-    } else if (address >= ramBankNumberAddress && address < bankingModeSelectAddress) {
+        return;
+    }
+    if (address >= ramBankNumberAddress && address < bankingModeSelectAddress) {
         registers.ramBankNumber = value & 0b11;
-    } else if (address >= bankingModeSelectAddress && address < 0x8000) {
+        return;
+    }
+    if (address >= bankingModeSelectAddress && address < 0x8000) {
         registers.bankingModeSelect = value & 0b1;
-    } else if (address >= 0xA000 && address < 0xC000) {
+        return;
+    }
+    if (address >= 0xA000 && address < 0xC000) {
         if ((registers.ramEnable & 0b1111) != ramEnableFlag) {
             assert(false && "Ram is disabled");
             return;
         }
         uint8_t bankNumber = getRamBankNumber();
         ramBanks.at(bankNumber).at(address - 0xA000) = value;
+        return;
     }
     assert(false && "Wrong address");
 }

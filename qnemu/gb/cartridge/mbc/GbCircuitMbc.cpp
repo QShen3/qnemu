@@ -41,6 +41,7 @@ void GbCircuitMbc::write(uint16_t address, const uint8_t& value)
     if (address >= 0xA000 && address < 0xC000) {
         if (type != 0) {
             ramBanks.at(0).at(address - 0xA000) = value;
+            return;
         }
         assert(false && "No Ram available");
     }
