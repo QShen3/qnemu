@@ -10,6 +10,7 @@
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/memory/GbHighRam.h"
+#include "qnemu/gb/memory/GbWorkRam.h"
 
 namespace qnemu
 {
@@ -23,9 +24,11 @@ Gb::Gb()
 
     auto gbInterruptHandler = std::make_shared<GbInterruptHandler>(cpu);
 
+    auto gbWorkRam = std::make_shared<GbWorkRam>();
     auto gbHighRam = std::make_shared<GbHighRam>();
 
     cpu->addDevice(cartridge);
+    cpu->addDevice(gbWorkRam);
     cpu->addDevice(gbHighRam);
     cpu->addDevice(gbInterruptHandler);
 }
