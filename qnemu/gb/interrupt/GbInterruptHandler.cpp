@@ -33,9 +33,11 @@ void GbInterruptHandler::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFFFF) {
         registers.interruptEnabled = value;
+        return;
     }
     if (address == 0xFF0F) {
         registers.interruptFlag = value;
+        return;
     }
     assert(false && "Wrong address");
 }
