@@ -99,6 +99,11 @@ GbCartridge::~GbCartridge()
     }
 }
 
+bool GbCartridge::accepts(uint16_t address) const
+{
+    return mbc->accepts(address);
+}
+
 uint8_t GbCartridge::read(uint16_t address) const
 {
     return mbc->read(address);
@@ -109,21 +114,16 @@ void GbCartridge::write(uint16_t address, const uint8_t& value)
     mbc->write(address, value);
 }
 
-void GbCartridge::reset()
-{
-    mbc->reset();
-    gbcCartridge = false;
-    loaded = false;
-}
-
 void GbCartridge::step()
 {
     mbc->step();
 }
 
-bool GbCartridge::accepts(uint16_t address) const
+void GbCartridge::reset()
 {
-    return mbc->accepts(address);
+    mbc->reset();
+    gbcCartridge = false;
+    loaded = false;
 }
 
 void GbCartridge::load(const char* filePath)

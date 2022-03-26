@@ -9,6 +9,11 @@
 namespace qnemu
 {
 
+bool GbHighRam::accepts(uint16_t address) const
+{
+    return address >= 0xFF80 && address < 0xFFFF;
+}
+
 uint8_t GbHighRam::read(uint16_t address) const
 {
     return data.at(address - 0xFF80);
@@ -19,17 +24,12 @@ void GbHighRam::write(uint16_t address, const uint8_t& value)
     data.at(address - 0xFF80) = value;
 }
 
-void GbHighRam::reset()
-{
-}
-
 void GbHighRam::step()
 {
 }
 
-bool GbHighRam::accepts(uint16_t address) const
+void GbHighRam::reset()
 {
-    return address >= 0xFF80 && address < 0xFFFF;
 }
 
 }  // namespace qnemu

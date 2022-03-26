@@ -17,6 +17,11 @@ GbCircuitMbc::GbCircuitMbc(std::vector<std::array<uint8_t, romBankSize>>&& romBa
 {
 }
 
+bool GbCircuitMbc::accepts(uint16_t address) const
+{
+    return (address < 0x8000) || (address >= 0xA000 && address < 0xC000);
+}
+
 uint8_t GbCircuitMbc::read(uint16_t address) const
 {
     if (address < 0x4000) {
@@ -48,17 +53,12 @@ void GbCircuitMbc::write(uint16_t address, const uint8_t& value)
     assert(false && "Wrong address");
 }
 
-void GbCircuitMbc::reset()
-{
-}
-
 void GbCircuitMbc::step()
 {
 }
 
-bool GbCircuitMbc::accepts(uint16_t address) const
+void GbCircuitMbc::reset()
 {
-    return (address < 0x8000) || (address >= 0xA000 && address < 0xC000);
 }
 
 }  // namespace qnemu

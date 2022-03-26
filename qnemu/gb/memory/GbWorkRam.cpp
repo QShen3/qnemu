@@ -15,6 +15,17 @@ GbWorkRam::GbWorkRam()
     GbWorkRam::reset();
 }
 
+bool GbWorkRam::accepts(uint16_t address) const
+{
+    if (address >= 0xC000 && address < 0xFE00) {
+        return true;
+    }
+    if (address == 0xFF70) {
+        return true;
+    }
+    return false;
+}
+
 uint8_t GbWorkRam::read(uint16_t address) const
 {
     if (address >= 0xC000 && address < 0xD000) {
@@ -68,24 +79,13 @@ void GbWorkRam::write(uint16_t address, const uint8_t& value)
     assert(false && "Wrong address");
 }
 
-void GbWorkRam::reset()
-{
-    registers.workRamBank = 0x1;
-}
-
 void GbWorkRam::step()
 {
 }
 
-bool GbWorkRam::accepts(uint16_t address) const
+void GbWorkRam::reset()
 {
-    if (address >= 0xC000 && address < 0xFE00) {
-        return true;
-    }
-    if (address == 0xFF70) {
-        return true;
-    }
-    return false;
+    registers.workRamBank = 0x1;
 }
 
 }  // namespace qnemu

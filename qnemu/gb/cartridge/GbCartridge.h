@@ -21,11 +21,11 @@ public:
     explicit GbCartridge(const GbMbcFactoryInterface& gbMbcFactory);
     ~GbCartridge();
 
+    bool accepts(uint16_t address) const override;
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
-    void reset() override;
     void step() override;
-    bool accepts(uint16_t address) const override;
+    void reset() override;
 
     void load(const char* filePath) override;
     bool isGbcCartridge() const override;

@@ -17,6 +17,11 @@ GbInterruptHandler::GbInterruptHandler(std::shared_ptr<GbCpuInterface> cpu) : cp
     GbInterruptHandler::reset();
 }
 
+bool GbInterruptHandler::accepts(uint16_t address) const
+{
+    return address == 0xFF0F || address == 0xFFFF;
+}
+
 uint8_t GbInterruptHandler::read(uint16_t address) const
 {
     if (address == 0xFFFF) {
@@ -40,12 +45,6 @@ void GbInterruptHandler::write(uint16_t address, const uint8_t& value)
         return;
     }
     assert(false && "Wrong address");
-}
-
-void GbInterruptHandler::reset()
-{
-    registers.interruptFlag = 0xE1;
-    registers.interruptEnabled = 0;
 }
 
 void GbInterruptHandler::step()
@@ -76,9 +75,10 @@ void GbInterruptHandler::step()
     GbDeviceInterface::interruptMasterEnabled = false;
 }
 
-bool GbInterruptHandler::accepts(uint16_t address) const
+void GbInterruptHandler::reset()
 {
-    return address == 0xFF0F || address == 0xFFFF;
+    registers.interruptFlag = 0xE1;
+    registers.interruptEnabled = 0;
 }
 
 }  // namespace qnemu

@@ -19,6 +19,11 @@ GbMbc1::GbMbc1(std::vector<std::array<uint8_t, romBankSize>>&& romBanks,
     GbMbc1::reset();
 }
 
+bool GbMbc1::accepts(uint16_t address) const
+{
+    return (address < 0x8000) || (address >= 0xA000 && address < 0xC000);
+}
+
 uint8_t GbMbc1::read(uint16_t address) const
 {
     if (address < 0x8000) {
@@ -70,19 +75,14 @@ void GbMbc1::write(uint16_t address, const uint8_t& value)
     assert(false && "Wrong address");
 }
 
-void GbMbc1::reset()
-{
-    (void)type;
-    std::memset(&registers, 0, sizeof(registers));
-}
-
 void GbMbc1::step()
 {
 }
 
-bool GbMbc1::accepts(uint16_t address) const
+void GbMbc1::reset()
 {
-    return (address < 0x8000) || (address >= 0xA000 && address < 0xC000);
+    (void)type;
+    std::memset(&registers, 0, sizeof(registers));
 }
 
 uint8_t GbMbc1::getRomBankNumberForAddress(uint16_t address) const
