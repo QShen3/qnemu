@@ -4,22 +4,131 @@
 
 #pragma once
 
+#include <array>
+#include <cstdint>
+#include <memory>
+
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/gpu/Mode.h"
+#include "qnemu/gb/interrupt/GbInterruptHandler.h"
 
 namespace qnemu
 {
 
-class GbGpu : GbDeviceInterface
+class GbGpu : public GbDeviceInterface
 {
 public:
-    GbGpu() = default;
+    GbGpu() = delete;
+    GbGpu(std::shared_ptr<GbInterruptHandler> interruptHandler);
     ~GbGpu() = default;
+
+    static constexpr size_t videoRamBankSize = 0x2000;
+    static constexpr size_t spriteAttributeTableSize = 0xA0;
 
     bool accepts(uint16_t address) const override;
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
+
+private:
+    void checklcdYCoordinate();
+
+    struct {
+        union {
+            struct {
+                uint8_t backgroundAndWindowPriority : 1;
+                uint8_t spriteEnable : 1;
+                uint8_t spriteSize : 1;
+                uint8_t backgroundTileMapArea : 1;
+                uint8_t backgroundAndWindowTileDataArea : 1;
+                uint8_t windowEnable : 1;
+                uint8_t windowTileMapArea : 1;
+                uint8_t lcdEnable : 1;
+            };
+            uint8_t lcdControl;
+        };  // FF40
+        union {
+            struct {
+                uint8_t modeFlag : 2;
+                uint8_t coincidenceFlag : 1;
+                uint8_t mode0HBlankInterrupt : 1;
+                uint8_t mode1VBlankInterrupt : 1;
+                uint8_t mode2OAMInterrupt : 1;
+                uint8_t lyCoincidenceInterrupt : 1;
+            };
+            uint8_t lcdStatus;
+        };  // FF41
+        uint8_t scrollY;  // FF42
+        uint8_t scrollX;  // FF43
+        uint8_t lcdYCoordinate;  // FF44
+        uint8_t lcdYCoordinateCompare;  // FF45
+        uint8_t dMATransferAndStartAddress;  // FF46
+        union {
+            struct {
+                uint8_t shadeForBackgroundColorIndex0 : 2;
+                uint8_t shadeForBackgroundColorIndex1 : 2;
+                uint8_t shadeForBackgroundColorIndex2 : 2;
+                uint8_t shadeForBackgroundColorIndex3 : 2;
+            };
+            uint8_t backgroundPaletteData;
+        };  // FF47
+        union {
+            struct {
+                uint8_t shadeForSprite0ColorIndex0 : 2;
+                uint8_t shadeForSprite0ColorIndex1 : 2;
+                uint8_t shadeForSprite0ColorIndex2 : 2;
+                uint8_t shadeForSprite0ColorIndex3 : 2;
+            };
+            uint8_t spritePalette0Data;
+        };  // FF48
+        union {
+            struct {
+                uint8_t shadeForSprite1ColorIndex0 : 2;
+                uint8_t shadeForSprite1ColorIndex1 : 2;
+                uint8_t shadeForSprite1ColorIndex2 : 2;
+                uint8_t shadeForSprite1ColorIndex3 : 2;
+            };
+            uint8_t spritePalette1Data;
+        };  // FF49
+        uint8_t windowYPosition;  // FF4A
+        uint8_t windowXPosition;  // FF4B
+        uint8_t videoRamBank;  // FF4F
+        uint8_t newDMASourceHigh;  // FF51
+        uint8_t newDMASourceLow;  // FF52
+        uint8_t newDMADestinationHigh;  // FF53
+        uint8_t newDMADestinationLow;  // FF54
+        uint8_t newDMALength;  // FF55
+        union {
+            struct {
+                uint8_t gbcBackgroundPaletteIndex : 6;
+                uint8_t : 1;
+                uint8_t gbcBackgroundAutoIncrement : 1;
+            };
+            uint8_t gbcBackgroundPaletteSpecification;
+        };  // FF68
+        uint8_t gbcBckgroundPaletteData;  // FF69
+        union {
+            struct {
+                uint8_t gbcSritePaletteIndex : 6;
+                uint8_t : 1;
+                uint8_t gbcSpriteAutoIncrement : 1;
+            };
+            uint8_t gbcSpritePaletteSpecification;
+        };  // FF6A
+        uint8_t gbcSpritePaletteData;  // FF6B
+    } registers;
+    std::shared_ptr<GbInterruptHandler> interruptHandler;
+    std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
+    uint16_t ticks;
+    std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;
+    const std::array<Mode, 4> modes;
+
+    // Modes
+    void mode0();
+    void mode1();
+    void mode2();
+    void mode3();
 };
 
 }  // namespace qnemu

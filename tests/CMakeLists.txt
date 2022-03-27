@@ -9,6 +9,7 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/gb/interrupt GB_I
 
 # Executable
 add_executable(
+    qnemu_test
     ${GB_CARTRIDGE_MBCTEST_SRCS}
     ${GB_CARTRIDGE_MBC_SRCS}
     ${GB_CARTRIDGETEST_SRCS}

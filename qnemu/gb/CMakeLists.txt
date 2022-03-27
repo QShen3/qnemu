@@ -4,6 +4,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge/mbc CARTRIDGE_MBC_SRC
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cpu CPU_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/interrupt INTERRUPT_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/memory MEMORY_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gpu GPU_SRCS)
 
 message(${CARTRIDGE_SRCS})
 
@@ -15,6 +16,7 @@ add_library(
     ${CPU_SRCS}
     ${INTERRUPT_SRCS}
     ${MEMORY_SRCS}
+    ${GPU_SRCS}
 )
 
 # Library

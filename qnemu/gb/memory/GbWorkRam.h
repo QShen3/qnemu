@@ -25,8 +25,7 @@ public:
     void reset() override;
 
 private:
-    struct
-    {
+    struct {
         uint8_t workRamBank;
     } registers;
     std::array<std::array<uint8_t, 0x1000>, 8> data;

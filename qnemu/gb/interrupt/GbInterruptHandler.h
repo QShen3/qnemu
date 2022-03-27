@@ -13,6 +13,8 @@
 namespace qnemu
 {
 
+class GbGpu;
+
 class GbInterruptHandler : public GbDeviceInterface
 {
 public:
@@ -27,6 +29,7 @@ public:
     void reset() override;
 
 private:
+    friend GbGpu;
     struct {
         union {
             struct {
