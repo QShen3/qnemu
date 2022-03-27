@@ -33,6 +33,7 @@ public:
 
 private:
     void checklcdYCoordinate();
+    void scanSprites();
 
     struct {
         union {
@@ -122,6 +123,7 @@ private:
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
     uint16_t ticks;
     std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;
+    uint16_t windowLineCounter;
     const std::array<Mode, 4> modes;
 
     // Modes

@@ -31,7 +31,7 @@ void GbGpu::mode1()
 {
     if (registers.lcdYCoordinate == 153) {
         registers.lcdYCoordinate = 0;
-        // windowLineCounter = 0;
+        windowLineCounter = 0;
         registers.modeFlag = 2;
     }
     else {
@@ -43,7 +43,7 @@ void GbGpu::mode1()
 
 void GbGpu::mode2()
 {
-    // scanSprites();
+    scanSprites();
     registers.modeFlag = 3;
 }
 

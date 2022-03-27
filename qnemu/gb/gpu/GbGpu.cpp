@@ -246,4 +246,9 @@ void GbGpu::checklcdYCoordinate()
     }
 }
 
+void GbGpu::scanSprites()
+{
+    
+}
+
 }  // namespace qnemu
