@@ -7,6 +7,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <stack>
 
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
@@ -33,6 +34,7 @@ public:
 
 private:
     void checklcdYCoordinate();
+    void renderLine();
     void scanSprites();
 
     struct {
@@ -121,6 +123,7 @@ private:
     } registers;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
+    std::stack<uint8_t> spriteStack;
     uint16_t ticks;
     std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;
     uint16_t windowLineCounter;

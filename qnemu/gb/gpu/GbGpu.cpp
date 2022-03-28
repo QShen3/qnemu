@@ -246,9 +246,29 @@ void GbGpu::checklcdYCoordinate()
     }
 }
 
-void GbGpu::scanSprites()
+void GbGpu::renderLine()
 {
     
+}
+
+void GbGpu::scanSprites()
+{
+    spriteStack = {};
+    for (uint8_t i = 0; i < 160; i += 4) {
+        int16_t y = spriteAttributeTable.at(i) - 16;
+        if (registers.spriteSize == 1) {
+            if (int16_t(registers.lcdYCoordinate) >= y && int16_t(registers.lcdYCoordinate) < (y + 16)) {
+                spriteStack.push(i);
+            }
+        } else {
+            if (int16_t(registers.lcdYCoordinate) >= y && int16_t(registers.lcdYCoordinate) < (y + 8)) {
+                spriteStack.push(i);
+            }
+        }
+        if (spriteStack.size() >= 10) {
+            break;
+        }
+    }
 }
 
 }  // namespace qnemu
