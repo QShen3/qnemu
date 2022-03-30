@@ -2,9 +2,12 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+
+#include <QtGui/QColor>
 
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/gpu/Mode.h"
@@ -12,8 +15,10 @@
 namespace qnemu
 {
 
-GbGpu::GbGpu(std::shared_ptr<GbInterruptHandler> interruptHandler) :
+GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler) :
+    cartridge(cartridge),
     interruptHandler(interruptHandler),
+    output(160, 144, QImage::Format_RGB32),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
@@ -246,9 +251,71 @@ void GbGpu::checklcdYCoordinate()
     }
 }
 
+QRgb GbGpu::getColor(uint16_t colorIndex) const
+{
+    return qRgb(0xFF, 0xFF, 0xFF);
+}
+
+uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset)
+{
+    uint8_t tileX = x / 8, tileY = y / 8;
+    GbcTileAttribute tileAttribute { .attribute = 0};
+    uint8_t tileIndex = videoRamBanks[0].at(tileMapOffset + (tileY * 32 + tileX));
+    if (cartridge.isGbcCartridge()) {
+        tileAttribute.attribute = videoRamBanks[1].at(tileMapOffset + (tileY * 32 + tileX));
+    }
+    if (tileAttribute.backgroundToOAMPriority == 1) {
+        backgroundToOAMPriorityMap[x][y] = true;
+    }
+
+    bool isBank1 = cartridge.isGbcCartridge() && (tileAttribute.tileVideoRamBank == 1);
+    uint8_t pixelXinTile = x % 8, pixelYinTile = y % 8;
+    uint8_t bitPositionInByte = tileAttribute.horizontalFlip ? 1 << pixelXinTile : 1 << (7 - pixelXinTile);
+    size_t byteIndex = tileIndex * 16 + (tileAttribute.verticalFlip ? (7 - pixelYinTile) : pixelYinTile) * 2;
+    if (tileIndex < 128) {
+        byteIndex += registers.backgroundAndWindowTileDataArea == 1 ? 0 : 0x1000;
+    }
+    const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
+    uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
+    colorIndexMap[x][y] = colorIndex;
+    return colorIndex;
+}
+
 void GbGpu::renderLine()
 {
-    
+    if (registers.lcdEnable == 0) {
+        return;
+    }
+    for (auto &data : backgroundToOAMPriorityMap) {
+        std::fill_n(data.begin(), data.size(), false);
+    }
+    bool isWindowVisible = false;
+    QRgb *line = reinterpret_cast<QRgb*>(output.scanLine(registers.lcdYCoordinate));
+    std::fill_n(line, output.bytesPerLine(), 0xFFFFFFFF);
+    for (uint8_t i = 0; i < 160; i++) {
+        if (cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) {
+            uint8_t x = (i + registers.scrollX) % 256;
+            uint8_t y = (registers.lcdYCoordinate + registers.scrollY) % 256;
+            size_t tileMapOffset = registers.backgroundTileMapArea == 0 ? 0x1800 : 0x1c00;
+            uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
+            line[i] = getColor(colorIndex);
+        }
+        if ((cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) &&
+                (registers.windowEnable == 1 && (registers.windowXPosition - 7) <= i && registers.windowYPosition <= registers.lcdYCoordinate)) {
+            uint8_t x = i - registers.windowXPosition + 7;
+            uint8_t y = windowLineCounter;
+            size_t tileMapOffset = registers.windowTileMapArea == 0 ? 0x1800 : 0x1c00;
+            uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
+            line[i] = getColor(colorIndex);
+            isWindowVisible = true;
+        }
+    }
+    if (isWindowVisible) {
+        windowLineCounter++;
+    }
+    if (registers.spriteEnable == 0) {
+        return;
+    }
 }
 
 void GbGpu::scanSprites()

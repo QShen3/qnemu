@@ -9,7 +9,11 @@
 #include <memory>
 #include <stack>
 
+#include <QtGui/QColor>
+#include <QtGui/QImage>
+
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 
@@ -20,7 +24,7 @@ class GbGpu : public GbDeviceInterface
 {
 public:
     GbGpu() = delete;
-    GbGpu(std::shared_ptr<GbInterruptHandler> interruptHandler);
+    GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler);
     ~GbGpu() = default;
 
     static constexpr size_t videoRamBankSize = 0x2000;
@@ -33,7 +37,21 @@ public:
     void reset() override;
 
 private:
+    union GbcTileAttribute {
+        struct {
+            uint backgroundPaletteNumber : 3;
+            uint tileVideoRamBank : 1;
+            uint : 1;
+            uint horizontalFlip : 1;
+            uint verticalFlip : 1;
+            uint backgroundToOAMPriority : 1;
+        };
+        uint8_t attribute;
+    };
+
     void checklcdYCoordinate();
+    QRgb getColor(uint16_t colorIndex) const;
+    uint16_t getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset);
     void renderLine();
     void scanSprites();
 
@@ -121,7 +139,11 @@ private:
         };  // FF6A
         uint8_t gbcSpritePaletteData;  // FF6B
     } registers;
+    std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
+    const GbCartridgeInterface& cartridge;
+    std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
+    QImage output;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;

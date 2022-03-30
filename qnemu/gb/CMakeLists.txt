@@ -20,10 +20,12 @@ add_library(
 )
 
 # Library
+find_package(Qt6 COMPONENTS Core Gui)
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     set_property(TARGET gb PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 target_include_directories(gb PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(gb PRIVATE Qt6::Core Qt6::Gui)
 
 # Special compile options
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)

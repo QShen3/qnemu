@@ -24,7 +24,7 @@ Gb::Gb()
     GbMbcFactory mbcFactory;
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
 
-    auto gbGpu = std::make_shared<GbGpu>(gbInterruptHandler);
+    auto gbGpu = std::make_shared<GbGpu>(*cartridge, gbInterruptHandler);
 
     auto gbWorkRam = std::make_shared<GbWorkRam>();
     auto gbHighRam = std::make_shared<GbHighRam>();
