@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 
@@ -251,7 +252,7 @@ void GbGpu::checklcdYCoordinate()
     }
 }
 
-QRgb GbGpu::getColor(uint16_t colorIndex) const
+QRgb GbGpu::getColor(uint16_t) const
 {
     return qRgb(0xFF, 0xFF, 0xFF);
 }

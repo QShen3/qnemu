@@ -2,6 +2,10 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <cstdint>
+#include <cstring>
+#include <thread>
+
 #include "qnemu/gb/cpu/GbCpu.h"
 
 namespace qnemu
