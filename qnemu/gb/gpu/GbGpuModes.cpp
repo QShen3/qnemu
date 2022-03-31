@@ -49,7 +49,7 @@ void GbGpu::mode2()
 
 void GbGpu::mode3()
 {
-    // renderLine();
+    renderLine();
     registers.modeFlag = 0;
     if (registers.mode0HBlankInterrupt) {
         interruptHandler->registers.lcdRequest = 1;
