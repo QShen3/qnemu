@@ -37,6 +37,15 @@ public:
     void reset() override;
 
 private:
+    union GbcColor {
+        struct {
+            uint red : 5;
+            uint green : 5;
+            uint blue : 5;
+            uint : 1;
+        };
+        uint16_t color;
+    };
     union GbcTileAttribute {
         struct {
             uint backgroundPaletteNumber : 3;
@@ -48,10 +57,22 @@ private:
         };
         uint8_t attribute;
     };
+    union GbcSpriteAttribute {
+        struct {
+            uint gbcPaletteNumber : 3;
+            uint tileVideoRamBank : 1;
+            uint paletteNumber : 1;
+            uint horizontalFlip : 1;
+            uint verticalFlip : 1;
+            uint backgroundToOAMPriority : 1;
+        };
+        uint8_t attribute;
+    };
 
     void checklcdYCoordinate();
-    QRgb getColor(uint16_t colorIndex) const;
+    QRgb getColor(uint16_t colorIndex, uint8_t paletteData) const;
     uint16_t getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset);
+    QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData);
     void renderLine();
     void scanSprites();
 
@@ -139,12 +160,14 @@ private:
         };  // FF6A
         uint8_t gbcSpritePaletteData;  // FF6B
     } registers;
+    std::array<uint8_t, 0x3F> backgroundOrWindowPaletteData;
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
     QImage output;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
+    std::array<uint8_t, 0x3F> spritePaletteData;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;
     std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;

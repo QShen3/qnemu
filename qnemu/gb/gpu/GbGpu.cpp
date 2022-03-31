@@ -57,9 +57,15 @@ bool GbGpu::accepts(uint16_t address) const
 uint8_t GbGpu::read(uint16_t address) const
 {
     if (address >= 0x8000 && address < 0xA000) {
-        return videoRamBanks.at(registers.videoRamBank).at(address - 0x8000);
+        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+            return 0xFF;
+        }
+        return videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - 0x8000);
     }
     if (address >= 0xFE00 && address < 0xFEA0) {
+        if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
+            return 0xFF;
+        }
         return spriteAttributeTable.at(address - 0xFE00);
     }
     if (address == 0xFF40) {
@@ -120,12 +126,18 @@ uint8_t GbGpu::read(uint16_t address) const
         return registers.gbcBackgroundPaletteSpecification;
     }
     if (address == 0xFF69) {
+        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+            return 0xFF;
+        }
         return registers.gbcBckgroundPaletteData;
     }
     if (address == 0xFF6A) {
         return registers.gbcSpritePaletteSpecification;
     }
     if (address == 0xFF6B) {
+        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+            return 0xFF;
+        }
         return registers.gbcSpritePaletteData;
     }
     assert(false && "Wrong address");
@@ -135,9 +147,15 @@ uint8_t GbGpu::read(uint16_t address) const
 void GbGpu::write(uint16_t address, const uint8_t& value)
 {
     if (address >= 0x8000 && address < 0xA000) {
-        videoRamBanks.at(registers.videoRamBank).at(address - 0x8000) = value;
+        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+            return;
+        }
+        videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - 0x8000) = value;
     }
     if (address >= 0xFE00 && address < 0xFEA0) {
+        if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
+            return;
+        }
         spriteAttributeTable.at(address - 0xFE00) = value;
     }
     if (address == 0xFF40) {
@@ -198,13 +216,27 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
         registers.gbcBackgroundPaletteSpecification = value;
     }
     if (address == 0xFF69) {
+        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+            return;
+        }
         registers.gbcBckgroundPaletteData = value;
+        backgroundOrWindowPaletteData.at(registers.gbcBackgroundPaletteIndex) = value;
+        if (registers.gbcBackgroundAutoIncrement) {
+            registers.gbcBackgroundPaletteIndex++;
+        }
     }
     if (address == 0xFF6A) {
         registers.gbcSpritePaletteSpecification = value;
     }
     if (address == 0xFF6B) {
+        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+            return;
+        }
         registers.gbcSpritePaletteData = value;
+        spritePaletteData.at(registers.gbcSritePaletteIndex) = value;
+        if (registers.gbcSpriteAutoIncrement) {
+            registers.gbcSritePaletteIndex++;
+        }
     }
 }
 
@@ -252,9 +284,31 @@ void GbGpu::checklcdYCoordinate()
     }
 }
 
-QRgb GbGpu::getColor(uint16_t) const
+QRgb GbGpu::getColor(uint16_t colorIndex, uint8_t paletteData) const
 {
+    uint8_t shade = 0;
+    shade = paletteData << (6 - colorIndex * 2) >> 6;
+
+    if (shade == 0) {
+        return qRgb(255, 255, 255);
+    }
+    if (shade == 1) {
+        return qRgb(170, 170, 170);
+    }
+    if (shade == 2) {
+        return qRgb(85, 85, 85);
+    }
+    if (shade == 3) {
+        return qRgb(0, 0, 0);
+    }
     return qRgb(0xFF, 0xFF, 0xFF);
+}
+
+QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData)
+{
+    uint16_t colorNumber = (uint16_t(paletteData.at(colorIndex + 1)) << 8) | uint16_t(paletteData.at(colorIndex));
+    GbcColor color = { .color = colorNumber };
+    return qRgb((color.red << 3 | color.red >> 2), (color.green << 3 | color.green >> 2), (color.blue << 3 | color.blue >> 2));
 }
 
 uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset)
@@ -279,6 +333,9 @@ uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t t
     const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
     uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
     colorIndexMap[x][y] = colorIndex;
+    if (cartridge.isGbcCartridge()) {
+        colorIndex = tileAttribute.backgroundPaletteNumber * 8 + colorIndex;
+    }
     return colorIndex;
 }
 
@@ -299,7 +356,11 @@ void GbGpu::renderLine()
             uint8_t y = (registers.lcdYCoordinate + registers.scrollY) % 256;
             size_t tileMapOffset = registers.backgroundTileMapArea == 0 ? 0x1800 : 0x1c00;
             uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
-            line[i] = getColor(colorIndex);
+            if (cartridge.isGbcCartridge()) {
+                line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
+            } else {
+                line[i] = getColor(colorIndex, registers.backgroundPaletteData);
+            }
         }
         if ((cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) &&
                 (registers.windowEnable == 1 && (registers.windowXPosition - 7) <= i && registers.windowYPosition <= registers.lcdYCoordinate)) {
@@ -307,7 +368,11 @@ void GbGpu::renderLine()
             uint8_t y = windowLineCounter;
             size_t tileMapOffset = registers.windowTileMapArea == 0 ? 0x1800 : 0x1c00;
             uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
-            line[i] = getColor(colorIndex);
+            if (cartridge.isGbcCartridge()) {
+                line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
+            } else {
+                line[i] = getColor(colorIndex, registers.backgroundPaletteData);
+            }
             isWindowVisible = true;
         }
     }
@@ -316,6 +381,72 @@ void GbGpu::renderLine()
     }
     if (registers.spriteEnable == 0) {
         return;
+    }
+    while (!spriteStack.empty()) {
+        uint8_t spriteIndex = spriteStack.top();
+        spriteStack.pop();
+
+        uint8_t tileIndex = spriteAttributeTable.at(spriteIndex + 2);
+        if (registers.spriteSize == 1) {
+            tileIndex &= 0xFE;
+        }
+        GbcSpriteAttribute spriteAttribute { .attribute = 0 };
+        spriteAttribute.attribute = spriteAttributeTable.at(spriteIndex + 3);
+
+        bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
+        const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
+
+        for (uint8_t i = 0; i < 160; i++) {
+            if (backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] && colorIndexMap[i][registers.lcdYCoordinate] > 0) {
+                if (cartridge.isGbcCartridge() && registers.backgroundAndWindowPriority == 1) {
+                    continue;
+                }
+                if (!cartridge.isGbcCartridge()) {
+                    continue;
+                }
+            }
+            if (spriteAttribute.backgroundToOAMPriority == 1 && colorIndexMap[i][registers.lcdYCoordinate] > 0) {
+                if (cartridge.isGbcCartridge() && registers.backgroundAndWindowPriority == 1) {
+                    continue;
+                }
+                if (!cartridge.isGbcCartridge()) {
+                    continue;
+                }
+            }
+
+            int16_t pixelXInTile = i - spriteAttributeTable.at(spriteIndex + 1) + 8;
+            if (pixelXInTile >= 8) {
+                break;
+            }
+            if (pixelXInTile < 0) {
+                continue;
+            }
+            int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable.at(spriteIndex) + 16;
+            if (registers.spriteSize == 1) {
+                if (pixelYInTile < 8 && spriteAttribute.verticalFlip == 1) {
+                    tileIndex += 1;
+                } else if (pixelXInTile >= 8 && spriteAttribute.verticalFlip == 0) {
+                    tileIndex += 1;
+                }
+            }
+            pixelYInTile = pixelYInTile & 0x7;
+
+            uint8_t bitPositionInByte = spriteAttribute.horizontalFlip ? (1 << pixelXInTile) : (1 << (7 - pixelXInTile));
+            size_t byteIndex = tileIndex * 16 + (spriteAttribute.verticalFlip ? (7 - pixelYInTile) : pixelYInTile) * 2;
+            uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
+
+            if (colorIndex == 0) {
+                continue;
+            }
+            if (cartridge.isGbcCartridge()) {
+                colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex;
+            }
+            if (cartridge.isGbcCartridge()) {
+                line[i] = getGbcColor(colorIndex, spritePaletteData);
+            } else {
+                line[i] = getColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
+            }
+        }
     }
 }
 
