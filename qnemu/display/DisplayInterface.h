@@ -14,7 +14,7 @@ class DisplayInterface
 public:
     virtual ~DisplayInterface() = default;
 
-    virtual void show(const QImage& image) = 0;
+    virtual void update(const QImage& image) = 0;
 };
 
 }  // namespace qnemu

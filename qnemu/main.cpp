@@ -5,6 +5,7 @@
 #include <QtWidgets/QApplication>
 
 #include "qnemu/DeviceInterface.h"
+#include "qnemu/MainWindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -12,7 +13,11 @@ int main(int argc, char *argv[])
 
     QApplication::setOrganizationName("QShen");
     QApplication::setOrganizationDomain("blog.qshen.cc");
-    QApplication::setApplicationName("QNemu");
+    QApplication::setApplicationName("QNEmu");
+    QApplication::setApplicationVersion("0.1.0");
+    
+    qnemu::MainWindow window;
+    window.show();
 
     return app.exec();
 }
