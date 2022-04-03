@@ -284,7 +284,7 @@ void GbGpu::checklcdYCoordinate()
     }
 }
 
-QRgb GbGpu::getColor(uint16_t colorIndex, uint8_t paletteData) const
+QRgb GbGpu::getGbColor(uint16_t colorIndex, uint8_t paletteData) const
 {
     uint8_t shade = 0;
     shade = paletteData << (6 - colorIndex * 2) >> 6;
@@ -304,7 +304,7 @@ QRgb GbGpu::getColor(uint16_t colorIndex, uint8_t paletteData) const
     return qRgb(0xFF, 0xFF, 0xFF);
 }
 
-QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData)
+QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const
 {
     uint16_t colorNumber = (uint16_t(paletteData.at(colorIndex + 1)) << 8) | uint16_t(paletteData.at(colorIndex));
     GbcColor color = { .color = colorNumber };
@@ -359,7 +359,7 @@ void GbGpu::renderLine()
             if (cartridge.isGbcCartridge()) {
                 line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
             } else {
-                line[i] = getColor(colorIndex, registers.backgroundPaletteData);
+                line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
             }
         }
         if ((cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) &&
@@ -371,7 +371,7 @@ void GbGpu::renderLine()
             if (cartridge.isGbcCartridge()) {
                 line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
             } else {
-                line[i] = getColor(colorIndex, registers.backgroundPaletteData);
+                line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
             }
             isWindowVisible = true;
         }
@@ -444,7 +444,7 @@ void GbGpu::renderLine()
             if (cartridge.isGbcCartridge()) {
                 line[i] = getGbcColor(colorIndex, spritePaletteData);
             } else {
-                line[i] = getColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
+                line[i] = getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
             }
         }
     }
