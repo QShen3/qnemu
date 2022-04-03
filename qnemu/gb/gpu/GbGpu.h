@@ -70,9 +70,9 @@ private:
     };
 
     void checklcdYCoordinate();
-    QRgb getColor(uint16_t colorIndex, uint8_t paletteData) const;
     uint16_t getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset);
-    QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData);
+    QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
+    QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const;
     void renderLine();
     void scanSprites();
 

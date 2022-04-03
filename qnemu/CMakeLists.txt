@@ -5,11 +5,12 @@ add_executable(
 )
 
 # Library
+find_package(Qt6 COMPONENTS Widgets)
 target_include_directories(qnemu PRIVATE ${CMAKE_SOURCE_DIR})
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     set_property(TARGET qnemu PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
-target_link_libraries(qnemu PRIVATE gb)
+target_link_libraries(qnemu PRIVATE gb Qt6::Widgets)
 
 # Special compile options
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
