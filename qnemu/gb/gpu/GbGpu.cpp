@@ -344,11 +344,11 @@ void GbGpu::renderLine()
     if (registers.lcdEnable == 0) {
         return;
     }
-    for (auto &data : backgroundToOAMPriorityMap) {
+    for (auto& data : backgroundToOAMPriorityMap) {
         std::fill_n(data.begin(), data.size(), false);
     }
     bool isWindowVisible = false;
-    QRgb *line = reinterpret_cast<QRgb*>(output.scanLine(registers.lcdYCoordinate));
+    QRgb* line = reinterpret_cast<QRgb*>(output.scanLine(registers.lcdYCoordinate));
     std::fill_n(line, output.bytesPerLine(), 0xFFFFFFFF);
     for (uint8_t i = 0; i < 160; i++) {
         if (cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) {
