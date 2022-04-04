@@ -24,13 +24,13 @@ Gb::Gb()
     GbMbcFactory mbcFactory;
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
 
-    auto gbGpu = std::make_shared<GbGpu>(*cartridge, gbInterruptHandler);
+    gpu = std::make_shared<GbGpu>(*cartridge, gbInterruptHandler);
 
     auto gbWorkRam = std::make_shared<GbWorkRam>();
     auto gbHighRam = std::make_shared<GbHighRam>();
 
     cpu->addDevice(cartridge);
-    cpu->addDevice(gbGpu);
+    cpu->addDevice(gpu);
     cpu->addDevice(gbWorkRam);
     cpu->addDevice(gbHighRam);
     cpu->addDevice(gbInterruptHandler);
@@ -38,10 +38,19 @@ Gb::Gb()
 
 void Gb::loadCartridge(const char* filePath)
 {
-    cpu->stop();
-    cpu->reset();
-    cartridge->load(filePath);
-    cpu->start();
+    if (cpu) {
+        cpu->stop();
+        cpu->reset();
+        cartridge->load(filePath);
+        cpu->start();
+    }
+}
+
+void Gb::setDisplay(std::shared_ptr<DisplayInterface> display)
+{
+    if (gpu) {
+        gpu->setDisplay(display);
+    }
 }
 
 }  // namespace qnemu

@@ -12,29 +12,29 @@
 #include <QtGui/QColor>
 #include <QtGui/QImage>
 
-#include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
+#include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 
 namespace qnemu
 {
 
-class GbGpu : public GbDeviceInterface
+class GbGpu : public GbGpuInterface
 {
 public:
     GbGpu() = delete;
     GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler);
     ~GbGpu() = default;
 
-    static constexpr size_t videoRamBankSize = 0x2000;
-    static constexpr size_t spriteAttributeTableSize = 0xA0;
-
     bool accepts(uint16_t address) const override;
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
+
+    void setDisplay(std::shared_ptr<DisplayInterface> display) override;
 
 private:
     union GbcColor {
@@ -164,6 +164,7 @@ private:
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
+    std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
     QImage output;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;

@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain("blog.qshen.cc");
     QApplication::setApplicationName("QNEmu");
     QApplication::setApplicationVersion("0.1.0");
-    
+
     qnemu::MainWindow window;
     window.show();
 
