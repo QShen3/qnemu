@@ -4,8 +4,12 @@
 
 #pragma once
 
+#include <memory>
+
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/gpu/GbGpuInterface.h"
 
 namespace qnemu
 {
@@ -17,10 +21,12 @@ public:
     ~Gb() = default;
 
     void loadCartridge(const char* filePath);
+    void setDisplay(std::shared_ptr<DisplayInterface> display);
 
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::shared_ptr<GbCpuInterface> cpu;
+    std::shared_ptr<GbGpuInterface> gpu;
 };
 
 }  // namespace qnemu

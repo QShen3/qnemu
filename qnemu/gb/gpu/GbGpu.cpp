@@ -10,6 +10,7 @@
 
 #include <QtGui/QColor>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/gpu/Mode.h"
 
@@ -269,6 +270,11 @@ void GbGpu::reset()
     registers.newDMALength = 0xFF;
 
     ticks = 0;
+}
+
+void GbGpu::setDisplay(std::shared_ptr<DisplayInterface> display)
+{
+    this->display = display;
 }
 
 void GbGpu::checklcdYCoordinate()
