@@ -121,7 +121,9 @@ void GbCartridge::step()
 
 void GbCartridge::reset()
 {
-    mbc->reset();
+    if (mbc) {
+        mbc->reset();
+    }
     gbcCartridge = false;
     loaded = false;
 }
@@ -217,17 +219,6 @@ std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& b
 
 size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag) const
 {
-    if (flag <= 8) {
-        return GbMbcInterface::romBankSize << flag;
-    }
-    if (flag >= 0x52 && flag <= 0x54) {
-        return 0x10'0000 + (0x2'0000 << (flag - 0x52));
-    }
-    throw std::runtime_error("Cartridge file is not correct!");
-}
-
-size_t GbCartridge::getRomSizeFromCartridge(uint8_t flag) const
-{
     if (flag == 0) {
         return 0;
     }
@@ -236,6 +227,17 @@ size_t GbCartridge::getRomSizeFromCartridge(uint8_t flag) const
     }
     if (flag == 5) {
         return 0x1'0000;
+    }
+    throw std::runtime_error("Cartridge file is not correct!");
+}
+
+size_t GbCartridge::getRomSizeFromCartridge(uint8_t flag) const
+{
+    if (flag <= 8) {
+        return (GbMbcInterface::romBankSize * 2) << flag;
+    }
+    if (flag >= 0x52 && flag <= 0x54) {
+        return 0x10'0000 + (0x2'0000 << (flag - 0x52));
     }
     throw std::runtime_error("Cartridge file is not correct!");
 }

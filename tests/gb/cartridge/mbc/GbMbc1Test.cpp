@@ -77,7 +77,7 @@ TEST(GbMbc1Test, ReadFromRom)
 
         gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 1);
         for (uint16_t i = 0x20; i < size; i = i + 0x20) {
-            gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, uint8_t(i >> 5));
+            gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, static_cast<uint8_t>(i >> 5));
             for (uint16_t j = 0; j < qnemu::GbMbcInterface::romBankSize; j++) {
                 EXPECT_EQ(gbMbc1.read(j), romDataBanks->at(i).at(j));
             }

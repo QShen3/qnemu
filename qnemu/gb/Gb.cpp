@@ -6,7 +6,6 @@
 
 #include "qnemu/gb/Gb.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
-#include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
@@ -21,7 +20,6 @@ Gb::Gb()
     cpu = std::make_shared<GbCpu>();
     auto gbInterruptHandler = std::make_shared<GbInterruptHandler>(cpu);
 
-    GbMbcFactory mbcFactory;
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
 
     gpu = std::make_shared<GbGpu>(*cartridge, gbInterruptHandler);

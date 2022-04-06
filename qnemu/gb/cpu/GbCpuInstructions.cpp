@@ -120,7 +120,7 @@ void GbCpu::stop_p()
 
 void GbCpu::ld_de_nn()
 {
-    registers.de = readByte(registers.pc + 1) + (uint16_t(readByte(registers.pc + 2)) << 8);
+    registers.de = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ld_dep_a()
@@ -166,7 +166,7 @@ void GbCpu::rla()
 
 void GbCpu::jr_n()
 {
-    registers.pc += int8_t(readByte(registers.pc + 1)) + 2;
+    registers.pc += static_cast<int8_t>(readByte(registers.pc + 1)) + 2;
 }
 
 void GbCpu::add_hl_de()
@@ -218,14 +218,14 @@ void GbCpu::rra()
 void GbCpu::jr_nz_n()
 {
     if (!registers.zero) {
-       registers.pc += int8_t(readByte(registers.pc + 1)) + 2;
+       registers.pc += static_cast<int8_t>(readByte(registers.pc + 1)) + 2;
        ticks += 4;
     }
 }
 
 void GbCpu::ld_hl_nn()
 {
-    registers.hl = readByte(registers.pc + 1) + (uint16_t(readByte(registers.pc + 2)) << 8);
+    registers.hl = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ldi_hlp_a()
@@ -276,7 +276,7 @@ void GbCpu::daa()
         else {
             registers.carry = 0;
         }
-        registers.a = uint8_t(value);
+        registers.a = static_cast<uint8_t>(value);
     }
     registers.halfCarry = 0;
     setZeroFlag(registers.a);
@@ -285,7 +285,7 @@ void GbCpu::daa()
 void GbCpu::jr_z_n()
 {
     if (registers.zero) {
-        registers.pc += int8_t(readByte(registers.pc + 1)) + 2;
+        registers.pc += static_cast<int8_t>(readByte(registers.pc + 1)) + 2;
         ticks += 4;
     }
 }
@@ -338,7 +338,7 @@ void GbCpu::jr_nc_n()
 
 void GbCpu::ld_sp_nn()
 {
-    registers.sp = readByte(registers.pc + 1) + (uint16_t(readByte(registers.pc + 2)) << 8);
+    registers.sp = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ldd_hlp_a()
@@ -1370,8 +1370,8 @@ void GbCpu::rst_30()
 void GbCpu::ld_hl_sp_n()
 {
     uint16_t value = readByte(registers.pc + 1);
-    setCarryFlag(uint16_t(registers.sp + int8_t(value)), 0, true);
-    setHalfCarryFlag(uint8_t(registers.sp), uint8_t(value), true);
+    setCarryFlag(static_cast<uint16_t>(registers.sp + static_cast<int8_t>(value)), 0, true);
+    setHalfCarryFlag(static_cast<uint8_t>(registers.sp), static_cast<uint8_t>(value), true);
     registers.subtraction = 0;
     registers.zero = 0;
     registers.hl = value;
