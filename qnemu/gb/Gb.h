@@ -8,6 +8,7 @@
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
+#include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 
@@ -26,6 +27,7 @@ public:
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::shared_ptr<GbCpuInterface> cpu;
+    const GbMbcFactory mbcFactory;
     std::shared_ptr<GbGpuInterface> gpu;
 };
 

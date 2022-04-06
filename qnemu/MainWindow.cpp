@@ -6,13 +6,15 @@
 #include <QtCore/QString>
 #include <QtGui/QAction>
 #include <QtGui/QKeySequence>
+#include <QtGui/QRasterWindow>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 
-
 #include "qnemu/MainWindow.h"
+#include "qnemu/display/RasterDisplay.h"
+#include "qnemu/gb/Gb.h"
 
 namespace qnemu
 {
@@ -38,14 +40,21 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu->addAction(exitAct);
 }
 
-MainWindow::~MainWindow()
-{
-}
-
 void MainWindow::openFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM file"), "", tr("ROM files (*.gb *.gbc *.gbz *.gba *.sgb *.zip)"));
     resize(320, 288 + menuBar()->height());
+
+    Gb* gb = new Gb();
+
+    // RasterDisplay* view = new RasterDisplay();
+    auto view = std::make_shared<RasterDisplay>();
+    // QWidget::createWindowContainer(view.get(), this);
+    view->setGeometry(QRect(200, 200, 320, 288));
+    view->show();
+
+    gb->setDisplay(view);
+    gb->loadCartridge(fileName.toStdString().c_str());
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

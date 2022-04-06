@@ -312,7 +312,7 @@ QRgb GbGpu::getGbColor(uint16_t colorIndex, uint8_t paletteData) const
 
 QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const
 {
-    uint16_t colorNumber = (uint16_t(paletteData.at(colorIndex + 1)) << 8) | uint16_t(paletteData.at(colorIndex));
+    uint16_t colorNumber = (static_cast<uint16_t>(paletteData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(paletteData.at(colorIndex));
     GbcColor color = { .color = colorNumber };
     return qRgb((color.red << 3 | color.red >> 2), (color.green << 3 | color.green >> 2), (color.blue << 3 | color.blue >> 2));
 }
@@ -462,11 +462,11 @@ void GbGpu::scanSprites()
     for (uint8_t i = 0; i < 160; i += 4) {
         int16_t y = spriteAttributeTable.at(i) - 16;
         if (registers.spriteSize == 1) {
-            if (int16_t(registers.lcdYCoordinate) >= y && int16_t(registers.lcdYCoordinate) < (y + 16)) {
+            if (static_cast<int16_t>(registers.lcdYCoordinate) >= y && static_cast<int16_t>(registers.lcdYCoordinate) < (y + 16)) {
                 spriteStack.push(i);
             }
         } else {
-            if (int16_t(registers.lcdYCoordinate) >= y && int16_t(registers.lcdYCoordinate) < (y + 8)) {
+            if (static_cast<int16_t>(registers.lcdYCoordinate) >= y && static_cast<int16_t>(registers.lcdYCoordinate) < (y + 8)) {
                 spriteStack.push(i);
             }
         }
