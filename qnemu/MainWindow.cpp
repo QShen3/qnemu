@@ -48,12 +48,12 @@ void MainWindow::openFile()
     Gb* gb = new Gb();
 
     // RasterDisplay* view = new RasterDisplay();
-    auto view = std::make_shared<RasterDisplay>();
-    // QWidget::createWindowContainer(view.get(), this);
-    view->setGeometry(QRect(200, 200, 320, 288));
-    view->show();
+    // auto view = std::make_shared<RasterDisplay>();
+    // // QWidget::createWindowContainer(view.get(), this);
+    // view->setGeometry(QRect(200, 200, 320, 288));
+    // view->show();
 
-    gb->setDisplay(view);
+    //gb->setDisplay(view);
     gb->loadCartridge(fileName.toStdString().c_str());
 }
 

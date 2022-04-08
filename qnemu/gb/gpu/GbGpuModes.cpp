@@ -13,7 +13,7 @@ void GbGpu::mode0()
 {
     if (registers.lcdYCoordinate == 143) {
         registers.modeFlag = 1;
-        display->update(output);
+        //display->update(output);
         interruptHandler->registers.vBlankRequest = 1;
         if (registers.mode0HBlankInterrupt) {
             interruptHandler->registers.lcdRequest = 1;
