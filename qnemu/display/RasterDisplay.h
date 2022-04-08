@@ -6,30 +6,24 @@
 
 #include <memory>
 
-#include <QtGui/QBackingStore>
 #include <QtGui/QImage>
 #include <QtGui/QPaintDeviceWindow>
-#include <QtGui/QWindow>
+#include <QtGui/QRasterWindow>
 
 #include "qnemu/display/DisplayInterface.h"
 
 namespace qnemu
 {
 
-class RasterDisplay : public QWindow, public DisplayInterface
+class RasterDisplay : public QRasterWindow, public DisplayInterface
 {
     Q_OBJECT
 public:
     RasterDisplay(QWindow* parent = nullptr);
     ~RasterDisplay() override = default;
 
-    void update(const QImage& image) override;
-
-protected:
-    void resizeEvent(QResizeEvent* event) override;
-
 private:
-    std::unique_ptr<QBackingStore> backingStore;
+
 };
 
 }  // namespace qnemu
