@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include <QtGui/QColor>
+#include <QtGui/QImage>
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/gpu/GbGpu.h"
@@ -20,7 +21,6 @@ namespace qnemu
 GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler) :
     cartridge(cartridge),
     interruptHandler(interruptHandler),
-    output(160, 144, QImage::Format_RGB32),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
@@ -274,6 +274,8 @@ void GbGpu::reset()
 
 void GbGpu::setDisplay(std::shared_ptr<DisplayInterface> display)
 {
+    auto& buffer = display->getBuffer();
+    buffer = QImage(160, 144, QImage::Format_RGB32);
     this->display = display;
 }
 
@@ -347,13 +349,14 @@ uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t t
 
 void GbGpu::renderLine()
 {
-    if (registers.lcdEnable == 0) {
+    if (registers.lcdEnable == 0 || !display) {
         return;
     }
     for (auto& data : backgroundToOAMPriorityMap) {
         std::fill_n(data.begin(), data.size(), false);
     }
     bool isWindowVisible = false;
+    auto& output = display->getBuffer();
     QRgb* line = reinterpret_cast<QRgb*>(output.scanLine(registers.lcdYCoordinate));
     std::fill_n(line, output.bytesPerLine(), 0xFFFFFFFF);
     for (uint8_t i = 0; i < 160; i++) {

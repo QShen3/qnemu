@@ -16,6 +16,8 @@ public:
 
     virtual void requestUpdate() = 0;
     virtual void waitForUpdateFinished() = 0;
+
+    virtual QImage& getBuffer() = 0;
 };
 
 }  // namespace qnemu

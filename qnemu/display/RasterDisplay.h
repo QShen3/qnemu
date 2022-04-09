@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
+#include <thread>
 
 #include <QtGui/QImage>
-#include <QtGui/QPaintDeviceWindow>
 #include <QtGui/QRasterWindow>
 
 #include "qnemu/display/DisplayInterface.h"
@@ -22,8 +24,21 @@ public:
     RasterDisplay(QWindow* parent = nullptr);
     ~RasterDisplay() override = default;
 
-private:
+    void paintEvent(QPaintEvent* event) override;
 
+    void requestUpdate() override;
+    void waitForUpdateFinished() override;
+
+    QImage& getBuffer() override;
+
+private:
+    void run();
+
+    QImage buffer;
+    std::mutex bufferMutex;
+    std::condition_variable cv;
+    bool refreshRequested;
+    std::thread work;
 };
 
 }  // namespace qnemu

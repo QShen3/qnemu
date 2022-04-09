@@ -14,6 +14,9 @@ void GbGpu::mode0()
     if (registers.lcdYCoordinate == 143) {
         registers.modeFlag = 1;
         //display->update(output);
+        if (display) {
+            display->requestUpdate();
+        }
         interruptHandler->registers.vBlankRequest = 1;
         if (registers.mode0HBlankInterrupt) {
             interruptHandler->registers.lcdRequest = 1;
@@ -34,6 +37,9 @@ void GbGpu::mode1()
         registers.lcdYCoordinate = 0;
         windowLineCounter = 0;
         registers.modeFlag = 2;
+        if (display) {
+            display->waitForUpdateFinished();
+        }
     }
     else {
         registers.modeFlag = 1;

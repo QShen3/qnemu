@@ -166,7 +166,7 @@ private:
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
-    QImage output;
+    // QImage output;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
     std::array<uint8_t, 0x3F> spritePaletteData;
     std::stack<uint8_t> spriteStack;
