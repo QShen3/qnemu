@@ -4,10 +4,7 @@
 
 #pragma once
 
-#include <condition_variable>
-#include <memory>
 #include <mutex>
-#include <thread>
 
 #include <QtGui/QImage>
 #include <QtGui/QRasterWindow>
@@ -32,13 +29,9 @@ public:
     QImage& getBuffer() override;
 
 private:
-    void run();
 
     QImage buffer;
     std::mutex bufferMutex;
-    std::condition_variable cv;
-    bool refreshRequested;
-    std::thread work;
 };
 
 }  // namespace qnemu
