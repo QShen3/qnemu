@@ -2,7 +2,6 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
-#include <memory>
 #include <mutex>
 
 #include <QtGui/QPainter>
@@ -15,50 +14,35 @@ namespace qnemu
 
 RasterDisplay::RasterDisplay(QWindow* parent) :
     QRasterWindow(parent),
-    buffer(160, 144, QImage::Format_RGB32),
-    refreshRequested(false)
+    buffer(160, 144, QImage::Format_RGB32)
 {
-    work = std::thread(&RasterDisplay::run, this);
 }
 
 void RasterDisplay::paintEvent(QPaintEvent*)
 {
+    bufferMutex.lock();
     QPainter painter(this);
     painter.drawImage(0, 0, buffer);
-    refreshRequested = false;
-    cv.notify_one();
+    bufferMutex.unlock();
 }
 
 void RasterDisplay::requestUpdate()
 {
-    {
-        std::lock_guard lock(bufferMutex);
-        refreshRequested = true;
-    }
-    cv.notify_one();
+    update();
 }
 
 void RasterDisplay::waitForUpdateFinished()
 {
-    std::unique_lock lock(bufferMutex);
-    cv.wait(lock, [this] { return !refreshRequested; });
+    while (true) {
+        if (bufferMutex.try_lock()) {
+            break;
+        }
+    }
 }
 
 QImage& RasterDisplay::getBuffer()
 {
     return buffer;
-}
-
-void RasterDisplay::run()
-{
-    while (true)
-    {
-        {
-            std::unique_lock lock(bufferMutex);
-            cv.wait(lock, [this] { return refreshRequested; });
-        }
-        update();
-    }
 }
 
 } // namespace qnemu
