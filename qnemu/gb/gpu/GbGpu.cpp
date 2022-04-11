@@ -345,7 +345,7 @@ uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t t
     uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
     // colorIndexMap[x][y] = colorIndex;
     if (cartridge.isGbcCartridge()) {
-        colorIndex = tileAttribute.backgroundPaletteNumber * 8 + colorIndex;
+        colorIndex = tileAttribute.backgroundPaletteNumber * 8 + colorIndex * 2;
     }
     return colorIndex;
 }
@@ -369,7 +369,7 @@ void GbGpu::renderLine()
             uint8_t y = (registers.lcdYCoordinate + registers.scrollY) % 256;
             size_t tileMapOffset = registers.backgroundTileMapArea == 0 ? 0x1800 : 0x1c00;
             uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
-            colorIndexMap[i][registers.lcdYCoordinate] = colorIndex;
+            colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             if (cartridge.isGbcCartridge()) {
                 //line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, backgroundOrWindowPaletteData));
@@ -384,7 +384,7 @@ void GbGpu::renderLine()
             uint8_t y = windowLineCounter;
             size_t tileMapOffset = registers.windowTileMapArea == 0 ? 0x1800 : 0x1c00;
             uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
-            colorIndexMap[i][registers.lcdYCoordinate] = colorIndex;
+            colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             if (cartridge.isGbcCartridge()) {
                 // line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, backgroundOrWindowPaletteData));
@@ -441,24 +441,25 @@ void GbGpu::renderLine()
                 continue;
             }
             int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable.at(spriteIndex) + 16;
+            uint8_t realTileIndex = tileIndex;
             if (registers.spriteSize == 1) {
                 if (pixelYInTile < 8 && spriteAttribute.verticalFlip == 1) {
-                    tileIndex += 1;
-                } else if (pixelXInTile >= 8 && spriteAttribute.verticalFlip == 0) {
-                    tileIndex += 1;
+                    realTileIndex += 1;
+                } else if (pixelYInTile >= 8 && spriteAttribute.verticalFlip == 0) {
+                    realTileIndex += 1;
                 }
             }
             pixelYInTile = pixelYInTile & 0x7;
 
             uint8_t bitPositionInByte = spriteAttribute.horizontalFlip ? (1 << pixelXInTile) : (1 << (7 - pixelXInTile));
-            size_t byteIndex = tileIndex * 16 + (spriteAttribute.verticalFlip ? (7 - pixelYInTile) : pixelYInTile) * 2;
+            size_t byteIndex = realTileIndex * 16 + (spriteAttribute.verticalFlip ? (7 - pixelYInTile) : pixelYInTile) * 2;
             uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
 
             if (colorIndex == 0) {
                 continue;
             }
             if (cartridge.isGbcCartridge()) {
-                colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex;
+                colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex * 2;
             }
             if (cartridge.isGbcCartridge()) {
                 //line[i] = getGbcColor(colorIndex, spritePaletteData);
