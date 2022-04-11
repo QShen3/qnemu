@@ -545,6 +545,7 @@ void GbCpu::start()
         work = std::thread([this](){
             exec();
         });
+        started.store(true);
     }
 }
 
@@ -609,9 +610,12 @@ void GbCpu::step()
             enableInterruptFlag = false;
         }
         auto instruction = instructions.at(readByte(registers.pc));
-        registers.pc += instruction.length;
+        uint16_t pc = registers.pc;
         ticks = instruction.ticks;
         instruction.execute();
+        if (pc == registers.pc) {
+            registers.pc += instruction.length;
+        }
     } else {
         ticks--;
     }

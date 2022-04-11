@@ -74,9 +74,8 @@ void GbWorkRam::write(uint16_t address, const uint8_t& value)
         data.at(registers.workRamBank).at(address - 0xF000) = value;
     }
     if (address == 0xFF70) {
-        registers.workRamBank = value;
+        registers.workRamBank = value & 0b111;
     }
-    assert(false && "Wrong address");
 }
 
 void GbWorkRam::step()

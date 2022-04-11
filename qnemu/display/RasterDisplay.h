@@ -23,15 +23,16 @@ public:
 
     void paintEvent(QPaintEvent* event) override;
 
-    void requestUpdate() override;
-    void waitForUpdateFinished() override;
+    std::unique_lock<std::mutex> sync() override;
 
     QImage& getBuffer() override;
 
-private:
+signals:
+    void requestRefresh() override;
 
+private:
     QImage buffer;
-    std::mutex bufferMutex;
+    std::mutex mutex;
 };
 
 }  // namespace qnemu
