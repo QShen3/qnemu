@@ -28,7 +28,7 @@ uint8_t GbCircuitMbc::read(uint16_t address) const
         return romBanks.at(0).at(address);
     }
     if (address >= 0x4000 && address < 0x8000) {
-        return romBanks.at(1).at(address - romBankSize);
+        return romBanks.at(1).at(address - 0x4000);
     }
     if (address >= 0xA000 && address < 0xC000) {
         if (type != 0) {

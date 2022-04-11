@@ -2,8 +2,9 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
-#include <mutex>
+#include <atomic>
 
+#include <QtCore/QRect>
 #include <QtGui/QPainter>
 #include <QtGui/QRasterWindow>
 
@@ -16,28 +17,20 @@ RasterDisplay::RasterDisplay(QWindow* parent) :
     QRasterWindow(parent),
     buffer(160, 144, QImage::Format_RGB32)
 {
+    connect(this, SIGNAL(requestRefresh()), this, SLOT(update()));
 }
 
 void RasterDisplay::paintEvent(QPaintEvent*)
 {
-    bufferMutex.lock();
+    QRect rect(0, 0, width(), height());
     QPainter painter(this);
-    painter.drawImage(0, 0, buffer);
-    bufferMutex.unlock();
+    std::unique_lock<std::mutex> lock(mutex);
+    painter.drawImage(rect, buffer);
 }
 
-void RasterDisplay::requestUpdate()
+std::unique_lock<std::mutex> RasterDisplay::sync()
 {
-    update();
-}
-
-void RasterDisplay::waitForUpdateFinished()
-{
-    while (true) {
-        if (bufferMutex.try_lock()) {
-            break;
-        }
-    }
+    return std::move(std::unique_lock<std::mutex>(mutex));
 }
 
 QImage& RasterDisplay::getBuffer()

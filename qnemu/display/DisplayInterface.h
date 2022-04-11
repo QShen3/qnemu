@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <QtGui/QImage>
 
 namespace qnemu
@@ -14,8 +16,8 @@ class DisplayInterface
 public:
     virtual ~DisplayInterface() = default;
 
-    virtual void requestUpdate() = 0;
-    virtual void waitForUpdateFinished() = 0;
+    virtual void requestRefresh() = 0;
+    virtual std::unique_lock<std::mutex> sync() = 0;
 
     virtual QImage& getBuffer() = 0;
 };
