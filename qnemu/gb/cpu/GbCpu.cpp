@@ -592,6 +592,9 @@ void GbCpu::addDevice(std::shared_ptr<GbDeviceInterface> device)
 void GbCpu::exec()
 {
     while(true) {
+        if (!started.load()) {
+            return;
+        }
         step();
         for (auto& device : devices) {
             device->step();
