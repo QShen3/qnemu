@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <stack>
+#include <tuple>
 
 #include <QtGui/QColor>
 #include <QtGui/QImage>
@@ -70,7 +71,7 @@ private:
     };
 
     void checklcdYCoordinate();
-    uint16_t getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset);
+    std::tuple<uint16_t, bool> getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const;
     QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
     QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const;
     void renderLine();

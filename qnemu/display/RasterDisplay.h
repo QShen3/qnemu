@@ -23,7 +23,8 @@ public:
 
     void paintEvent(QPaintEvent* event) override;
 
-    std::unique_lock<std::mutex> sync() override;
+    void lock() override;
+    void unlock() override;
 
     QImage& getBuffer() override;
 

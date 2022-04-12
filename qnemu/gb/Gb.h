@@ -23,6 +23,7 @@ public:
 
     void loadCartridge(const char* filePath);
     void setDisplay(std::shared_ptr<DisplayInterface> display);
+    void stop();
 
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;

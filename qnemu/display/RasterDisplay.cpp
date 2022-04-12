@@ -28,9 +28,14 @@ void RasterDisplay::paintEvent(QPaintEvent*)
     painter.drawImage(rect, buffer);
 }
 
-std::unique_lock<std::mutex> RasterDisplay::sync()
+void RasterDisplay::lock()
 {
-    return std::move(std::unique_lock<std::mutex>(mutex));
+    mutex.lock();
+}
+
+void RasterDisplay::unlock()
+{
+    mutex.unlock();
 }
 
 QImage& RasterDisplay::getBuffer()

@@ -17,7 +17,8 @@ public:
     virtual ~DisplayInterface() = default;
 
     virtual void requestRefresh() = 0;
-    virtual std::unique_lock<std::mutex> sync() = 0;
+    virtual void lock() = 0;
+    virtual void unlock() = 0;
 
     virtual QImage& getBuffer() = 0;
 };

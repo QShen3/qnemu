@@ -44,6 +44,13 @@ void Gb::loadCartridge(const char* filePath)
     }
 }
 
+void Gb::stop()
+{
+    if (cpu) {
+        cpu->stop();
+    }
+}
+
 void Gb::setDisplay(std::shared_ptr<DisplayInterface> display)
 {
     if (gpu) {

@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <tuple>
 
 #include <QtGui/QColor>
 #include <QtGui/QImage>
@@ -272,13 +273,20 @@ void GbGpu::reset()
     registers.newDMALength = 0xFF;
 
     ticks = 0;
+
+    if (display) {
+        display->unlock();
+    }
 }
 
 void GbGpu::setDisplay(std::shared_ptr<DisplayInterface> display)
 {
-    auto& buffer = display->getBuffer();
-    auto lock = display->sync();
-    buffer = QImage(160, 144, QImage::Format_RGB32);
+    if (display) {
+        auto& buffer = display->getBuffer();
+        display->lock();
+        buffer = QImage(160, 144, QImage::Format_RGB32);
+        display->unlock();
+    }
     this->display = display;
 }
 
@@ -322,16 +330,13 @@ QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& pa
     return qRgb((color.red << 3 | color.red >> 2), (color.green << 3 | color.green >> 2), (color.blue << 3 | color.blue >> 2));
 }
 
-uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset)
+std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const
 {
     uint8_t tileX = x / 8, tileY = y / 8;
     GbcTileAttribute tileAttribute { .attribute = 0};
     uint8_t tileIndex = videoRamBanks[0].at(tileMapOffset + (tileY * 32 + tileX));
     if (cartridge.isGbcCartridge()) {
         tileAttribute.attribute = videoRamBanks[1].at(tileMapOffset + (tileY * 32 + tileX));
-    }
-    if (tileAttribute.backgroundToOAMPriority == 1) {
-        backgroundToOAMPriorityMap[x][y] = true;
     }
 
     bool isBank1 = cartridge.isGbcCartridge() && (tileAttribute.tileVideoRamBank == 1);
@@ -343,11 +348,10 @@ uint16_t GbGpu::getColorIndexOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t t
     }
     const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
     uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
-    // colorIndexMap[x][y] = colorIndex;
     if (cartridge.isGbcCartridge()) {
         colorIndex = tileAttribute.backgroundPaletteNumber * 8 + colorIndex * 2;
     }
-    return colorIndex;
+    return std::make_tuple(colorIndex, tileAttribute.backgroundToOAMPriority == 1);
 }
 
 void GbGpu::renderLine()
@@ -360,21 +364,18 @@ void GbGpu::renderLine()
     }
     bool isWindowVisible = false;
     auto& output = display->getBuffer();
-    //QRgb* line = reinterpret_cast<QRgb*>(output.scanLine(registers.lcdYCoordinate));
-    //std::fill_n(line, output.bytesPerLine(), 0xFFFFFFFF);
     for (uint8_t i = 0; i < 160; i++) {
         output.setPixel(i, registers.lcdYCoordinate, 0xFFFFFFFF);
         if (cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) {
             uint8_t x = (i + registers.scrollX) % 256;
             uint8_t y = (registers.lcdYCoordinate + registers.scrollY) % 256;
             size_t tileMapOffset = registers.backgroundTileMapArea == 0 ? 0x1800 : 0x1c00;
-            uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
+            auto [ colorIndex, priority ] = getColorIndexAndPriorityOfBackgroundOrWindow(x, y, tileMapOffset);
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
+            backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
             if (cartridge.isGbcCartridge()) {
-                //line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, backgroundOrWindowPaletteData));
             } else {
-                //line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbColor(colorIndex, registers.backgroundPaletteData));
             }
         }
@@ -383,13 +384,12 @@ void GbGpu::renderLine()
             uint8_t x = i - registers.windowXPosition + 7;
             uint8_t y = windowLineCounter;
             size_t tileMapOffset = registers.windowTileMapArea == 0 ? 0x1800 : 0x1c00;
-            uint8_t colorIndex = getColorIndexOfBackgroundOrWindow(x, y, tileMapOffset);
+            auto [ colorIndex, priority ] = getColorIndexAndPriorityOfBackgroundOrWindow(x, y, tileMapOffset);
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
+            backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
             if (cartridge.isGbcCartridge()) {
-                // line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, backgroundOrWindowPaletteData));
             } else {
-                // line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbColor(colorIndex, registers.backgroundPaletteData));
             }
             isWindowVisible = true;
@@ -462,10 +462,8 @@ void GbGpu::renderLine()
                 colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex * 2;
             }
             if (cartridge.isGbcCartridge()) {
-                //line[i] = getGbcColor(colorIndex, spritePaletteData);
                 output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, spritePaletteData));
             } else {
-                //line[i] = getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
                 output.setPixel(i, registers.lcdYCoordinate, getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data));
             }
         }
