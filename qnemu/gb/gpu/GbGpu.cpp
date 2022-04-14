@@ -33,6 +33,14 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptH
     GbGpu::reset();
 }
 
+GbGpu::~GbGpu()
+{
+    if (display) {
+        display->lock();
+        display->unlock();
+    }
+}
+
 bool GbGpu::accepts(uint16_t address) const
 {
     if (address >= 0x8000 && address < 0xA000) {
@@ -275,6 +283,7 @@ void GbGpu::reset()
     ticks = 0;
 
     if (display) {
+        display->lock();
         display->unlock();
     }
 }

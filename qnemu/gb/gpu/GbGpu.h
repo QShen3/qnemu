@@ -27,7 +27,7 @@ class GbGpu : public GbGpuInterface
 public:
     GbGpu() = delete;
     GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler);
-    ~GbGpu() = default;
+    ~GbGpu();
 
     bool accepts(uint16_t address) const override;
     uint8_t read(uint16_t address) const override;
