@@ -58,12 +58,12 @@ void MainWindow::openFile()
     this->setCentralWidget(nullptr);
     if (gb) {
         gb->stop();
-        gb->setDisplay(nullptr);
-    }
-    if (display) {
-        display->setParent(nullptr);
     }
     gb = std::make_unique<Gb>();
+    if (display) {
+        display->setParent(nullptr);
+        display->close();
+    }
     display = std::make_shared<RasterDisplay>();
     gb->setDisplay(display);
     QWidget* displayWidgets = QWidget::createWindowContainer(display.get(), this);
