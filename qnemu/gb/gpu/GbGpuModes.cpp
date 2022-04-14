@@ -14,7 +14,6 @@ void GbGpu::mode0()
     if (registers.lcdYCoordinate == 143) {
         registers.modeFlag = 1;
         if (display) {
-            display->unlock();
             display->requestRefresh();
         }
         interruptHandler->registers.vBlankRequest = 1;
@@ -38,7 +37,7 @@ void GbGpu::mode1()
         windowLineCounter = 0;
         registers.modeFlag = 2;
         if (display) {
-            display->lock();
+            display->waitFroRefresh();
         }
     }
     else {

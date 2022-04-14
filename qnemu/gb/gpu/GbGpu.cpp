@@ -35,10 +35,6 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptH
 
 GbGpu::~GbGpu()
 {
-    if (display) {
-        display->lock();
-        display->unlock();
-    }
 }
 
 bool GbGpu::accepts(uint16_t address) const
@@ -281,20 +277,13 @@ void GbGpu::reset()
     registers.newDMALength = 0xFF;
 
     ticks = 0;
-
-    if (display) {
-        display->lock();
-        display->unlock();
-    }
 }
 
 void GbGpu::setDisplay(std::shared_ptr<DisplayInterface> display)
 {
     if (display) {
         auto& buffer = display->getBuffer();
-        display->lock();
         buffer = QImage(160, 144, QImage::Format_RGB32);
-        display->unlock();
     }
     this->display = display;
 }
