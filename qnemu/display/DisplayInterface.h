@@ -17,8 +17,7 @@ public:
     virtual ~DisplayInterface() = default;
 
     virtual void requestRefresh() = 0;
-    virtual void lock() = 0;
-    virtual void unlock() = 0;
+    virtual void waitFroRefresh() = 0;
 
     virtual QImage& getBuffer() = 0;
 };

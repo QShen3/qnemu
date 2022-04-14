@@ -15,9 +15,9 @@ namespace qnemu
 
 RasterDisplay::RasterDisplay(QWindow* parent) :
     QRasterWindow(parent),
+    refreshRequested(false),
     buffer(160, 144, QImage::Format_RGB32)
 {
-    connect(this, SIGNAL(requestRefresh()), this, SLOT(update()));
 }
 
 void RasterDisplay::paintEvent(QPaintEvent*)
@@ -25,17 +25,23 @@ void RasterDisplay::paintEvent(QPaintEvent*)
     QRect rect(0, 0, width(), height());
     QPainter painter(this);
     std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [this] { return refreshRequested.load(); });
     painter.drawImage(rect, buffer);
+    refreshRequested.store(false);
+    cv.notify_all();
 }
 
-void RasterDisplay::lock()
+void RasterDisplay::requestRefresh()
 {
-    mutex.lock();
+    refreshRequested.store(true);
+    cv.notify_all();
+    requestUpdate();
 }
 
-void RasterDisplay::unlock()
+void RasterDisplay::waitFroRefresh()
 {
-    mutex.unlock();
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [this] { return !refreshRequested.load(); });
 }
 
 QImage& RasterDisplay::getBuffer()

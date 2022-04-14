@@ -55,16 +55,16 @@ void MainWindow::openFile()
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM file"), "", tr("ROM files (*.gb *.gbc *.gbz *.gba *.sgb *.zip)"));
     resize(320, 288 + menuBar()->height());
 
-    this->setCentralWidget(nullptr);
     if (gb) {
+        gb->setDisplay(nullptr);
         gb->stop();
     }
-    gb = std::make_unique<Gb>();
     if (display) {
         display->setParent(nullptr);
-        display->close();
     }
+    this->setCentralWidget(nullptr);
     display = std::make_shared<RasterDisplay>();
+    gb = std::make_unique<Gb>();
     gb->setDisplay(display);
     QWidget* displayWidgets = QWidget::createWindowContainer(display.get(), this);
     this->setCentralWidget(displayWidgets);

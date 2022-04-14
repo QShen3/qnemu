@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <atomic>
+#include <condition_variable>
 #include <mutex>
 
 #include <QtGui/QImage>
@@ -23,16 +25,15 @@ public:
 
     void paintEvent(QPaintEvent* event) override;
 
-    void lock() override;
-    void unlock() override;
+    void requestRefresh() override;
+    void waitFroRefresh() override;
 
     QImage& getBuffer() override;
 
-signals:
-    void requestRefresh() override;
-
 private:
+    std::atomic_bool refreshRequested;
     QImage buffer;
+    std::condition_variable cv;
     std::mutex mutex;
 };
 
