@@ -362,6 +362,7 @@ void GbGpu::renderLine()
     }
     bool isWindowVisible = false;
     auto& output = display->getBuffer();
+    QRgb* line = reinterpret_cast<QRgb*>(output.scanLine(registers.lcdYCoordinate));
     for (uint8_t i = 0; i < 160; i++) {
         output.setPixel(i, registers.lcdYCoordinate, 0xFFFFFFFF);
         if (cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) {
@@ -372,9 +373,9 @@ void GbGpu::renderLine()
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
             if (cartridge.isGbcCartridge()) {
-                output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, backgroundOrWindowPaletteData));
+                line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
             } else {
-                output.setPixel(i, registers.lcdYCoordinate, getGbColor(colorIndex, registers.backgroundPaletteData));
+                line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
             }
         }
         if ((cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) &&
@@ -460,9 +461,9 @@ void GbGpu::renderLine()
                 colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex * 2;
             }
             if (cartridge.isGbcCartridge()) {
-                output.setPixel(i, registers.lcdYCoordinate, getGbcColor(colorIndex, spritePaletteData));
+                line[i] = getGbcColor(colorIndex, spritePaletteData);
             } else {
-                output.setPixel(i, registers.lcdYCoordinate, getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data));
+                line[i] = getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
             }
         }
     }
