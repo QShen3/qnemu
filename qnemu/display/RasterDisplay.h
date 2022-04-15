@@ -30,6 +30,9 @@ public:
 
     QImage& getBuffer() override;
 
+signals:
+    void startRefresh();
+
 private:
     std::atomic_bool refreshRequested;
     QImage buffer;

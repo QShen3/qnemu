@@ -3,6 +3,7 @@
  */
 
 #include <atomic>
+#include <chrono>
 
 #include <QtCore/QRect>
 #include <QtGui/QPainter>
@@ -18,6 +19,7 @@ RasterDisplay::RasterDisplay(QWindow* parent) :
     refreshRequested(false),
     buffer(160, 144, QImage::Format_RGB32)
 {
+    connect(this, SIGNAL(startRefresh()), this, SLOT(update()));
 }
 
 void RasterDisplay::paintEvent(QPaintEvent*)
@@ -35,13 +37,13 @@ void RasterDisplay::requestRefresh()
 {
     refreshRequested.store(true);
     cv.notify_all();
-    requestUpdate();
+    emit startRefresh();
 }
 
 void RasterDisplay::waitFroRefresh()
 {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [this] { return !refreshRequested.load(); });
+    cv.wait_for(lock, std::chrono::milliseconds(10), [this] { return !refreshRequested.load(); });
 }
 
 QImage& RasterDisplay::getBuffer()
