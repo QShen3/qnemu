@@ -6,7 +6,8 @@
 
 #include <memory>
 
-#include "qnemu/display/DisplayInterface.h"
+#include <QtGui/QWindow>
+
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
@@ -22,14 +23,14 @@ public:
     ~Gb() = default;
 
     void loadCartridge(const char* filePath);
-    void setDisplay(std::shared_ptr<DisplayInterface> display);
+    std::shared_ptr<QWindow> getDisplay();
     void stop();
 
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::shared_ptr<GbCpuInterface> cpu;
     const GbMbcFactory mbcFactory;
-    std::shared_ptr<GbGpuInterface> gpu;
+    std::shared_ptr<QWindow> display;
 };
 
 }  // namespace qnemu

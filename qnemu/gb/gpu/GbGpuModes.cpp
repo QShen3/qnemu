@@ -36,9 +36,7 @@ void GbGpu::mode1()
         registers.lcdYCoordinate = 0;
         windowLineCounter = 0;
         registers.modeFlag = 2;
-        if (display) {
-            display->waitFroRefresh();
-        }
+        display->waitFroRefresh();
     }
     else {
         registers.modeFlag = 1;
@@ -55,9 +53,7 @@ void GbGpu::mode2()
 
 void GbGpu::mode3()
 {
-    if (display) {
-        renderLine();
-    }
+    renderLine();
     registers.modeFlag = 0;
     if (registers.mode0HBlankInterrupt) {
         interruptHandler->registers.lcdRequest = 1;

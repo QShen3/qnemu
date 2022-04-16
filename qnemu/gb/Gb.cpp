@@ -4,6 +4,7 @@
 
 #include <memory>
 
+#include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
@@ -22,7 +23,8 @@ Gb::Gb()
 
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
 
-    gpu = std::make_shared<GbGpu>(*cartridge, gbInterruptHandler);
+    auto rasterDisplay = std::make_shared<RasterDisplay>();
+    auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, gbInterruptHandler);
 
     auto gbWorkRam = std::make_shared<GbWorkRam>();
     auto gbHighRam = std::make_shared<GbHighRam>();
@@ -32,6 +34,8 @@ Gb::Gb()
     cpu->addDevice(gbWorkRam);
     cpu->addDevice(gbHighRam);
     cpu->addDevice(gbInterruptHandler);
+
+    display = rasterDisplay;
 }
 
 void Gb::loadCartridge(const char* filePath)
@@ -51,11 +55,9 @@ void Gb::stop()
     }
 }
 
-void Gb::setDisplay(std::shared_ptr<DisplayInterface> display)
+std::shared_ptr<QWindow> Gb::getDisplay()
 {
-    if (gpu) {
-        gpu->setDisplay(display);
-    }
+    return display;
 }
 
 }  // namespace qnemu

@@ -26,7 +26,7 @@ class GbGpu : public GbGpuInterface
 {
 public:
     GbGpu() = delete;
-    GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler);
+    GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler);
     ~GbGpu();
 
     bool accepts(uint16_t address) const override;
@@ -34,8 +34,6 @@ public:
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
-
-    void setDisplay(std::shared_ptr<DisplayInterface> display) override;
 
 private:
     union GbcColor {

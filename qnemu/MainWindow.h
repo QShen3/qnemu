@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
 
 #include <QtCore/QSettings>
@@ -27,7 +26,6 @@ public:
 
 private:
     QSettings settings;
-    std::shared_ptr<RasterDisplay> display;
     std::unique_ptr<Gb> gb;
 };
 
