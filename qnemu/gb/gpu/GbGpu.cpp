@@ -19,8 +19,9 @@
 namespace qnemu
 {
 
-GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbInterruptHandler> interruptHandler) :
+GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler) :
     cartridge(cartridge),
+    display(display),
     interruptHandler(interruptHandler),
     modes({
         Mode
@@ -279,15 +280,6 @@ void GbGpu::reset()
     ticks = 0;
 }
 
-void GbGpu::setDisplay(std::shared_ptr<DisplayInterface> display)
-{
-    if (display) {
-        auto& buffer = display->getBuffer();
-        buffer = QImage(160, 144, QImage::Format_RGB32);
-    }
-    this->display = display;
-}
-
 void GbGpu::checklcdYCoordinate()
 {
     if (registers.lcdYCoordinate == registers.lcdYCoordinateCompare) {
@@ -354,7 +346,7 @@ std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(u
 
 void GbGpu::renderLine()
 {
-    if (registers.lcdEnable == 0 || !display) {
+    if (registers.lcdEnable == 0) {
         return;
     }
     for (auto& data : backgroundToOAMPriorityMap) {
