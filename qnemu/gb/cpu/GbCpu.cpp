@@ -542,9 +542,7 @@ GbCpu::~GbCpu()
 void GbCpu::start()
 {
     if (!started.load()) {
-        work = std::thread([this](){
-            exec();
-        });
+        work = std::thread(&GbCpu::exec, this);
         started.store(true);
     }
 }

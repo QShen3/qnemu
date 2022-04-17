@@ -51,6 +51,9 @@ MainWindow::~MainWindow()
 void MainWindow::openFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM file"), "", tr("ROM files (*.gb *.gbc *.gbz *.gba *.sgb *.zip)"));
+    if (fileName.isEmpty()) {
+        return;
+    }
     resize(320, 288 + menuBar()->height());
 
     if (!gb) {
