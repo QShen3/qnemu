@@ -7,6 +7,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 #include <QtGui/QImage>
 #include <QtGui/QRasterWindow>
@@ -21,7 +22,7 @@ class RasterDisplay : public QRasterWindow, public DisplayInterface
     Q_OBJECT
 public:
     RasterDisplay(QWindow* parent = nullptr);
-    ~RasterDisplay() override = default;
+    ~RasterDisplay();
 
     void paintEvent(QPaintEvent* event) override;
 
@@ -34,10 +35,14 @@ signals:
     void startRefresh();
 
 private:
-    std::atomic_bool refreshRequested;
+    void run();
+
     QImage buffer;
     std::condition_variable cv;
     std::mutex mutex;
+    std::atomic_bool refreshRequested;
+    std::atomic_bool started;
+    std::thread work;
 };
 
 }  // namespace qnemu
