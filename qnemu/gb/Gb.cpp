@@ -24,7 +24,7 @@ Gb::Gb()
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
 
     auto rasterDisplay = std::make_shared<RasterDisplay>();
-    auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, gbInterruptHandler);
+    auto gpu = std::make_shared<GbGpu>(*cartridge, cpu, rasterDisplay, gbInterruptHandler);
 
     auto gbWorkRam = std::make_shared<GbWorkRam>();
     auto gbHighRam = std::make_shared<GbHighRam>();

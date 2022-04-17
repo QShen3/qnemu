@@ -17,6 +17,8 @@
 namespace qnemu
 {
 
+class GbGpu;
+
 class GbCpu : public GbCpuInterface
 {
 public:
@@ -31,10 +33,11 @@ public:
     void addDevice(std::shared_ptr<GbDeviceInterface> device) override;
 
 private:
+    friend GbGpu;
     void exec();
     void step();
-    uint8_t readByte(uint16_t address) const;
-    void writeByte(uint16_t address, uint8_t value);
+    uint8_t readByte(uint16_t address) const override;
+    void writeByte(uint16_t address, uint8_t value) override;
 
     struct {
         union {
