@@ -19,8 +19,9 @@
 namespace qnemu
 {
 
-GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler) :
+GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler) :
     cartridge(cartridge),
+    cpu(cpu),
     display(display),
     interruptHandler(interruptHandler),
     modes({
@@ -187,6 +188,10 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
     }
     if (address == 0xFF46) {
         registers.dMATransferAndStartAddress = value;
+        if (!isSpriteAttributeTableDmaInProgress) {
+            isSpriteAttributeTableDmaInProgress = true;
+            spriteAttributeTableDmaTicks = 640;
+        }
     }
     if (address == 0xFF47) {
         registers.backgroundPaletteData = value;
@@ -251,6 +256,7 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
 
 void GbGpu::step()
 {
+    spriteAttributeTableDma();
     if (registers.lcdEnable == 0) {
         ticks = 0;
         return;
@@ -277,7 +283,9 @@ void GbGpu::reset()
     registers.newDMADestinationLow = 0xFF;
     registers.newDMALength = 0xFF;
 
+    isSpriteAttributeTableDmaInProgress = false;
     ticks = 0;
+    spriteAttributeTableDmaTicks = 0;
 }
 
 void GbGpu::checklcdYCoordinate()
@@ -342,6 +350,19 @@ std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(u
         colorIndex = tileAttribute.backgroundPaletteNumber * 8 + colorIndex * 2;
     }
     return std::make_tuple(colorIndex, tileAttribute.backgroundToOAMPriority == 1);
+}
+
+void GbGpu::spriteAttributeTableDma()
+{
+    if (isSpriteAttributeTableDmaInProgress) {
+        spriteAttributeTableDmaTicks--;
+        if (spriteAttributeTableDmaTicks == 0) {
+            isSpriteAttributeTableDmaInProgress = false;
+            for (uint i = 0; i < 0xA0; i++) {
+                spriteAttributeTable.at(i) = cpu.lock()->readByte(registers.dMATransferAndStartAddress * 0x100 + i);
+            }
+        }
+    }
 }
 
 void GbGpu::renderLine()

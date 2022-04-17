@@ -15,6 +15,7 @@
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
+#include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
@@ -26,7 +27,7 @@ class GbGpu : public GbGpuInterface
 {
 public:
     GbGpu() = delete;
-    GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler);
+    GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler);
     ~GbGpu();
 
     bool accepts(uint16_t address) const override;
@@ -72,6 +73,7 @@ private:
     std::tuple<uint16_t, bool> getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const;
     QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
     QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const;
+    void spriteAttributeTableDma();
     void renderLine();
     void scanSprites();
 
@@ -163,10 +165,12 @@ private:
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
+    std::weak_ptr<GbCpuInterface> cpu;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
-    // QImage output;
+    bool isSpriteAttributeTableDmaInProgress;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
+    uint16_t spriteAttributeTableDmaTicks;
     std::array<uint8_t, 0x3F> spritePaletteData;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;
