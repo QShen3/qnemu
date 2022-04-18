@@ -5,6 +5,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cpu CPU_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/interrupt INTERRUPT_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/memory MEMORY_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gpu GPU_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/joypad JOYPAD_SRCS)
 
 message(${CARTRIDGE_SRCS})
 
@@ -17,6 +18,7 @@ add_library(
     ${INTERRUPT_SRCS}
     ${MEMORY_SRCS}
     ${GPU_SRCS}
+    ${JOYPAD_SRCS}
 )
 
 # Library
