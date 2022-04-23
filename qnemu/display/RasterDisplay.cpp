@@ -57,6 +57,7 @@ void RasterDisplay::waitFroRefresh()
 {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait_for(lock, std::chrono::milliseconds(10), [this] { return !refreshRequested.load(); });
+    refreshRequested.store(false);
 }
 
 QImage& RasterDisplay::getBuffer()
@@ -71,8 +72,6 @@ void RasterDisplay::run()
             return;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        std::unique_lock<std::mutex> lock(mutex);
-        cv.wait(lock, [this] { return refreshRequested.load(); });
         emit startRefresh();
     }
 }
