@@ -16,7 +16,7 @@ GbCpu::GbCpu() :
         Instruction
         { "NOP",                     1, 4,  [this](){nop();}       },
         { "LD BC, 0x%04X",           3, 12, [this](){ld_bc_nn();}  },
-        { "LD (BC), A",              1, 8,  [this](){ld_bc_nn();}  },
+        { "LD (BC), A",              1, 8,  [this](){ld_bcp_a();}  },
         { "INC BC",                  1, 8,  [this](){inc_bc();}    },                     // 0x03
         { "INC B",                   1, 4,  [this](){inc_b();}     },                       // 0x04
         { "DEC B",                   1, 4,  [this](){dec_b();}     },                       // 0x05
