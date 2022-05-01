@@ -5,7 +5,8 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge GB_CARTRIDGETEST_S
 aux_source_directory(${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/gb/cartridge GB_CARTRIDGE_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/interrupt GB_INTERRUPTTEST_SRCS)
 aux_source_directory(${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/gb/interrupt GB_INTERRUPT_SRCS)
-
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/memory GB_MEMORYTEST_SRCS)
+aux_source_directory(${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/gb/memory GB_MEMORY_SRCS)
 
 # Executable
 add_executable(
@@ -16,6 +17,8 @@ add_executable(
     ${GB_CARTRIDGE_SRCS}
     ${GB_INTERRUPTTEST_SRCS}
     ${GB_INTERRUPT_SRCS}
+    ${GB_MEMORYTEST_SRCS}
+    ${GB_MEMORY_SRCS}
 )
 include(GoogleTest)
 gtest_discover_tests(qnemu_test)
