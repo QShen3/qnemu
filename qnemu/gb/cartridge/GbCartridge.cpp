@@ -144,7 +144,7 @@ void GbCartridge::load(const char* filePath)
     std::vector<uint8_t> buffer(romSize);
     file.read(reinterpret_cast<char *>(buffer.data()), static_cast<std::streamsize>(romSize));
 
-    if (buffer.at(0x143) == 0xC0 || buffer.at(0x143) == 0x80) {
+    if (buffer.at(0x143) == 0xC0) {
         gbcCartridge = true;
     } else {
         gbcCartridge = false;
