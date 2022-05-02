@@ -63,8 +63,8 @@ void GbCpu::rlca()
 
 void GbCpu::ld_nnp_sp()
 {
-    uint16_t address = readByte(registers.pc + 1) + (readByte(registers.pc + 2) << 8);
-    writeByte(address, registers.sp & 0x0F);
+    uint16_t address = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
+    writeByte(address, registers.sp & 0xFF);
     writeByte(address + 1, registers.sp >> 8);
 }
 
