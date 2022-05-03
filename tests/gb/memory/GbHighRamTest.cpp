@@ -52,4 +52,4 @@ TEST(GbHighRamTest, ReadAndWrite)
     }
 }
 
-} // namespace qnemuTest
+}  // namespace qnemuTest
