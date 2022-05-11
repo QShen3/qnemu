@@ -5,7 +5,9 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
 
 namespace qnemu
@@ -14,7 +16,8 @@ namespace qnemu
 class GbJoypad : public GbDeviceInterface
 {
 public:
-    GbJoypad();
+    GbJoypad() = delete;
+    GbJoypad(std::shared_ptr<DisplayInterface> display);
     ~GbJoypad() = default;
 
     bool accepts(uint16_t address) const override;
@@ -37,6 +40,7 @@ private:
             uint8_t joypadState;
         };
     } registers;
+    std::shared_ptr<DisplayInterface> display;
 };
 
 }  // namespace qnemu

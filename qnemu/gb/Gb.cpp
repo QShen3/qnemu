@@ -10,6 +10,7 @@
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/memory/GbWorkRam.h"
 
@@ -29,10 +30,13 @@ Gb::Gb()
     auto gbWorkRam = std::make_shared<GbWorkRam>();
     auto gbHighRam = std::make_shared<GbHighRam>();
 
+    auto joypad = std::make_shared<GbJoypad>(rasterDisplay);
+
     cpu->addDevice(cartridge);
     cpu->addDevice(gpu);
     cpu->addDevice(gbWorkRam);
     cpu->addDevice(gbHighRam);
+    cpu->addDevice(joypad);
     cpu->addDevice(gbInterruptHandler);
 
     display = rasterDisplay;

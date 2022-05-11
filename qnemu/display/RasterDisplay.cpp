@@ -4,9 +4,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <thread>
 
 #include <QtCore/QRect>
+#include <QtGui/QKeyEvent>
 #include <QtGui/QPainter>
 #include <QtGui/QRasterWindow>
 
@@ -63,6 +65,30 @@ void RasterDisplay::waitFroRefresh()
 QImage& RasterDisplay::getBuffer()
 {
     return buffer;
+}
+
+void RasterDisplay::setKeyPressCallback(std::function<void(int)> callback)
+{
+    keyPressCallback = callback;
+}
+
+void RasterDisplay::setKeyReleaseCallback(std::function<void(int)> callback)
+{
+    keyReleaseCallback = callback;
+}
+
+void RasterDisplay::keyPressEvent(QKeyEvent* event)
+{
+    if (keyPressCallback) {
+        keyPressCallback(event->key());
+    }
+}
+
+void RasterDisplay::keyReleaseEvent(QKeyEvent* event)
+{
+    if (keyReleaseCallback) {
+        keyReleaseCallback(event->key());
+    }
 }
 
 void RasterDisplay::run()
