@@ -4,13 +4,16 @@
 
 #include <cassert>
 #include <cstdint>
+#include <memory>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 
 namespace qnemu
 {
 
-GbJoypad::GbJoypad()
+GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display)
+    : display(display)
 {
     GbJoypad::reset();
 }

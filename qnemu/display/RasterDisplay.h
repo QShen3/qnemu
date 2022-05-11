@@ -10,6 +10,7 @@
 #include <thread>
 
 #include <QtGui/QImage>
+#include <QtGui/QKeyEvent>
 #include <QtGui/QRasterWindow>
 
 #include "qnemu/display/DisplayInterface.h"
@@ -31,6 +32,12 @@ public:
 
     QImage& getBuffer() override;
 
+    void setKeyPressCallback(std::function<void(int)> callback) override;
+    void setKeyReleaseCallback(std::function<void(int)> callback) override;
+
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
+
 signals:
     void startRefresh();
 
@@ -39,6 +46,8 @@ private:
 
     QImage buffer;
     std::condition_variable cv;
+    std::function<void(int)> keyPressCallback;
+    std::function<void(int)> keyReleaseCallback;
     std::mutex mutex;
     std::atomic_bool refreshRequested;
     std::atomic_bool started;
