@@ -27,15 +27,15 @@ Gb::Gb()
     auto rasterDisplay = std::make_shared<RasterDisplay>();
     auto gpu = std::make_shared<GbGpu>(*cartridge, cpu, rasterDisplay, gbInterruptHandler);
 
-    auto gbWorkRam = std::make_shared<GbWorkRam>();
-    auto gbHighRam = std::make_shared<GbHighRam>();
+    auto workRam = std::make_shared<GbWorkRam>();
+    auto highRam = std::make_shared<GbHighRam>();
 
     auto joypad = std::make_shared<GbJoypad>(rasterDisplay);
 
     cpu->addDevice(cartridge);
     cpu->addDevice(gpu);
-    cpu->addDevice(gbWorkRam);
-    cpu->addDevice(gbHighRam);
+    cpu->addDevice(workRam);
+    cpu->addDevice(highRam);
     cpu->addDevice(joypad);
     cpu->addDevice(gbInterruptHandler);
 
