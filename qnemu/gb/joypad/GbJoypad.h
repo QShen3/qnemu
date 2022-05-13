@@ -9,6 +9,7 @@
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandler.h"
 
 namespace qnemu
 {
@@ -17,7 +18,7 @@ class GbJoypad : public GbDeviceInterface
 {
 public:
     GbJoypad() = delete;
-    GbJoypad(std::shared_ptr<DisplayInterface> display);
+    GbJoypad(std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHander);
     ~GbJoypad() = default;
 
     bool accepts(uint16_t address) const override;
@@ -26,6 +27,8 @@ public:
     void step() override;
     void reset() override;
 private:
+    void processKeyPressEvent(int key);
+    void processKeyReleaseEvent(int key);
     struct {
         union {
             struct {
@@ -41,6 +44,7 @@ private:
         };
     } registers;
     std::shared_ptr<DisplayInterface> display;
+    std::shared_ptr<GbInterruptHandler> interruptHandler;
 };
 
 }  // namespace qnemu
