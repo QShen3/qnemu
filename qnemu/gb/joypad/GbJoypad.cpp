@@ -4,18 +4,24 @@
 
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <memory>
 
+#include <QtCore/qnamespace.h>
+
 #include "qnemu/display/DisplayInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 
 namespace qnemu
 {
 
-GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display)
-    : display(display)
+GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler)
+    : display(display), interruptHandler(interruptHandler)
 {
     GbJoypad::reset();
+    display->setKeyPressCallback(std::bind(&GbJoypad::processKeyPressEvent, this, std::placeholders::_1));
+    display->setKeyReleaseCallback(std::bind(&GbJoypad::processKeyReleaseEvent, this, std::placeholders::_1));
 }
 
 bool GbJoypad::accepts(uint16_t address) const
@@ -35,7 +41,7 @@ uint8_t GbJoypad::read(uint16_t address) const
 void GbJoypad::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF00) {
-        registers.joypadState = value & 0b00110000;
+        registers.joypadState = (value & 0b00110000);
         return;
     }
     assert(false && "Wrong address");
@@ -48,6 +54,57 @@ void GbJoypad::step()
 void GbJoypad::reset()
 {
     registers.joypadState = 0xCF;
+}
+
+void GbJoypad::processKeyPressEvent(int key)
+{
+    interruptHandler->registers.joyPadRequest = 1;
+    if ((registers.joypadState & 0x10) == 0) {
+        if (key == Qt::Key_S) {
+            registers.joypadState &= ~0b1000;
+        } else if (key == Qt::Key_W) {
+            registers.joypadState &= ~0b100;
+        } else if (key == Qt::Key_A) {
+            registers.joypadState &= ~0b10;
+        } else if (key == Qt::Key_D) {
+            registers.joypadState &= ~0b1;
+        }
+    } else if ((registers.joypadState & 0x20) == 0) {
+        if (key == Qt::Key_3) {
+            registers.joypadState &= ~0b1000;
+        } else if (key == Qt::Key_2) {
+            registers.joypadState &= ~0b100;
+        } else if (key == Qt::Key_K) {
+            registers.joypadState &= ~0b10;
+        } else if (key == Qt::Key_J) {
+            registers.joypadState &= ~0b1;
+        }
+    }
+}
+
+void GbJoypad::processKeyReleaseEvent(int key)
+{
+    if ((registers.joypadState & 0x10) == 0) {
+        if (key == Qt::Key_S) {
+            registers.joypadState |= 0b1000;
+        } else if (key == Qt::Key_W) {
+            registers.joypadState |= 0b100;
+        } else if (key == Qt::Key_A) {
+            registers.joypadState |= 0b10;
+        } else if (key == Qt::Key_D) {
+            registers.joypadState |= 0b1;
+        }
+    } else if ((registers.joypadState & 0x20) == 0) {
+        if (key == Qt::Key_3) {
+            registers.joypadState |= 0b1000;
+        } else if (key == Qt::Key_2) {
+            registers.joypadState |= 0b100;
+        } else if (key == Qt::Key_K) {
+            registers.joypadState |= 0b10;
+        } else if (key == Qt::Key_J) {
+            registers.joypadState |= 0b1;
+        }
+    }
 }
 
 }  // namespace qnemu
