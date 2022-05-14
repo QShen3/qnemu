@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include <QtCore/qnamespace.h>
 
@@ -32,6 +33,7 @@ bool GbJoypad::accepts(uint16_t address) const
 uint8_t GbJoypad::read(uint16_t address) const
 {
     if (address == 0xFF00) {
+        std::lock_guard lock(mutex);
         return registers.joypadState;
     }
     assert(false && "Wrong address");
@@ -41,6 +43,7 @@ uint8_t GbJoypad::read(uint16_t address) const
 void GbJoypad::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF00) {
+        std::lock_guard lock(mutex);
         registers.joypadState = (value & 0b00110000);
         return;
     }
@@ -58,6 +61,7 @@ void GbJoypad::reset()
 
 void GbJoypad::processKeyPressEvent(int key)
 {
+    std::lock_guard lock(mutex);
     if ((registers.joypadState & 0x10) == 0) {
         if (key == Qt::Key_S) {
             interruptHandler->registers.joyPadRequest = 1;
@@ -91,6 +95,7 @@ void GbJoypad::processKeyPressEvent(int key)
 
 void GbJoypad::processKeyReleaseEvent(int key)
 {
+    std::lock_guard lock(mutex);
     if ((registers.joypadState & 0x10) == 0) {
         if (key == Qt::Key_S) {
             registers.joypadState |= 0b1000;
