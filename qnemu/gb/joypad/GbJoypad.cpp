@@ -58,25 +58,32 @@ void GbJoypad::reset()
 
 void GbJoypad::processKeyPressEvent(int key)
 {
-    interruptHandler->registers.joyPadRequest = 1;
     if ((registers.joypadState & 0x10) == 0) {
         if (key == Qt::Key_S) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b1000;
         } else if (key == Qt::Key_W) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b100;
         } else if (key == Qt::Key_A) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b10;
         } else if (key == Qt::Key_D) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b1;
         }
     } else if ((registers.joypadState & 0x20) == 0) {
         if (key == Qt::Key_3) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b1000;
         } else if (key == Qt::Key_2) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b100;
         } else if (key == Qt::Key_K) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b10;
         } else if (key == Qt::Key_J) {
+            interruptHandler->registers.joyPadRequest = 1;
             registers.joypadState &= ~0b1;
         }
     }

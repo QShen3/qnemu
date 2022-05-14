@@ -13,6 +13,7 @@
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/memory/GbWorkRam.h"
+#include "qnemu/gb/timer/GbTimer.h"
 
 namespace qnemu
 {
@@ -30,12 +31,14 @@ Gb::Gb()
     auto workRam = std::make_shared<GbWorkRam>();
     auto highRam = std::make_shared<GbHighRam>();
 
+    auto timer = std::make_shared<GbTimer>(interruptHandler);
     auto joypad = std::make_shared<GbJoypad>(rasterDisplay, interruptHandler);
 
     cpu->addDevice(cartridge);
     cpu->addDevice(gpu);
     cpu->addDevice(workRam);
     cpu->addDevice(highRam);
+    cpu->addDevice(timer);
     cpu->addDevice(joypad);
     cpu->addDevice(interruptHandler);
 
