@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
@@ -43,6 +44,7 @@ private:
             uint8_t joypadState;
         };
     } registers;
+    mutable std::mutex mutex;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
 };
