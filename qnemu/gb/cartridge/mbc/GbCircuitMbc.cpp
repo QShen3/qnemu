@@ -48,9 +48,9 @@ void GbCircuitMbc::write(uint16_t address, const uint8_t& value)
             ramBanks.at(0).at(address - 0xA000) = value;
             return;
         }
-        assert(false && "No Ram available");
+        // assert(false && "No Ram available");
     }
-    assert(false && "Wrong address");
+    // assert(false && "Wrong address");
 }
 
 void GbCircuitMbc::step()

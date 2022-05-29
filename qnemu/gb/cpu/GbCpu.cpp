@@ -2,6 +2,8 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <cstdio>
+
 #include <cstdint>
 #include <cstring>
 #include <thread>
@@ -532,11 +534,15 @@ GbCpu::GbCpu() :
     })
 {
     GbCpu::reset();
+    fopen_s(&fp, "instructions.txt", "w");
 }
 
 GbCpu::~GbCpu()
 {
     GbCpu::stop();
+    if (fp) {
+        std::fclose(fp);
+    }
 }
 
 void GbCpu::start()
@@ -606,22 +612,27 @@ void GbCpu::step()
         return;
     }
     if (ticks == 0) {
-        if (enableInterruptFlag) {
-            GbDeviceInterface::interruptMasterEnabled = true;
-            enableInterruptFlag = false;
-        }
         auto instruction = instructions.at(readByte(registers.pc));
+        if (instruction.length == 1) {
+            fprintf(fp, instruction.disassembly);
+        } else if (instruction.length == 2) {
+            fprintf(fp, instruction.disassembly, readByte(registers.pc + 1));
+        } else if (instruction.length == 3) {
+            fprintf(fp, instruction.disassembly, (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8) + readByte(registers.pc + 1));
+        }
         uint16_t pc = registers.pc;
         ticks = instruction.ticks;
         instruction.execute();
         if (pc == registers.pc) {
             registers.pc += instruction.length;
         }
+        if (enableInterruptFlag) {
+            GbDeviceInterface::interruptMasterEnabled = true;
+            enableInterruptFlag = false;
+        }
+        fprintf(fp, "\n");
     } else {
         ticks--;
-    }
-    for (auto& device : devices) {
-        device->step();
     }
 }
 
@@ -646,7 +657,7 @@ void GbCpu::writeByte(uint16_t address, uint8_t value)
 
 uint16_t GbCpu::pop()
 {
-    uint16_t value = readByte(registers.sp) | (readByte(registers.sp + 1) << 8);
+    uint16_t value = readByte(registers.sp) | (static_cast<uint16_t>(readByte(registers.sp + 1)) << 8);
     registers.sp += 2;
 
     return value;
