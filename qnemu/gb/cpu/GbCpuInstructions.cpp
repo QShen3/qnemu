@@ -17,7 +17,7 @@ void GbCpu::nop()
 
 void GbCpu::ld_bc_nn()
 {
-    registers.bc = readByte(registers.pc + 1) + (readByte(registers.pc + 2) << 8);
+    registers.bc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ld_bcp_a()
@@ -63,7 +63,7 @@ void GbCpu::rlca()
 
 void GbCpu::ld_nnp_sp()
 {
-    uint16_t address = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
+    uint16_t address = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
     writeByte(address, registers.sp & 0xFF);
     writeByte(address + 1, registers.sp >> 8);
 }
@@ -120,7 +120,7 @@ void GbCpu::stop_p()
 
 void GbCpu::ld_de_nn()
 {
-    registers.de = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
+    registers.de = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ld_dep_a()
@@ -225,7 +225,7 @@ void GbCpu::jr_nz_n()
 
 void GbCpu::ld_hl_nn()
 {
-    registers.hl = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
+    registers.hl = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ldi_hlp_a()
@@ -338,7 +338,7 @@ void GbCpu::jr_nc_n()
 
 void GbCpu::ld_sp_nn()
 {
-    registers.sp = readByte(registers.pc + 1) + (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
+    registers.sp = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::ldd_hlp_a()
@@ -587,7 +587,7 @@ void GbCpu::ld_e_hlp()
 
 void GbCpu::ld_e_a()
 {
-    registers.d = registers.a;
+    registers.e = registers.a;
 }
 
 void GbCpu::ld_h_b()
@@ -667,7 +667,7 @@ void GbCpu::ld_l_hlp()
 
 void GbCpu::ld_l_a()
 {
-    registers.d = registers.a;
+    registers.l = registers.a;
 }
 
 void GbCpu::ld_hlp_b()
@@ -1090,21 +1090,21 @@ void GbCpu::pop_bc()
 void GbCpu::jp_nz_nn()
 {
     if (!registers.zero) {
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 4;
     }
 }
 
 void GbCpu::jp_nn()
 {
-    registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+    registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::call_nz_nn()
 {
     if (!registers.zero) {
         push(registers.pc + 3);
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 12;
     }
 }
@@ -1121,7 +1121,7 @@ void GbCpu::add_a_n()
 
 void GbCpu::rst_0()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0;
 }
 
@@ -1141,7 +1141,7 @@ void GbCpu::ret()
 void GbCpu::jp_z_nn()
 {
     if (registers.zero) {
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 4;
     }
 }
@@ -1149,6 +1149,7 @@ void GbCpu::jp_z_nn()
 void GbCpu::cb_n()
 {
     auto prefixedInstruction = prefixedInstructions.at(readByte(registers.pc + 1));
+    fprintf(fp, prefixedInstruction.disassembly, readByte(registers.pc + 2));
     ticks = prefixedInstruction.ticks;
     prefixedInstruction.execute();
     registers.pc += prefixedInstruction.length;
@@ -1158,7 +1159,7 @@ void GbCpu::call_z_nn()
 {
     if (registers.zero) {
         push(registers.pc + 3);
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 12;
     }
 }
@@ -1166,7 +1167,7 @@ void GbCpu::call_z_nn()
 void GbCpu::call_nn()
 {
     push(registers.pc + 3);
-    registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+    registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
 }
 
 void GbCpu::adc_n()
@@ -1176,7 +1177,7 @@ void GbCpu::adc_n()
 
 void GbCpu::rst_08()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x8;
 }
 
@@ -1196,7 +1197,7 @@ void GbCpu::pop_de()
 void GbCpu::jp_nc_nn()
 {
     if (!registers.carry) {
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 4;
     }
 }
@@ -1205,7 +1206,7 @@ void GbCpu::call_nc_nn()
 {
     if (!registers.carry) {
         push(registers.pc + 3);
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 12;
     }
 }
@@ -1222,7 +1223,7 @@ void GbCpu::sub_n()
 
 void GbCpu::rst_10()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x10;
 }
 
@@ -1243,7 +1244,7 @@ void GbCpu::reti()
 void GbCpu::jp_c_nn()
 {
     if (registers.carry) {
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 4;
     }
 }
@@ -1252,7 +1253,7 @@ void GbCpu::call_c_nn()
 {
     if (registers.carry) {
         push(registers.pc + 3);
-        registers.pc = readByte(registers.pc + 1) | (readByte(registers.pc + 2) << 8);
+        registers.pc = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
         ticks += 12;
     }
 }
@@ -1264,7 +1265,7 @@ void GbCpu::sbc_n()
 
 void GbCpu::rst_18()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x18;
 }
 
@@ -1295,7 +1296,7 @@ void GbCpu::and_n()
 
 void GbCpu::rst_20()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x20;
 }
 
@@ -1316,7 +1317,7 @@ void GbCpu::jp_hl()
 
 void GbCpu::ld_nnp_a()
 {
-    writeByte(readByte(registers.pc + 1), registers.a);
+    writeByte(readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8), registers.a);
 }
 
 void GbCpu::xor_n()
@@ -1326,7 +1327,7 @@ void GbCpu::xor_n()
 
 void GbCpu::rst_28()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x28;
 }
 
@@ -1363,7 +1364,7 @@ void GbCpu::or_n()
 
 void GbCpu::rst_30()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x30;
 }
 
@@ -1384,7 +1385,7 @@ void GbCpu::ld_sp_hl()
 
 void GbCpu::ld_a_nnp()
 {
-    registers.a = readByte(readByte(registers.pc + 1));
+    registers.a = readByte(readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8));
 }
 
 void GbCpu::ei()
@@ -1399,12 +1400,15 @@ void GbCpu::cp_n()
 
 void GbCpu::rst_38()
 {
-    push(registers.pc);
+    push(registers.pc + 1);
     registers.pc = 0x38;
 }
 
 void GbCpu::undefined()
 {
+    if (fp) {
+        std::fclose(fp);
+    }
     throw std::runtime_error("Invalid instruction!");
 }
 

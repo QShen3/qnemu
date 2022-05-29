@@ -72,7 +72,7 @@ private:
     void checklcdYCoordinate();
     std::tuple<uint16_t, bool> getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const;
     QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
-    QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const;
+    QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x40>& paletteData) const;
     void spriteAttributeTableDma();
     void renderLine();
     void scanSprites();
@@ -161,7 +161,7 @@ private:
         };  // FF6A
         uint8_t gbcSpritePaletteData;  // FF6B
     } registers;
-    std::array<uint8_t, 0x3F> backgroundOrWindowPaletteData;
+    std::array<uint8_t, 0x40> backgroundOrWindowPaletteData;
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
@@ -171,7 +171,7 @@ private:
     bool isSpriteAttributeTableDmaInProgress;
     std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
     uint16_t spriteAttributeTableDmaTicks;
-    std::array<uint8_t, 0x3F> spritePaletteData;
+    std::array<uint8_t, 0x40> spritePaletteData;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;
     std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;

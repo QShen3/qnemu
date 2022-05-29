@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdlib>
+
 #include <array>
 #include <atomic>
 #include <memory>
@@ -85,6 +87,8 @@ private:
     std::thread work;
     const std::array<Instruction, 256> instructions;
     const std::array<Instruction, 256> prefixedInstructions;
+
+    std::FILE* fp;
 
     // Instructions
     void nop();       // 0x00

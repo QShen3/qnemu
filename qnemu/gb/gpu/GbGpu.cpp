@@ -321,7 +321,7 @@ QRgb GbGpu::getGbColor(uint16_t colorIndex, uint8_t paletteData) const
     return qRgb(0xFF, 0xFF, 0xFF);
 }
 
-QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x3F>& paletteData) const
+QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x40>& paletteData) const
 {
     uint16_t colorNumber = (static_cast<uint16_t>(paletteData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(paletteData.at(colorIndex));
     GbcColor color = { .color = colorNumber };
