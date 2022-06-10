@@ -44,7 +44,7 @@ void GbJoypad::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF00) {
         std::lock_guard lock(mutex);
-        registers.joypadState = (value & 0b00110000);
+        registers.joypadState = ((value & 0b11110000) | (registers.joypadState & 0b00001111));
         return;
     }
     assert(false && "Wrong address");
