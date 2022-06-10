@@ -534,7 +534,7 @@ GbCpu::GbCpu() :
     })
 {
     GbCpu::reset();
-    fopen_s(&fp, "instructions.txt", "w");
+    // fopen_s(&fp, "instructions.txt", "w");
 }
 
 GbCpu::~GbCpu()
@@ -614,11 +614,14 @@ void GbCpu::step()
     if (ticks == 0) {
         auto instruction = instructions.at(readByte(registers.pc));
         if (instruction.length == 1) {
-            fprintf(fp, instruction.disassembly);
+            // fprintf(fp, instruction.disassembly);
+            //printf(instruction.disassembly);
         } else if (instruction.length == 2) {
-            fprintf(fp, instruction.disassembly, readByte(registers.pc + 1));
+            // fprintf(fp, instruction.disassembly, readByte(registers.pc + 1));
+            //printf(instruction.disassembly, readByte(registers.pc + 1));
         } else if (instruction.length == 3) {
-            fprintf(fp, instruction.disassembly, (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8) + readByte(registers.pc + 1));
+            // fprintf(fp, instruction.disassembly, (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8) + readByte(registers.pc + 1));
+            //printf(instruction.disassembly, (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8) + readByte(registers.pc + 1));
         }
         uint16_t pc = registers.pc;
         ticks = instruction.ticks;
@@ -630,7 +633,8 @@ void GbCpu::step()
             GbDeviceInterface::interruptMasterEnabled = true;
             enableInterruptFlag = false;
         }
-        fprintf(fp, "\n");
+        // fprintf(fp, "\n");
+        //printf("\n");
     } else {
         ticks--;
     }
