@@ -34,6 +34,11 @@ uint8_t GbJoypad::read(uint16_t address) const
 {
     if (address == 0xFF00) {
         std::lock_guard lock(mutex);
+        if (registers.selectDirectionButtons == 0) {
+            registers.joypadState = ((registers.joypadState & 0xF0) | directionButtionState.data);
+        } else if (registers.selectActionButtons == 0) {
+            registers.joypadState = ((registers.joypadState & 0xF0) | actionButtonsState.data);
+        }
         return registers.joypadState;
     }
     assert(false && "Wrong address");
@@ -57,65 +62,52 @@ void GbJoypad::step()
 void GbJoypad::reset()
 {
     registers.joypadState = 0xCF;
+
+    actionButtonsState.data = 0xF;
+    directionButtionState.data = 0xF;
 }
 
 void GbJoypad::processKeyPressEvent(int key)
 {
     std::lock_guard lock(mutex);
-    if ((registers.joypadState & 0x10) == 0) {
-        if (key == Qt::Key_S) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b1000;
-        } else if (key == Qt::Key_W) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b100;
-        } else if (key == Qt::Key_A) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b10;
-        } else if (key == Qt::Key_D) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b1;
-        }
-    } else if ((registers.joypadState & 0x20) == 0) {
-        if (key == Qt::Key_3) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b1000;
-        } else if (key == Qt::Key_2) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b100;
-        } else if (key == Qt::Key_K) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b10;
-        } else if (key == Qt::Key_J) {
-            interruptHandler->registers.joyPadRequest = 1;
-            registers.joypadState &= ~0b1;
-        }
+    if (key == Qt::Key_S) {
+        directionButtionState.down = 0;
+    } else if (key == Qt::Key_W) {
+        directionButtionState.up = 0;
+    } else if (key == Qt::Key_A) {
+        directionButtionState.left = 0;
+    } else if (key == Qt::Key_D) {
+        directionButtionState.right = 0;
+    } else  if (key == Qt::Key_3) {
+        actionButtonsState.start = 0;
+    } else if (key == Qt::Key_2) {
+        actionButtonsState.select = 0;
+    } else if (key == Qt::Key_K) {
+        actionButtonsState.b = 0;
+    } else if (key == Qt::Key_J) {
+        actionButtonsState.a = 0;
     }
 }
 
 void GbJoypad::processKeyReleaseEvent(int key)
 {
     std::lock_guard lock(mutex);
-    if ((registers.joypadState & 0x10) == 0) {
-        if (key == Qt::Key_S) {
-            registers.joypadState |= 0b1000;
-        } else if (key == Qt::Key_W) {
-            registers.joypadState |= 0b100;
-        } else if (key == Qt::Key_A) {
-            registers.joypadState |= 0b10;
-        } else if (key == Qt::Key_D) {
-            registers.joypadState |= 0b1;
-        }
-    } else if ((registers.joypadState & 0x20) == 0) {
-        if (key == Qt::Key_3) {
-            registers.joypadState |= 0b1000;
-        } else if (key == Qt::Key_2) {
-            registers.joypadState |= 0b100;
-        } else if (key == Qt::Key_K) {
-            registers.joypadState |= 0b10;
-        } else if (key == Qt::Key_J) {
-            registers.joypadState |= 0b1;
-        }
+    if (key == Qt::Key_S) {
+        directionButtionState.down = 1;
+    } else if (key == Qt::Key_W) {
+        directionButtionState.up = 1;
+    } else if (key == Qt::Key_A) {
+        directionButtionState.left = 1;
+    } else if (key == Qt::Key_D) {
+        directionButtionState.right = 1;
+    } else  if (key == Qt::Key_3) {
+        actionButtonsState.start = 1;
+    } else if (key == Qt::Key_2) {
+        actionButtonsState.select = 1;
+    } else if (key == Qt::Key_K) {
+        actionButtonsState.b = 1;
+    } else if (key == Qt::Key_J) {
+        actionButtonsState.a = 1;
     }
 }
 
