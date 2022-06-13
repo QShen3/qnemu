@@ -30,14 +30,14 @@ public:
 private:
     void processKeyPressEvent(int key);
     void processKeyReleaseEvent(int key);
-    struct {
+    mutable struct {
         union {
             struct {
                 uint8_t rightOrA : 1;
                 uint8_t leftOrB : 1;
                 uint8_t upOrSelect : 1;
                 uint8_t downOrStart : 1;
-                uint8_t selectDirectionButtions : 1;
+                uint8_t selectDirectionButtons : 1;
                 uint8_t selectActionButtons : 1;
                 uint8_t : 2;
             };
@@ -45,6 +45,26 @@ private:
         };
     } registers;
     mutable std::mutex mutex;
+    union {
+        struct {
+            uint8_t a : 1;
+            uint8_t b : 1;
+            uint8_t select : 1;
+            uint8_t start : 1;
+            uint8_t : 4;
+        };
+        uint8_t data;
+    } actionButtonsState;
+    union {
+        struct {
+            uint8_t right : 1;
+            uint8_t left : 1;
+            uint8_t up : 1;
+            uint8_t down : 1;
+            uint8_t : 4;
+        };
+        uint8_t data;
+    } directionButtionState;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
 };
