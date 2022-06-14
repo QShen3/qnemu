@@ -540,9 +540,9 @@ GbCpu::GbCpu() :
 GbCpu::~GbCpu()
 {
     GbCpu::stop();
-    if (fp) {
-        std::fclose(fp);
-    }
+    // if (fp) {
+    //     std::fclose(fp);
+    // }
 }
 
 void GbCpu::start()
@@ -588,6 +588,11 @@ void GbCpu::jumpToAddress(uint16_t address)
     ticks = 20;
 }
 
+void GbCpu::cancelInterrupt()
+{
+    registers.pc = 0;
+}
+
 void GbCpu::addDevice(std::shared_ptr<GbDeviceInterface> device)
 {
     devices.push_back(device);
@@ -612,6 +617,10 @@ void GbCpu::step()
         return;
     }
     if (ticks == 0) {
+        if (enableInterruptFlag) {
+            GbDeviceInterface::interruptMasterEnabled = true;
+            enableInterruptFlag = false;
+        }
         auto instruction = instructions.at(readByte(registers.pc));
         if (instruction.length == 1) {
             // fprintf(fp, instruction.disassembly);
@@ -629,10 +638,6 @@ void GbCpu::step()
         if (pc == registers.pc) {
             registers.pc += instruction.length;
         }
-        if (enableInterruptFlag) {
-            GbDeviceInterface::interruptMasterEnabled = true;
-            enableInterruptFlag = false;
-        }
         // fprintf(fp, "\n");
         //printf("\n");
     } else {
@@ -647,7 +652,7 @@ uint8_t GbCpu::readByte(uint16_t address) const
             return device->read(address);
         }
     }
-    return 0;
+    return 0xFF;
 }
 
 void GbCpu::writeByte(uint16_t address, uint8_t value)

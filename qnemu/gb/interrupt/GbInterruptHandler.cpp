@@ -57,20 +57,40 @@ void GbInterruptHandler::step()
         return;
     }
     if (registers.vBlankEnabled & registers.vBlankRequest) {
-        registers.vBlankRequest = 0;
         cpu.lock()->jumpToAddress(0x40);
+        if (!registers.vBlankEnabled) {
+            cpu.lock()->cancelInterrupt();
+        } else {
+            registers.vBlankRequest = 0;
+        }
     } else if (registers.lcdEnabled & registers.lcdRequest) {
-        registers.lcdRequest = 0;
         cpu.lock()->jumpToAddress(0x48);
+        if (!registers.lcdEnabled) {
+            cpu.lock()->cancelInterrupt();
+        } else {
+            registers.lcdRequest = 0;
+        }
     } else if (registers.timerEnabled & registers.timerRequest) {
-        registers.timerRequest = 0;
         cpu.lock()->jumpToAddress(0x50);
+        if (!registers.timerEnabled) {
+            cpu.lock()->cancelInterrupt();
+        } else {
+            registers.timerRequest = 0;
+        }
     } else if (registers.serialEnabled & registers.serialRequest) {
-        registers.serialRequest = 0;
         cpu.lock()->jumpToAddress(0x58);
+        if (!registers.serialEnabled) {
+            cpu.lock()->cancelInterrupt();
+        } else {
+            registers.serialRequest = 0;
+        }
     } else if (registers.joyPadEnabled & registers.joyPadRequest) {
-        registers.joyPadRequest = 0;
         cpu.lock()->jumpToAddress(0x60);
+        if (!registers.joyPadEnabled) {
+            cpu.lock()->cancelInterrupt();
+        } else {
+             registers.joyPadRequest = 0;
+        }
     }
     GbDeviceInterface::interruptMasterEnabled = false;
 }

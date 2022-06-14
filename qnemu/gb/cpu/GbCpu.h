@@ -32,6 +32,7 @@ public:
     void reset() override;
 
     void jumpToAddress(uint16_t address) override;
+    void cancelInterrupt() override;
     void addDevice(std::shared_ptr<GbDeviceInterface> device) override;
 
 private:

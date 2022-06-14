@@ -17,6 +17,7 @@ class GbCpuInterface : public CpuInterface
 {
 public:
     virtual void jumpToAddress(uint16_t address) = 0;
+    virtual void cancelInterrupt() = 0;
     virtual void addDevice(std::shared_ptr<GbDeviceInterface> device) = 0;
 
     virtual uint8_t readByte(uint16_t address) const = 0;
