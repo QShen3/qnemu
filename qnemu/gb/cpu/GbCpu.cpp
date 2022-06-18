@@ -534,15 +534,11 @@ GbCpu::GbCpu() :
     })
 {
     GbCpu::reset();
-    // fopen_s(&fp, "instructions.txt", "w");
 }
 
 GbCpu::~GbCpu()
 {
     GbCpu::stop();
-    // if (fp) {
-    //     std::fclose(fp);
-    // }
 }
 
 void GbCpu::start()
@@ -622,24 +618,12 @@ void GbCpu::step()
             enableInterruptFlag = false;
         }
         auto instruction = instructions.at(readByte(registers.pc));
-        if (instruction.length == 1) {
-            // fprintf(fp, instruction.disassembly);
-            //printf(instruction.disassembly);
-        } else if (instruction.length == 2) {
-            // fprintf(fp, instruction.disassembly, readByte(registers.pc + 1));
-            //printf(instruction.disassembly, readByte(registers.pc + 1));
-        } else if (instruction.length == 3) {
-            // fprintf(fp, instruction.disassembly, (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8) + readByte(registers.pc + 1));
-            //printf(instruction.disassembly, (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8) + readByte(registers.pc + 1));
-        }
         uint16_t pc = registers.pc;
         ticks = instruction.ticks;
         instruction.execute();
         if (pc == registers.pc) {
             registers.pc += instruction.length;
         }
-        // fprintf(fp, "\n");
-        //printf("\n");
     } else {
         ticks--;
     }
