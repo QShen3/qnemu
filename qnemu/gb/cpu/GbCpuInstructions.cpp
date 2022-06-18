@@ -1149,8 +1149,6 @@ void GbCpu::jp_z_nn()
 void GbCpu::cb_n()
 {
     auto prefixedInstruction = prefixedInstructions.at(readByte(registers.pc + 1));
-    // fprintf(fp, prefixedInstruction.disassembly, readByte(registers.pc + 2));
-    //printf(prefixedInstruction.disassembly, readByte(registers.pc + 2));
     ticks = prefixedInstruction.ticks;
     prefixedInstruction.execute();
     registers.pc += prefixedInstruction.length;
@@ -1335,7 +1333,6 @@ void GbCpu::rst_28()
 void GbCpu::ld_ff_ap_n()
 {
     registers.a = readByte(0xFF00 + readByte(registers.pc + 1));
-    // fprintf(fp, "\nregisters.a: 0x%x", registers.a);
 }
 
 void GbCpu::pop_af()
