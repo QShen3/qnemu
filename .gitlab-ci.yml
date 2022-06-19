@@ -37,7 +37,7 @@ macos clang x64 build:
 
 linux alpine x64 build:
   stage: build
-  image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+  image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:alpine
   tags:
     - linux
     - docker
@@ -53,7 +53,7 @@ linux alpine x64 build:
 
 linux alpine arm64 build:
   stage: build
-  image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+  image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:alpine
   tags:
     - linux
     - docker
@@ -96,7 +96,7 @@ macos clang x64 test:
 
 linux alpine x64 test:
     stage: test
-    image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+    image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:alpine
     tags:
         - linux
         - docker
@@ -109,7 +109,7 @@ linux alpine x64 test:
 
 linux alpine arm64 test:
     stage: test
-    image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+    image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:alpine
     tags:
         - linux
         - docker
