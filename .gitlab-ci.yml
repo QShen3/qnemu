@@ -35,6 +35,38 @@ macos clang x64 build:
     - cmake .. -G Ninja
     - ninja
 
+linux alpine x64 build:
+  stage: build
+  image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+  tags:
+    - linux
+    - docker
+    - x64
+  artifacts:
+    paths:
+        - build/
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -G Ninja
+    - ninja
+
+linux alpine arm64 build:
+  stage: build
+  image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+  tags:
+    - linux
+    - docker
+    - arm64
+  artifacts:
+    paths:
+        - build/
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -G Ninja
+    - ninja
+
 #################################### test ####################################
 
 # windows msvc x64 test:
@@ -61,3 +93,29 @@ macos clang x64 test:
   script:
     - cd build
     - ninja test
+
+linux alpine x64 test:
+    stage: test
+    image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+    tags:
+        - linux
+        - docker
+        - x64
+    needs:
+      - job: linux alpine x64 build
+    script:
+        - cd build
+        - ninja test
+
+linux alpine arm64 test:
+    stage: test
+    image: registry.cn-hangzhou.aliyuncs.com/shen3/qnemu-devel:alpine
+    tags:
+        - linux
+        - docker
+        - arm64
+    needs:
+      - job: linux alpine arm64 build
+    script:
+        - cd build
+        - ninja test
