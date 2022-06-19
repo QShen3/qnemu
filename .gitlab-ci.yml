@@ -1,0 +1,63 @@
+stages:
+  - build
+  - test
+
+#################################### build ####################################
+
+windows msvc x64 build:
+  stage: build
+  tags:
+    - msvc
+    - windows
+    - x64
+  artifacts:
+    paths:
+      - build/
+  before_script:
+    - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+  script:
+    - mkdir -Force build
+    - cd build
+    - cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+    - ninja
+
+macos clang x64 build:
+  stage: build
+  tags:
+    - macos
+    - x64
+  artifacts:
+    paths:
+      - build/
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -G Ninja
+    - ninja
+
+#################################### test ####################################
+
+windows msvc x64 test:
+  stage: test
+  tags:
+    - msvc
+    - windows
+    - x64
+  dependencies:
+    - windows msvc x64 build
+  before_script:
+    - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+  script:
+    - cd build
+    - ninja test
+
+macos clang x64 test:
+  stage: test
+  tags:
+    - macos
+    - x64
+  dependencies:
+    - macos clang x64 build
+  script:
+    - cd build
+    - ninja test
