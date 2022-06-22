@@ -21,3 +21,40 @@ Build command:
 The executable will be available in qneme/qnemu. To run the test:
 
     make test
+
+## Play
+
+Just click the executable and load Rom file.
+
+### Key binding
+
+| Joypad | Key |
+| ------ | ----|
+| ↑      | W   |
+| ↓      | S   |
+| ←      | A   |
+| →      | D   |
+| Start  | 3   |
+| Select | 2   |
+
+## Features
+
+### GameBoy & GameBoy Color
+
+| Feature   | Implement | Test   |
+| --------- | --------- | ------ |
+| CPU       | ✅       | manual |
+| PPU       | ✅       | manual |
+| Sound     | ❌       | ❌    |
+| Interrupt | ✅       | ✅    |
+| Joypad    | ✅       | manual |
+| Timer     | ❌       | ❌    |
+| no MBC    | ✅       | ✅    |
+| MBC1      | ✅       | ✅    |
+| MBC2      | ❌       | ❌    |
+| MBC3      | ❌       | ❌    |
+| MBC5      | ❌       | ❌    |
+| MBC6      | ❌       | ❌    |
+| MBC7      | ❌       | ❌    |
+| HuC1      | ❌       | ❌    |
+| HDMA      | ❌       | ❌    |
