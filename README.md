@@ -4,6 +4,7 @@
 
 QNEmu is an emulator that support Nintendo Game Boy and Game Boy Color. It is still under development and plans to support other consoles in the future. The main purpose of this project is to study computer architecture and software design pattern.
 
+![QNEmu running game](doc/play.png)
 
 ## Build
 
