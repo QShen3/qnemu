@@ -59,3 +59,10 @@ Just click the executable and load Rom file.
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |
 | HDMA      | ❌       | ❌    |
+
+## Thanks
+
+- [Pan Doc](https://gbdev.io/pandocs/)
+- [Visual Boy Advance - M](https://github.com/visualboyadvance-m/visualboyadvance-m)
+- [mGBA](https://github.com/mgba-emu/mgba)
+- [Coffee GB](https://github.com/trekawek/coffee-gb)
