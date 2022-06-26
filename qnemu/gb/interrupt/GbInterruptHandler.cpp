@@ -62,35 +62,41 @@ void GbInterruptHandler::step()
             cpu.lock()->cancelInterrupt();
         } else {
             registers.vBlankRequest = 0;
+            GbDeviceInterface::interruptMasterEnabled = false;
+            return;
         }
-    } else if (registers.lcdEnabled & registers.lcdRequest) {
+    }
+    if (registers.lcdEnabled & registers.lcdRequest) {
         cpu.lock()->jumpToAddress(0x48);
         if (!registers.lcdEnabled) {
             cpu.lock()->cancelInterrupt();
         } else {
             registers.lcdRequest = 0;
+            GbDeviceInterface::interruptMasterEnabled = false;
+            return;
         }
-    } else if (registers.timerEnabled & registers.timerRequest) {
+    }
+    if (registers.timerEnabled & registers.timerRequest) {
         cpu.lock()->jumpToAddress(0x50);
         if (!registers.timerEnabled) {
             cpu.lock()->cancelInterrupt();
         } else {
             registers.timerRequest = 0;
+            GbDeviceInterface::interruptMasterEnabled = false;
+            return;
         }
-    } else if (registers.serialEnabled & registers.serialRequest) {
+    }
+    if (registers.serialEnabled & registers.serialRequest) {
         cpu.lock()->jumpToAddress(0x58);
-        if (!registers.serialEnabled) {
-            cpu.lock()->cancelInterrupt();
-        } else {
-            registers.serialRequest = 0;
-        }
-    } else if (registers.joyPadEnabled & registers.joyPadRequest) {
+        registers.serialRequest = 0;
+        GbDeviceInterface::interruptMasterEnabled = false;
+        return;
+    }
+    if (registers.joyPadEnabled & registers.joyPadRequest) {
         cpu.lock()->jumpToAddress(0x60);
-        if (!registers.joyPadEnabled) {
-            cpu.lock()->cancelInterrupt();
-        } else {
-             registers.joyPadRequest = 0;
-        }
+        registers.joyPadRequest = 0;
+        GbDeviceInterface::interruptMasterEnabled = false;
+        return;
     }
     GbDeviceInterface::interruptMasterEnabled = false;
 }
