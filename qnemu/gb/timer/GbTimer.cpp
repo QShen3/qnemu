@@ -67,7 +67,16 @@ void GbTimer::write(uint16_t address, const uint8_t& value)
 
 void GbTimer::step()
 {
+    registers.divider++;
 
+    if (!registers.timerEnable) {
+        return;
+    }
+
+    if (registers.timerCounter == 0xFF) {
+        registers.timerCounter = registers.timerModulo;
+        interruptHandler->registers.timerRequest = 1;
+    }
 }
 
 void GbTimer::reset()

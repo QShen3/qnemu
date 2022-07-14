@@ -15,6 +15,7 @@ namespace qnemu
 
 class GbGpu;
 class GbJoypad;
+class GbTimer;
 
 class GbInterruptHandler : public GbDeviceInterface
 {
@@ -32,6 +33,7 @@ public:
 private:
     friend GbGpu;
     friend GbJoypad;
+    friend GbTimer;
     struct {
         union {
             struct {
