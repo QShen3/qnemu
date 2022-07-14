@@ -28,7 +28,7 @@ public:
 
 private:
     struct {
-        uint8_t divider;
+        uint16_t divider;
         uint8_t timerCounter;
         uint8_t timerModulo;
         union  {
@@ -41,6 +41,9 @@ private:
         };
     } registers;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
+    bool overflow;
+    uint8_t previousBit;
+    uint8_t ticksSinceOverflow;
 };
 
 }  // namespace qnemu
