@@ -31,10 +31,16 @@ private:
         uint8_t divider;
         uint8_t timerCounter;
         uint8_t timerModulo;
-        uint8_t timerControl;
+        union  {
+            struct {
+                uint8_t inputClockSelect : 2;
+                uint8_t timerEnable : 1;
+                uint8_t : 5;
+            };
+            uint8_t timerControl;
+        };
     } registers;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
-    
 };
 
 }  // namespace qnemu
