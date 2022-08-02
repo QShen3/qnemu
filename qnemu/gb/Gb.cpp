@@ -3,12 +3,14 @@
  */
 
 #include <memory>
+#include <utility>
 
 #include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/GbGpu.h"
+#include "qnemu/gb/gpu/SpriteAttributeTable.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
@@ -26,7 +28,8 @@ Gb::Gb()
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
 
     auto rasterDisplay = std::make_shared<RasterDisplay>();
-    auto gpu = std::make_shared<GbGpu>(*cartridge, cpu, rasterDisplay, interruptHandler);
+    auto spriteAttributeTable = std::make_unique<SpriteAttributeTable>(cpu);
+    auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, interruptHandler, std::move(spriteAttributeTable));
 
     auto workRam = std::make_shared<GbWorkRam>();
     auto highRam = std::make_shared<GbHighRam>();

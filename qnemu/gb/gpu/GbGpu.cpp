@@ -7,7 +7,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <tuple>
+#include <utility>
 
 #include <QtGui/QColor>
 #include <QtGui/QImage>
@@ -15,15 +17,19 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/gpu/Mode.h"
+#include "qnemu/gb/gpu/SpriteAttributeTable.h"
 
 namespace qnemu
 {
 
-GbGpu::GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler) :
+GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
+        std::shared_ptr<DisplayInterface> display,
+        std::shared_ptr<GbInterruptHandler> interruptHandler,
+        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable) :
     cartridge(cartridge),
-    cpu(cpu),
     display(display),
     interruptHandler(interruptHandler),
+    spriteAttributeTable(std::move(spriteAttributeTable)),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
@@ -41,13 +47,19 @@ GbGpu::~GbGpu()
 
 bool GbGpu::accepts(uint16_t address) const
 {
+    if (spriteAttributeTable->accepts(address)) {
+        return true;
+    }
     if (address >= 0x8000 && address < 0xA000) {
         return true;
     }
     if (address >= 0xFE00 && address < 0xFEA0) {
         return true;
     }
-    if (address >= 0xFF40 && address <= 0xFF4B) {
+    if (address >= 0xFF40 && address <= 0xFF45) {
+        return true;
+    }
+    if (address >= 0xFF47 && address <= 0xFF4B) {
         return true;
     }
     if (address == 0xFF4F) {
@@ -74,7 +86,6 @@ uint8_t GbGpu::read(uint16_t address) const
         if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
             return 0xFF;
         }
-        return spriteAttributeTable.at(address - 0xFE00);
     }
     if (address == 0xFF40) {
         return registers.lcdControl;
@@ -93,9 +104,6 @@ uint8_t GbGpu::read(uint16_t address) const
     }
     if (address == 0xFF45) {
         return registers.lcdYCoordinateCompare;
-    }
-    if (address == 0xFF46) {
-        return registers.dMATransferAndStartAddress;
     }
     if (address == 0xFF47) {
         return registers.backgroundPaletteData;
@@ -148,6 +156,9 @@ uint8_t GbGpu::read(uint16_t address) const
         }
         return registers.gbcSpritePaletteData;
     }
+    if (spriteAttributeTable->accepts(address)) {
+        return spriteAttributeTable->read(address);
+    }
     assert(false && "Wrong address");
     return 0xFF;
 }
@@ -164,7 +175,6 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
         if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
             return;
         }
-        spriteAttributeTable.at(address - 0xFE00) = value;
     }
     if (address == 0xFF40) {
         registers.lcdControl = value;
@@ -185,13 +195,6 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
     }
     if (address == 0xFF45) {
         registers.lcdYCoordinateCompare = value;
-    }
-    if (address == 0xFF46) {
-        registers.dMATransferAndStartAddress = value;
-        if (!isSpriteAttributeTableDmaInProgress) {
-            isSpriteAttributeTableDmaInProgress = true;
-            spriteAttributeTableDmaTicks = 640;
-        }
     }
     if (address == 0xFF47) {
         registers.backgroundPaletteData = value;
@@ -252,11 +255,14 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
             registers.gbcSritePaletteIndex++;
         }
     }
+    if (spriteAttributeTable->accepts(address)) {
+        spriteAttributeTable->write(address, value);
+    }
 }
 
 void GbGpu::step()
 {
-    spriteAttributeTableDma();
+    spriteAttributeTable->step();
     if (registers.lcdEnable == 0) {
         ticks = 0;
         return;
@@ -283,9 +289,7 @@ void GbGpu::reset()
     registers.newDMADestinationLow = 0xFF;
     registers.newDMALength = 0xFF;
 
-    isSpriteAttributeTableDmaInProgress = false;
-    ticks = 0;
-    spriteAttributeTableDmaTicks = 0;
+    spriteAttributeTable->reset();
 }
 
 void GbGpu::checklcdYCoordinate()
@@ -352,19 +356,6 @@ std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(u
     return std::make_tuple(colorIndex, tileAttribute.backgroundToOAMPriority == 1);
 }
 
-void GbGpu::spriteAttributeTableDma()
-{
-    if (isSpriteAttributeTableDmaInProgress) {
-        spriteAttributeTableDmaTicks--;
-        if (spriteAttributeTableDmaTicks == 0) {
-            isSpriteAttributeTableDmaInProgress = false;
-            for (uint i = 0; i < 0xA0; i++) {
-                spriteAttributeTable.at(i) = cpu.lock()->readByte(registers.dMATransferAndStartAddress * 0x100 + i);
-            }
-        }
-    }
-}
-
 void GbGpu::renderLine()
 {
     if (registers.lcdEnable == 0) {
@@ -417,12 +408,12 @@ void GbGpu::renderLine()
         uint8_t spriteIndex = spriteStack.top();
         spriteStack.pop();
 
-        uint8_t tileIndex = spriteAttributeTable.at(spriteIndex + 2);
+        uint8_t tileIndex = spriteAttributeTable->read(0xFE00 + spriteIndex + 2);
         if (registers.spriteSize == 1) {
             tileIndex &= 0xFE;
         }
         GbcSpriteAttribute spriteAttribute { .attribute = 0 };
-        spriteAttribute.attribute = spriteAttributeTable.at(spriteIndex + 3);
+        spriteAttribute.attribute = spriteAttributeTable->read(0xFE00 + spriteIndex + 3);
 
         bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
         const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
@@ -445,14 +436,14 @@ void GbGpu::renderLine()
                 }
             }
 
-            int16_t pixelXInTile = i - spriteAttributeTable.at(spriteIndex + 1) + 8;
+            int16_t pixelXInTile = i - spriteAttributeTable->read(0xFE00 + spriteIndex + 1) + 8;
             if (pixelXInTile >= 8) {
                 break;
             }
             if (pixelXInTile < 0) {
                 continue;
             }
-            int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable.at(spriteIndex) + 16;
+            int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable->read(0xFE00 + spriteIndex) + 16;
             uint8_t realTileIndex = tileIndex;
             if (registers.spriteSize == 1) {
                 if (pixelYInTile < 8 && spriteAttribute.verticalFlip == 1) {
@@ -486,7 +477,7 @@ void GbGpu::scanSprites()
 {
     spriteStack = {};
     for (uint8_t i = 0; i < 160; i += 4) {
-        int16_t y = spriteAttributeTable.at(i) - 16;
+        int16_t y = spriteAttributeTable->read(0xFE00 + i) - 16;
         if (registers.spriteSize == 1) {
             if (static_cast<int16_t>(registers.lcdYCoordinate) >= y && static_cast<int16_t>(registers.lcdYCoordinate) < (y + 16)) {
                 spriteStack.push(i);

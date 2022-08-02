@@ -18,6 +18,7 @@
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
+#include "qnemu/gb/gpu/SpriteAttributeTable.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 
 namespace qnemu
@@ -27,7 +28,10 @@ class GbGpu : public GbGpuInterface
 {
 public:
     GbGpu() = delete;
-    GbGpu(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler);
+    GbGpu(const GbCartridgeInterface& cartridge,
+        std::shared_ptr<DisplayInterface> display,
+        std::shared_ptr<GbInterruptHandler> interruptHandler,
+        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable);
     ~GbGpu();
 
     bool accepts(uint16_t address) const override;
@@ -73,7 +77,6 @@ private:
     std::tuple<uint16_t, bool> getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const;
     QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
     QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x40>& paletteData) const;
-    void spriteAttributeTableDma();
     void renderLine();
     void scanSprites();
 
@@ -106,7 +109,6 @@ private:
         uint8_t scrollX;  // FF43
         uint8_t lcdYCoordinate;  // FF44
         uint8_t lcdYCoordinateCompare;  // FF45
-        uint8_t dMATransferAndStartAddress;  // FF46
         union {
             struct {
                 uint8_t shadeForBackgroundColorIndex0 : 2;
@@ -165,12 +167,9 @@ private:
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
-    std::weak_ptr<GbCpuInterface> cpu;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
-    bool isSpriteAttributeTableDmaInProgress;
-    std::array<uint8_t, spriteAttributeTableSize> spriteAttributeTable;
-    uint16_t spriteAttributeTableDmaTicks;
+    std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
     std::array<uint8_t, 0x40> spritePaletteData;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;
