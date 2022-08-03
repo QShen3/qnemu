@@ -27,6 +27,8 @@ public:
     void step() override;
     void reset() override;
 
+    uint8_t at(uint16_t address) const;
+
 private:
     struct {
         uint8_t dmaTransferAndStartAddress;  // FF46

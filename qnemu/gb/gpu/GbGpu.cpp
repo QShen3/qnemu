@@ -408,12 +408,12 @@ void GbGpu::renderLine()
         uint8_t spriteIndex = spriteStack.top();
         spriteStack.pop();
 
-        uint8_t tileIndex = spriteAttributeTable->read(0xFE00 + spriteIndex + 2);
+        uint8_t tileIndex = spriteAttributeTable->at(spriteIndex + 2);
         if (registers.spriteSize == 1) {
             tileIndex &= 0xFE;
         }
         GbcSpriteAttribute spriteAttribute { .attribute = 0 };
-        spriteAttribute.attribute = spriteAttributeTable->read(0xFE00 + spriteIndex + 3);
+        spriteAttribute.attribute = spriteAttributeTable->at(spriteIndex + 3);
 
         bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
         const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
@@ -436,14 +436,14 @@ void GbGpu::renderLine()
                 }
             }
 
-            int16_t pixelXInTile = i - spriteAttributeTable->read(0xFE00 + spriteIndex + 1) + 8;
+            int16_t pixelXInTile = i - spriteAttributeTable->at(spriteIndex + 1) + 8;
             if (pixelXInTile >= 8) {
                 break;
             }
             if (pixelXInTile < 0) {
                 continue;
             }
-            int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable->read(0xFE00 + spriteIndex) + 16;
+            int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable->at(spriteIndex) + 16;
             uint8_t realTileIndex = tileIndex;
             if (registers.spriteSize == 1) {
                 if (pixelYInTile < 8 && spriteAttribute.verticalFlip == 1) {
@@ -477,7 +477,7 @@ void GbGpu::scanSprites()
 {
     spriteStack = {};
     for (uint8_t i = 0; i < 160; i += 4) {
-        int16_t y = spriteAttributeTable->read(0xFE00 + i) - 16;
+        int16_t y = spriteAttributeTable->at(i) - 16;
         if (registers.spriteSize == 1) {
             if (static_cast<int16_t>(registers.lcdYCoordinate) >= y && static_cast<int16_t>(registers.lcdYCoordinate) < (y + 16)) {
                 spriteStack.push(i);

@@ -76,4 +76,9 @@ void SpriteAttributeTable::reset()
     dmaTicks = 0;
 }
 
+uint8_t SpriteAttributeTable::at(uint16_t address) const
+{
+    return data.at(address);
+}
+
 }  // namespace qnemu
