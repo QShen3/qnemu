@@ -16,6 +16,7 @@
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/gpu/GbGpu.h"
+#include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
 
@@ -25,10 +26,12 @@ namespace qnemu
 GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandler> interruptHandler,
+        std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<SpriteAttributeTable> spriteAttributeTable) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),
+    gbcPalette(std::move(gbcPalette)),
     spriteAttributeTable(std::move(spriteAttributeTable)),
     modes({
         Mode
@@ -47,7 +50,7 @@ GbGpu::~GbGpu()
 
 bool GbGpu::accepts(uint16_t address) const
 {
-    if (spriteAttributeTable->accepts(address)) {
+    if (gbcPalette->accepts(address) || spriteAttributeTable->accepts(address)) {
         return true;
     }
     if (address >= 0x8000 && address < 0xA000) {
@@ -66,9 +69,6 @@ bool GbGpu::accepts(uint16_t address) const
         return true;
     }
     if (address >= 0xFF51 && address <= 0xFF55) {
-        return true;
-    }
-    if (address >= 0xFF68 && address <= 0xFF6B) {
         return true;
     }
     return false;
@@ -138,23 +138,18 @@ uint8_t GbGpu::read(uint16_t address) const
     if (address == 0xFF55) {
         return registers.newDMALength;
     }
-    if (address == 0xFF68) {
-        return registers.gbcBackgroundPaletteSpecification;
-    }
     if (address == 0xFF69) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return 0xFF;
         }
-        return registers.gbcBckgroundPaletteData;
-    }
-    if (address == 0xFF6A) {
-        return registers.gbcSpritePaletteSpecification;
     }
     if (address == 0xFF6B) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return 0xFF;
         }
-        return registers.gbcSpritePaletteData;
+    }
+    if (gbcPalette->accepts(address)) {
+        return gbcPalette->read(address);
     }
     if (spriteAttributeTable->accepts(address)) {
         return spriteAttributeTable->read(address);
@@ -229,31 +224,18 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
     if (address == 0xFF55) {
         registers.newDMALength = value;
     }
-    if (address == 0xFF68) {
-        registers.gbcBackgroundPaletteSpecification = value;
-    }
     if (address == 0xFF69) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return;
         }
-        registers.gbcBckgroundPaletteData = value;
-        backgroundOrWindowPaletteData.at(registers.gbcBackgroundPaletteIndex) = value;
-        if (registers.gbcBackgroundAutoIncrement) {
-            registers.gbcBackgroundPaletteIndex++;
-        }
-    }
-    if (address == 0xFF6A) {
-        registers.gbcSpritePaletteSpecification = value;
     }
     if (address == 0xFF6B) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return;
         }
-        registers.gbcSpritePaletteData = value;
-        spritePaletteData.at(registers.gbcSritePaletteIndex) = value;
-        if (registers.gbcSpriteAutoIncrement) {
-            registers.gbcSritePaletteIndex++;
-        }
+    }
+    if (gbcPalette->accepts(address)) {
+        gbcPalette->write(address, value);
     }
     if (spriteAttributeTable->accepts(address)) {
         spriteAttributeTable->write(address, value);
@@ -262,6 +244,7 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
 
 void GbGpu::step()
 {
+    gbcPalette->step();
     spriteAttributeTable->step();
     if (registers.lcdEnable == 0) {
         ticks = 0;
@@ -289,6 +272,7 @@ void GbGpu::reset()
     registers.newDMADestinationLow = 0xFF;
     registers.newDMALength = 0xFF;
 
+    gbcPalette->reset();
     spriteAttributeTable->reset();
 }
 
@@ -323,13 +307,6 @@ QRgb GbGpu::getGbColor(uint16_t colorIndex, uint8_t paletteData) const
         return qRgb(0, 0, 0);
     }
     return qRgb(0xFF, 0xFF, 0xFF);
-}
-
-QRgb GbGpu::getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x40>& paletteData) const
-{
-    uint16_t colorNumber = (static_cast<uint16_t>(paletteData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(paletteData.at(colorIndex));
-    GbcColor color = { .color = colorNumber };
-    return qRgb((color.red << 3 | color.red >> 2), (color.green << 3 | color.green >> 2), (color.blue << 3 | color.blue >> 2));
 }
 
 std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const
@@ -377,7 +354,7 @@ void GbGpu::renderLine()
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
             if (cartridge.isGbcCartridge()) {
-                line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
+                line[i] = gbcPalette->getBackgroundColor(colorIndex);
             } else {
                 line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
             }
@@ -391,7 +368,7 @@ void GbGpu::renderLine()
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
             if (cartridge.isGbcCartridge()) {
-                line[i] = getGbcColor(colorIndex, backgroundOrWindowPaletteData);
+                line[i] = gbcPalette->getBackgroundColor(colorIndex);
             } else {
                 line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
             }
@@ -465,7 +442,7 @@ void GbGpu::renderLine()
                 colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex * 2;
             }
             if (cartridge.isGbcCartridge()) {
-                line[i] = getGbcColor(colorIndex, spritePaletteData);
+                line[i] = gbcPalette->getSpriteColor(colorIndex);
             } else {
                 line[i] = getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
             }

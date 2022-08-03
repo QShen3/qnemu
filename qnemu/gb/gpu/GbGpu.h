@@ -16,6 +16,7 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
@@ -31,6 +32,7 @@ public:
     GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandler> interruptHandler,
+        std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<SpriteAttributeTable> spriteAttributeTable);
     ~GbGpu();
 
@@ -41,15 +43,6 @@ public:
     void reset() override;
 
 private:
-    union GbcColor {
-        struct {
-            uint red : 5;
-            uint green : 5;
-            uint blue : 5;
-            uint : 1;
-        };
-        uint16_t color;
-    };
     union GbcTileAttribute {
         struct {
             uint backgroundPaletteNumber : 3;
@@ -76,7 +69,6 @@ private:
     void checklcdYCoordinate();
     std::tuple<uint16_t, bool> getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const;
     QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
-    QRgb getGbcColor(uint16_t colorIndex, const std::array<uint8_t, 0x40>& paletteData) const;
     void renderLine();
     void scanSprites();
 
@@ -144,33 +136,14 @@ private:
         uint8_t newDMADestinationHigh;  // FF53
         uint8_t newDMADestinationLow;  // FF54
         uint8_t newDMALength;  // FF55
-        union {
-            struct {
-                uint8_t gbcBackgroundPaletteIndex : 6;
-                uint8_t : 1;
-                uint8_t gbcBackgroundAutoIncrement : 1;
-            };
-            uint8_t gbcBackgroundPaletteSpecification;
-        };  // FF68
-        uint8_t gbcBckgroundPaletteData;  // FF69
-        union {
-            struct {
-                uint8_t gbcSritePaletteIndex : 6;
-                uint8_t : 1;
-                uint8_t gbcSpriteAutoIncrement : 1;
-            };
-            uint8_t gbcSpritePaletteSpecification;
-        };  // FF6A
-        uint8_t gbcSpritePaletteData;  // FF6B
     } registers;
-    std::array<uint8_t, 0x40> backgroundOrWindowPaletteData;
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandler> interruptHandler;
+    std::unique_ptr<GbcPalette> gbcPalette;
     std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
-    std::array<uint8_t, 0x40> spritePaletteData;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;
     std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;
