@@ -16,6 +16,7 @@
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
@@ -138,7 +139,7 @@ void GbCartridge::load(const char* filePath)
         throw std::runtime_error("Load cartridge file failed!");
     }
     romSize = file.tellg();
-    size_t romBankCounts = romSize / GbMbcInterface::romBankSize;
+    size_t romBankCounts = romSize / RomBankSize;
     file.seekg(0, std::ios::beg);
 
     std::vector<uint8_t> buffer(romSize);
@@ -162,17 +163,17 @@ void GbCartridge::load(const char* filePath)
     publisher = getPublisherFromCartridge(buffer);
 
     ramSize = getRamSizeFromCartridge(buffer.at(0x149));
-    size_t ramBankCounts = ramSize == 0x800 ? 1 : ramSize / GbMbcInterface::ramBankSize;
+    size_t ramBankCounts = ramSize == 0x800 ? 1 : ramSize / RamBankSize;
 
     type = buffer.at(0x147);
     japanCartridge = buffer.at(0x14A) == 0 ? true : false;
 
-    std::vector<std::array<uint8_t, GbMbcInterface::romBankSize>> romBanks(romBankCounts);
-    std::vector<std::array<uint8_t, GbMbcInterface::ramBankSize>> ramBanks(ramBankCounts);
+    std::vector<std::array<uint8_t, RomBankSize>> romBanks(romBankCounts);
+    std::vector<std::array<uint8_t, RamBankSize>> ramBanks(ramBankCounts);
     file.seekg(0, std::ios::beg);
     for (auto& bank : romBanks) {
-        std::array<uint8_t, GbMbcInterface::romBankSize> data;
-        file.read(reinterpret_cast<char*>(data.data()), GbMbcInterface::romBankSize);
+        std::array<uint8_t, RomBankSize> data;
+        file.read(reinterpret_cast<char*>(data.data()), RomBankSize);
         std::copy(data.begin(), data.end(), bank.begin());
     }
     mbc = gbMbcFactory.create(std::move(romBanks), std::move(ramBanks), type);
@@ -234,7 +235,7 @@ size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag) const
 size_t GbCartridge::getRomSizeFromCartridge(uint8_t flag) const
 {
     if (flag <= 8) {
-        return (GbMbcInterface::romBankSize * 2) << flag;
+        return (RomBankSize * 2) << flag;
     }
     if (flag >= 0x52 && flag <= 0x54) {
         return 0x10'0000 + (0x2'0000 << (flag - 0x52));

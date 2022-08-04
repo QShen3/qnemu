@@ -6,12 +6,13 @@
 #include <cstring>
 
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
 
-GbMbc1::GbMbc1(std::vector<std::array<uint8_t, romBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, ramBankSize>>&& ramBanks, uint8_t type) :
+GbMbc1::GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) :
     romBanks(romBanks),
     ramBanks(ramBanks),
     type(type)
@@ -21,25 +22,25 @@ GbMbc1::GbMbc1(std::vector<std::array<uint8_t, romBankSize>>&& romBanks,
 
 bool GbMbc1::accepts(uint16_t address) const
 {
-    return (address < 0x8000) || (address >= 0xA000 && address < 0xC000);
+    return (address <= MemoryRomBank01End) || (address >= ExternalRamStart && address <= ExternalRamEnd);
 }
 
 uint8_t GbMbc1::read(uint16_t address) const
 {
-    if (address < 0x8000) {
+    if (address <= MemoryRomBank01End) {
         uint8_t bankNumber = getRomBankNumberForAddress(address);
-        if (address < 0x4000) {
+        if (address <= MemoryRomBank00End) {
             return romBanks.at(bankNumber).at(address);
         }
-        return romBanks.at(bankNumber).at(address - 0x4000);
+        return romBanks.at(bankNumber).at(address - MemoryRomBank01Start);
     }
-    if (address >= 0xA000 && address < 0xC000) {
+    if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         if ((registers.ramEnable & 0b1111) != ramEnableFlag) {
             assert(false && "Ram is disabled");
             return 0xFF;
         }
         uint8_t bankNumber = getRamBankNumber();
-        return ramBanks.at(bankNumber).at(address - 0xA000);
+        return ramBanks.at(bankNumber).at(address - ExternalRamStart);
     }
     assert(false && "Wrong address");
     return 0xFF;
@@ -59,17 +60,17 @@ void GbMbc1::write(uint16_t address, const uint8_t& value)
         registers.ramBankNumber = value & 0b11;
         return;
     }
-    if (address >= bankingModeSelectAddress && address < 0x8000) {
+    if (address >= bankingModeSelectAddress && address <= MemoryRomBank01End) {
         registers.bankingModeSelect = value & 0b1;
         return;
     }
-    if (address >= 0xA000 && address < 0xC000) {
+    if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         if ((registers.ramEnable & 0b1111) != ramEnableFlag) {
             assert(false && "Ram is disabled");
             return;
         }
         uint8_t bankNumber = getRamBankNumber();
-        ramBanks.at(bankNumber).at(address - 0xA000) = value;
+        ramBanks.at(bankNumber).at(address - ExternalRamStart) = value;
         return;
     }
     assert(false && "Wrong address");

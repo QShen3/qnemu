@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
@@ -19,8 +20,8 @@ class GbMbcFactoryInterface
         virtual ~GbMbcFactoryInterface() = default;
 
         virtual std::unique_ptr<GbMbcInterface> create(
-            std::vector<std::array<uint8_t, GbMbcInterface::romBankSize>>&& romBanks,
-            std::vector<std::array<uint8_t, GbMbcInterface::ramBankSize>>&& ramBanks,
+            std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+            std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks,
             uint8_t type) const = 0;
 };
 

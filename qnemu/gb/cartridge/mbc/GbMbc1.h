@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
@@ -22,8 +23,8 @@ public:
     static constexpr uint16_t bankingModeSelectAddress = 0x6000;
 
     GbMbc1() = delete;
-    GbMbc1(std::vector<std::array<uint8_t, romBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, ramBankSize>>&& ramBanks, uint8_t type);
+    GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type);
     ~GbMbc1() = default;
 
     bool accepts(uint16_t address) const override;
@@ -46,8 +47,8 @@ private:
         uint8_t bankingModeSelect;
     } registers;
 
-    std::vector<std::array<uint8_t, romBankSize>> romBanks;
-    std::vector<std::array<uint8_t, ramBankSize>> ramBanks;
+    std::vector<std::array<uint8_t, RomBankSize>> romBanks;
+    std::vector<std::array<uint8_t, RamBankSize>> ramBanks;
     uint8_t type;
 };
 

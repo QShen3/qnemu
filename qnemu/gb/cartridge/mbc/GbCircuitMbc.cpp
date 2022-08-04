@@ -5,12 +5,13 @@
 #include <cassert>
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
 
-GbCircuitMbc::GbCircuitMbc(std::vector<std::array<uint8_t, romBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, ramBankSize>>&& ramBanks, uint8_t type) :
+GbCircuitMbc::GbCircuitMbc(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) :
     romBanks(romBanks),
     ramBanks(ramBanks),
     type(type)
@@ -19,20 +20,20 @@ GbCircuitMbc::GbCircuitMbc(std::vector<std::array<uint8_t, romBankSize>>&& romBa
 
 bool GbCircuitMbc::accepts(uint16_t address) const
 {
-    return (address < 0x8000) || (address >= 0xA000 && address < 0xC000);
+    return (address <= MemoryRomBank01End) || (address >= ExternalRamStart && address <= ExternalRamEnd);
 }
 
 uint8_t GbCircuitMbc::read(uint16_t address) const
 {
-    if (address < 0x4000) {
+    if (address <= MemoryRomBank00End) {
         return romBanks.at(0).at(address);
     }
-    if (address >= 0x4000 && address < 0x8000) {
-        return romBanks.at(1).at(address - 0x4000);
+    if (address >= MemoryRomBank01Start && address <= MemoryRomBank01End) {
+        return romBanks.at(1).at(address - MemoryRomBank01Start);
     }
-    if (address >= 0xA000 && address < 0xC000) {
+    if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         if (type != 0) {
-            return ramBanks.at(0).at(address - 0xA000);
+            return ramBanks.at(0).at(address - ExternalRamStart);
         }
         assert(false && "No Ram available");
         return 0xFF;
@@ -43,9 +44,9 @@ uint8_t GbCircuitMbc::read(uint16_t address) const
 
 void GbCircuitMbc::write(uint16_t address, const uint8_t& value)
 {
-    if (address >= 0xA000 && address < 0xC000) {
+    if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         if (type != 0) {
-            ramBanks.at(0).at(address - 0xA000) = value;
+            ramBanks.at(0).at(address - ExternalRamStart) = value;
             return;
         }
         // assert(false && "No Ram available");

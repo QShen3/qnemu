@@ -13,9 +13,6 @@ namespace qnemu
 
 class GbMbcInterface : public GbDeviceInterface
 {
-public:
-    static constexpr size_t romBankSize = 0x4000;
-    static constexpr size_t ramBankSize = 0x2000;
 };
 
 }  // namespace qnemu

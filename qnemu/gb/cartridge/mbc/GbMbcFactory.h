@@ -11,6 +11,7 @@
 
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
@@ -21,8 +22,8 @@ class GbMbcFactory : public GbMbcFactoryInterface
         GbMbcFactory() = default;
         ~GbMbcFactory() = default;
 
-        std::unique_ptr<GbMbcInterface> create(std::vector<std::array<uint8_t, GbMbcInterface::romBankSize>>&& romBanks,
-            std::vector<std::array<uint8_t, GbMbcInterface::ramBankSize>>&& ramBanks, uint8_t type) const override;
+        std::unique_ptr<GbMbcInterface> create(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+            std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) const override;
 };
 
 }  // namespace qnemu

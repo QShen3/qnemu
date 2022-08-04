@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
@@ -17,8 +18,8 @@ class GbCircuitMbc : public GbMbcInterface
 {
 public:
     GbCircuitMbc() = delete;
-    GbCircuitMbc(std::vector<std::array<uint8_t, romBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, ramBankSize>>&& ramBanks, uint8_t type);
+    GbCircuitMbc(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type);
     ~GbCircuitMbc() = default;
 
     bool accepts(uint16_t address) const override;
@@ -28,8 +29,8 @@ public:
     void reset() override;
 
 private:
-    std::vector<std::array<uint8_t, romBankSize>> romBanks;
-    std::vector<std::array<uint8_t, ramBankSize>> ramBanks;
+    std::vector<std::array<uint8_t, RomBankSize>> romBanks;
+    std::vector<std::array<uint8_t, RamBankSize>> ramBanks;
     uint8_t type;
 };
 

@@ -12,12 +12,13 @@
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
+#include "qnemu/gb/const.h"
 
 namespace qnemu
 {
 
-std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint8_t, GbMbcInterface::romBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, GbMbcInterface::ramBankSize>>&& ramBanks, uint8_t type) const
+std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) const
 {
     std::unique_ptr<GbMbcInterface> mbc;
 
