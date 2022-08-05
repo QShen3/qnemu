@@ -6,15 +6,19 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <stack>
 #include <tuple>
+#include <vector>
 
 #include <QtGui/QColor>
 #include <QtGui/QImage>
 
 #include "qnemu/display/DisplayInterface.h"
+#include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
+#include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
@@ -145,8 +149,9 @@ private:
     std::unique_ptr<GbcPalette> gbcPalette;
     std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
     std::stack<uint8_t> spriteStack;
+    std::vector<std::reference_wrapper<GbDeviceInterface>> subDevices;
     uint16_t ticks;
-    std::array<std::array<uint8_t, videoRamBankSize>, 2> videoRamBanks;
+    std::array<std::array<uint8_t, VideoRamBankSize>, 2> videoRamBanks;
     uint16_t windowLineCounter;
     const std::array<Mode, 4> modes;
 

@@ -41,4 +41,7 @@ static constexpr uint16_t HighRamEnd = 0xFFFE;
 static constexpr size_t RomBankSize = 0x4000;
 static constexpr size_t RamBankSize = 0x2000;
 
+static constexpr size_t VideoRamBankSize = 0x2000;
+static constexpr size_t SpriteAttributeTableSize = 0xA0;
+
 }  // namespace qnemu

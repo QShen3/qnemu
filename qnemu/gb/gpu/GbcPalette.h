@@ -9,12 +9,12 @@
 
 #include <QtGui/QColor>
 
-#include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/GbDeviceInterface.h"
 
 namespace qnemu
 {
 
-class GbcPalette : public GbGpuInterface
+class GbcPalette : public GbDeviceInterface
 {
 public:
     GbcPalette();

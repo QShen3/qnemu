@@ -42,6 +42,8 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
     })
 {
     GbGpu::reset();
+    subDevices.push_back(*gbcPalette);
+    subDevices.push_back(*spriteAttributeTable);
 }
 
 GbGpu::~GbGpu()
@@ -50,8 +52,10 @@ GbGpu::~GbGpu()
 
 bool GbGpu::accepts(uint16_t address) const
 {
-    if (gbcPalette->accepts(address) || spriteAttributeTable->accepts(address)) {
-        return true;
+    for (const auto& subDevice : subDevices) {
+        if (subDevice.get().accepts(address)) {
+            return true;
+        }
     }
     if (address >= 0x8000 && address < 0xA000) {
         return true;
@@ -148,11 +152,10 @@ uint8_t GbGpu::read(uint16_t address) const
             return 0xFF;
         }
     }
-    if (gbcPalette->accepts(address)) {
-        return gbcPalette->read(address);
-    }
-    if (spriteAttributeTable->accepts(address)) {
-        return spriteAttributeTable->read(address);
+    for (const auto& subDevice : subDevices) {
+        if (subDevice.get().accepts(address)) {
+            return subDevice.get().read(address);
+        }
     }
     assert(false && "Wrong address");
     return 0xFF;
@@ -234,18 +237,18 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
             return;
         }
     }
-    if (gbcPalette->accepts(address)) {
-        gbcPalette->write(address, value);
-    }
-    if (spriteAttributeTable->accepts(address)) {
-        spriteAttributeTable->write(address, value);
+    for (auto& subDevice : subDevices) {
+        if (subDevice.get().accepts(address)) {
+            return subDevice.get().write(address, value);
+        }
     }
 }
 
 void GbGpu::step()
 {
-    gbcPalette->step();
-    spriteAttributeTable->step();
+    for (auto& subDevice : subDevices) {
+        subDevice.get().step();
+    }
     if (registers.lcdEnable == 0) {
         ticks = 0;
         return;
@@ -272,8 +275,9 @@ void GbGpu::reset()
     registers.newDMADestinationLow = 0xFF;
     registers.newDMALength = 0xFF;
 
-    gbcPalette->reset();
-    spriteAttributeTable->reset();
+    for (auto& subDevice : subDevices) {
+        subDevice.get().reset();
+    }
 }
 
 void GbGpu::checklcdYCoordinate()

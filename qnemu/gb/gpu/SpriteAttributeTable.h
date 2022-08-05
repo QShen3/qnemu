@@ -8,13 +8,14 @@
 #include <cstdint>
 #include <memory>
 
+#include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
-#include "qnemu/gb/gpu/GbGpuInterface.h"
 
 namespace qnemu
 {
 
-class SpriteAttributeTable : public GbGpuInterface
+class SpriteAttributeTable : public GbDeviceInterface
 {
 public:
     SpriteAttributeTable() = delete;
@@ -35,7 +36,7 @@ private:
     } registers;
 
     std::weak_ptr<GbCpuInterface> cpu;
-    std::array<uint8_t, spriteAttributeTableSize> data;
+    std::array<uint8_t, SpriteAttributeTableSize> data;
     uint16_t dmaTicks;
     bool isDmaInProgress;
 };
