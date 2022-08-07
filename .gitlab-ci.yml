@@ -21,6 +21,22 @@ stages:
 #     - cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
 #     - ninja
 
+windows msys2 ucrt x64 build:
+  stage: build
+  tags:
+    - gcc
+    - msys2
+    - windows
+    - x64
+  artifacts:
+    paths:
+      - build/
+  script:
+    - mkdir -Force build
+    - cd build
+    - C:\tools\msys64\usr\bin\bash -lc 'cmake .. -G Ninja'
+    - C:\tools\msys64\usr\bin\bash -lc 'ninja'
+
 macos clang x64 build:
   stage: build
   tags:
@@ -242,6 +258,19 @@ linux void x64 build:
 #   script:
 #     - cd build
 #     - ninja test
+
+windows msys2 ucrt x64 test:
+  stage: test
+  tags:
+    - gcc
+    - msys2
+    - windows
+    - x64
+  needs:
+    - job: windows msys2 ucrt x64 build
+  script:
+    - cd build
+    - C:\tools\msys64\usr\bin\bash -lc 'ninja test'
 
 macos clang x64 test:
   stage: test
