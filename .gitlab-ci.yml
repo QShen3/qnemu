@@ -37,6 +37,23 @@ windows msys2 ucrt x64 build:
     - C:\tools\msys64\usr\bin\bash -lc 'cmake .. -G Ninja'
     - C:\tools\msys64\usr\bin\bash -lc 'ninja'
 
+windows msys2 clang x64 build:
+  stage: build
+  tags:
+    - clang
+    - msys2
+    - windows
+    - x64
+  artifacts:
+    paths:
+      - build/
+  script:
+    - mkdir -Force build
+    - cd build
+    - C:\tools\msys64\usr\bin\bash -lc 'cmake .. -G Ninja'
+    - C:\tools\msys64\usr\bin\bash -lc 'ninja'
+
+
 macos clang x64 build:
   stage: build
   tags:
@@ -268,6 +285,19 @@ windows msys2 ucrt x64 test:
     - x64
   needs:
     - job: windows msys2 ucrt x64 build
+  script:
+    - cd build
+    - C:\tools\msys64\usr\bin\bash -lc 'ninja test'
+
+windows msys2 clang x64 test:
+  stage: test
+  tags:
+    - clang
+    - msys2
+    - windows
+    - x64
+  needs:
+    - job: windows msys2 clang x64 build
   script:
     - cd build
     - C:\tools\msys64\usr\bin\bash -lc 'ninja test'
