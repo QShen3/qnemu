@@ -34,8 +34,10 @@ static constexpr uint16_t EchoRamEnd = 0xFDFF;
 static constexpr uint16_t SpriteAttributeTableStart = 0xFE00;
 static constexpr uint16_t SpriteAttributeTableEnd = 0xFE9F;
 
-static constexpr uint16_t HighRamStart = 0xFE80;
+static constexpr uint16_t HighRamStart = 0xFF80;
 static constexpr uint16_t HighRamEnd = 0xFFFE;
+
+static constexpr uint16_t MemorySpaceSize = 0xFFFF;
 
 
 static constexpr size_t RomBankSize = 0x4000;

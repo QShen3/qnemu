@@ -63,7 +63,7 @@ TEST(GbCircuitMbcTest, ReadFromNoneExistRam)
     qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
 
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
-        EXPECT_EQ(0xFF, gbCircuitMbc.read(i + 0xA000));
+        EXPECT_EQ(0xFF, gbCircuitMbc.read(i + qnemu::ExternalRamStart));
     }
 }
 #endif
@@ -83,7 +83,7 @@ TEST(GbCircuitMbcTest, ReadFromRam)
     qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 1);
 
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
-        EXPECT_EQ(gbCircuitMbc.read(i + 0xA000), data0.at(i));
+        EXPECT_EQ(gbCircuitMbc.read(i + qnemu::ExternalRamStart), data0.at(i));
     }
 }
 
@@ -95,8 +95,8 @@ TEST(GbCircuitMbcTest, WriteToRam)
 
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
         uint8_t value = distrib(gen);
-        gbCircuitMbc.write(i + 0xA000, value);
-        EXPECT_EQ(gbCircuitMbc.read(i + 0xA000), value);
+        gbCircuitMbc.write(i + qnemu::ExternalRamStart, value);
+        EXPECT_EQ(gbCircuitMbc.read(i + qnemu::ExternalRamStart), value);
     }
 }
 

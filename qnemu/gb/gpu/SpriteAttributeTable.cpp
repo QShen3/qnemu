@@ -7,6 +7,7 @@
 #include <cstring>
 #include <memory>
 
+#include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
 
@@ -20,7 +21,7 @@ SpriteAttributeTable::SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu) 
 
 bool SpriteAttributeTable::accepts(uint16_t address) const
 {
-    if (address >= 0xFE00 && address < 0xFEA0) {
+    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
         return true;
     }
     if (address == 0xFF46) {
@@ -31,8 +32,8 @@ bool SpriteAttributeTable::accepts(uint16_t address) const
 
 uint8_t SpriteAttributeTable::read(uint16_t address) const
 {
-    if (address >= 0xFE00 && address < 0xFEA0) {
-        return data.at(address - 0xFE00);
+    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+        return data.at(address - SpriteAttributeTableStart);
     }
     if (address == 0xFF46) {
         return registers.dmaTransferAndStartAddress;
@@ -43,8 +44,8 @@ uint8_t SpriteAttributeTable::read(uint16_t address) const
 
 void SpriteAttributeTable::write(uint16_t address, const uint8_t& value)
 {
-    if (address >= 0xFE00 && address < 0xFEA0) {
-        data.at(address - 0xFE00) = value;
+    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+        data.at(address - SpriteAttributeTableStart) = value;
     }
     if (address == 0xFF46) {
         registers.dmaTransferAndStartAddress = value;

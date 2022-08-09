@@ -15,6 +15,7 @@
 #include <QtGui/QImage>
 
 #include "qnemu/display/DisplayInterface.h"
+#include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/Mode.h"
@@ -57,10 +58,7 @@ bool GbGpu::accepts(uint16_t address) const
             return true;
         }
     }
-    if (address >= 0x8000 && address < 0xA000) {
-        return true;
-    }
-    if (address >= 0xFE00 && address < 0xFEA0) {
+    if (address >= VideoRamStart && address <= VideoRamEnd) {
         return true;
     }
     if (address >= 0xFF40 && address <= 0xFF45) {
@@ -80,13 +78,13 @@ bool GbGpu::accepts(uint16_t address) const
 
 uint8_t GbGpu::read(uint16_t address) const
 {
-    if (address >= 0x8000 && address < 0xA000) {
+    if (address >= VideoRamStart && address <= VideoRamEnd) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return 0xFF;
         }
-        return videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - 0x8000);
+        return videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart);
     }
-    if (address >= 0xFE00 && address < 0xFEA0) {
+    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
         if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
             return 0xFF;
         }
@@ -163,13 +161,13 @@ uint8_t GbGpu::read(uint16_t address) const
 
 void GbGpu::write(uint16_t address, const uint8_t& value)
 {
-    if (address >= 0x8000 && address < 0xA000) {
+    if (address >= VideoRamStart && address <= VideoRamEnd) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return;
         }
-        videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - 0x8000) = value;
+        videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart) = value;
     }
-    if (address >= 0xFE00 && address < 0xFEA0) {
+    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
         if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
             return;
         }

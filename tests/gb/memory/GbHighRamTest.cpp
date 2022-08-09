@@ -15,6 +15,7 @@
 #pragma warning( pop )
 #endif
 
+#include "qnemu/gb/const.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 
 namespace qnemuTest
@@ -27,13 +28,13 @@ static std::uniform_int_distribution<> distrib(0, 255);
 TEST(GbHighRamTest, Accepts)
 {
     qnemu::GbHighRam gbHighRam;
-    for (uint16_t i = 0; i < 0xFF80; i++) {
+    for (uint16_t i = 0; i < qnemu::HighRamStart; i++) {
         EXPECT_FALSE(gbHighRam.accepts(i));
     }
-    for (uint16_t i = 0xFF80; i < 0xFFFF; i++) {
+    for (uint16_t i = qnemu::HighRamStart; i <= qnemu::HighRamEnd; i++) {
         EXPECT_TRUE(gbHighRam.accepts(i));
     }
-    EXPECT_FALSE(gbHighRam.accepts(0xFFFF));
+    EXPECT_FALSE(gbHighRam.accepts(qnemu::HighRamEnd + 1));
 }
 
 TEST(GbHighRamTest, ReadAndWrite)
@@ -44,11 +45,11 @@ TEST(GbHighRamTest, ReadAndWrite)
         value = distrib(gen);
     }
 
-    for (uint16_t i = 0xFF80; i < 0xFFFF; i++) {
-        gbHighRam.write(i, data.at(i - 0xFF80));
+    for (uint16_t i = qnemu::HighRamStart; i <= qnemu::HighRamEnd; i++) {
+        gbHighRam.write(i, data.at(i - qnemu::HighRamStart));
     }
-    for (uint16_t i = 0xFF80; i < 0xFFFF; i++) {
-        EXPECT_EQ(gbHighRam.read(i), data.at(i - 0xFF80));
+    for (uint16_t i = qnemu::HighRamStart; i <= qnemu::HighRamEnd; i++) {
+        EXPECT_EQ(gbHighRam.read(i), data.at(i - qnemu::HighRamStart));
     }
 }
 

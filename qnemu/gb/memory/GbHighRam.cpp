@@ -4,6 +4,7 @@
 
 #include <cstdint>
 
+#include "qnemu/gb/const.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 
 namespace qnemu
@@ -11,17 +12,17 @@ namespace qnemu
 
 bool GbHighRam::accepts(uint16_t address) const
 {
-    return address >= 0xFF80 && address < 0xFFFF;
+    return address >= HighRamStart && address <= HighRamEnd;
 }
 
 uint8_t GbHighRam::read(uint16_t address) const
 {
-    return data.at(address - 0xFF80);
+    return data.at(address - HighRamStart);
 }
 
 void GbHighRam::write(uint16_t address, const uint8_t& value)
 {
-    data.at(address - 0xFF80) = value;
+    data.at(address - HighRamStart) = value;
 }
 
 void GbHighRam::step()

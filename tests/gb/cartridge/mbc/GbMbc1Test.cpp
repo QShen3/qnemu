@@ -51,7 +51,7 @@ TEST(GbMbc1Test, ReadFrom1BankRom)
 
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 1);
     gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, 1);
-    EXPECT_THROW(gbMbc1.read(0x4000), std::out_of_range);
+    EXPECT_THROW(gbMbc1.read(qnemu::MemoryRomBank00End + 1), std::out_of_range);
 }
 
 TEST(GbMbc1Test, ReadFromRom)
@@ -88,12 +88,12 @@ TEST(GbMbc1Test, ReadFromRom)
             for (uint8_t j = 1; j < (size & 32); j++) {
                 gbMbc1.write(qnemu::GbMbc1::romBankNumberAddress, (j & 0b11111));
                 if (size < 64) {
-                    EXPECT_EQ(gbMbc1.read(i), romDataBanks->at(j).at(i - 0x4000));
+                    EXPECT_EQ(gbMbc1.read(i), romDataBanks->at(j).at(i - qnemu::MemoryRomBank01Start));
                 }
                 else {
                     for (uint8_t k = 1; k < (size >> 5); k++) {
                         gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, k);
-                        EXPECT_EQ(gbMbc1.read(i), romDataBanks->at((k << 5) | j).at(i - 0x4000));
+                        EXPECT_EQ(gbMbc1.read(i), romDataBanks->at((k << 5) | j).at(i - qnemu::MemoryRomBank01Start));
                     }
                 }
             }
@@ -111,7 +111,7 @@ TEST(GbMbc1Test, ReadWhenRamDisabled)
 
     gbMbc1.write(qnemu::GbMbc1::ramEnableAddress, 0);
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
-        EXPECT_EQ(0xFF, gbMbc1.read(i + 0xA000));
+        EXPECT_EQ(0xFF, gbMbc1.read(i + qnemu::ExternalRamStart));
     }
 }
 #endif
@@ -137,14 +137,14 @@ TEST(GbMbc1Test, ReadFromRam)
  
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 0);
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
-        EXPECT_EQ(gbMbc1.read(i + 0xA000), ramDataBanks.at(0).at(i));
+        EXPECT_EQ(gbMbc1.read(i + qnemu::ExternalRamStart), ramDataBanks.at(0).at(i));
     }
 
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 1);
     for (uint8_t i = 0; i < 4; i++) {
         gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, i);
         for (uint16_t j = 0; j < qnemu::RamBankSize; j++) {
-            EXPECT_EQ(gbMbc1.read(j + 0xA000), ramDataBanks.at(i).at(j));
+            EXPECT_EQ(gbMbc1.read(j + qnemu::ExternalRamStart), ramDataBanks.at(i).at(j));
         }
     }
 }
@@ -159,8 +159,8 @@ TEST(GbMbc1Test, WriteToRam)
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 0);
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
         uint8_t value = distrib(gen);
-        gbMbc1.write(i + 0xA000, value);
-        EXPECT_EQ(gbMbc1.read(i + 0xA000), value);
+        gbMbc1.write(i + qnemu::ExternalRamStart, value);
+        EXPECT_EQ(gbMbc1.read(i + qnemu::ExternalRamStart), value);
     }
 
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 1);
@@ -168,8 +168,8 @@ TEST(GbMbc1Test, WriteToRam)
         gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, i);
         for (uint16_t j = 0; j < qnemu::RamBankSize; j++) {
             uint8_t value = distrib(gen);
-            gbMbc1.write(j + 0xA000, value);
-            EXPECT_EQ(gbMbc1.read(j + 0xA000), value);
+            gbMbc1.write(j + qnemu::ExternalRamStart, value);
+            EXPECT_EQ(gbMbc1.read(j + qnemu::ExternalRamStart), value);
         }
     }
 }
