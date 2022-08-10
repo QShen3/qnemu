@@ -4,22 +4,22 @@ stages:
 
 #################################### build ####################################
 
-# windows msvc x64 build:
-#   stage: build
-#   tags:
-#     - msvc
-#     - windows
-#     - x64
-#   artifacts:
-#     paths:
-#       - build/
-#   before_script:
-#     - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
-#   script:
-#     - mkdir -Force build
-#     - cd build
-#     - cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
-#     - ninja
+windows msvc x64 build:
+  stage: build
+  tags:
+    - msvc
+    - windows
+    - x64
+  artifacts:
+    paths:
+      - build/
+  before_script:
+    - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+  script:
+    - mkdir -Force build
+    - cd build
+    - cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_TOOLCHAIN_FILE=C:/Users/shen/Documents/git/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    - ninja
 
 windows msys2 ucrt x64 build:
   stage: build
@@ -262,19 +262,19 @@ linux void x64 build:
 
 #################################### test ####################################
 
-# windows msvc x64 test:
-#   stage: test
-#   tags:
-#     - msvc
-#     - windows
-#     - x64
-#   needs:
-#     - job: windows msvc x64 build
-#   before_script:
-#     - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
-#   script:
-#     - cd build
-#     - ninja test
+windows msvc x64 test:
+  stage: test
+  tags:
+    - msvc
+    - windows
+    - x64
+  needs:
+    - job: windows msvc x64 build
+  before_script:
+    - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+  script:
+    - cd build
+    - ninja test
 
 windows msys2 ucrt x64 test:
   stage: test
