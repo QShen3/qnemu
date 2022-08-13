@@ -43,8 +43,8 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
     })
 {
     GbGpu::reset();
-    subDevices.push_back(*gbcPalette);
-    subDevices.push_back(*spriteAttributeTable);
+    subDevices.push_back(*(this->gbcPalette));
+    subDevices.push_back(*(this->spriteAttributeTable));
 }
 
 GbGpu::~GbGpu()
