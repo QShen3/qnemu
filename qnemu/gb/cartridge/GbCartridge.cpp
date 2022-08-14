@@ -191,11 +191,7 @@ std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& b
     std::string publisher;
     if (buffer.at(0x14B) == 0x33) {
         char newLicenseCode[3] = {static_cast<char>(buffer.at(0x144)), static_cast<char>(buffer.at(0x145)), 0};
-#if defined(__GNUC__) && !defined(__llvm__) && __GNUC__ < 9
-        if (newLicenseCodeMap.find(std::string(newLicenseCode)) != newLicenseCodeMap.end()) {
-#else
         if (newLicenseCodeMap.contains(std::string(newLicenseCode))) {
-#endif
             publisher = newLicenseCodeMap.at(std::string(newLicenseCode));
         }
         else {
@@ -204,11 +200,7 @@ std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& b
     }
     else {
         uint8_t licenseCode = buffer.at(0x14B);
-#if defined(__GNUC__) && !defined(__llvm__) && __GNUC__ < 9
-        if (licenseCodeMap.find(licenseCode) != licenseCodeMap.end()) {
-#else
         if (licenseCodeMap.contains(licenseCode)) {
-#endif
             publisher = licenseCodeMap.at(licenseCode);
         }
         else {

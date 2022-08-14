@@ -33,9 +33,7 @@ endif()
 find_package(GTest REQUIRED)
 
 # Library
-if(${CMAKE_VERSION} VERSION_LESS 3.20 OR ${OS_NAME} STREQUAL centos OR ${OS_NAME} STREQUAL rocky)
-    target_link_libraries(qnemu_test GTest::GTest gmock GTest::Main)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     target_link_libraries(qnemu_test GTest::gmock_main)
 else()
     target_link_libraries(qnemu_test GTest::gtest GTest::gmock GTest::gtest_main)
