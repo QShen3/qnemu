@@ -81,4 +81,30 @@ TEST(GbInterruptTest, Step)
     }
 }
 
+TEST(GbInterruptTest, RequesetInterrupt)
+{
+    auto mockGbCpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbCpu>>();
+    qnemu::GbInterruptHandler gbInterruptHandler(mockGbCpu);
+
+    gbInterruptHandler.write(0xFF0F, 0);
+    gbInterruptHandler.requestVBlankInterrupt();
+    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b1);
+
+    gbInterruptHandler.write(0xFF0F, 0);
+    gbInterruptHandler.requestLcdInterrupt();
+    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b10);
+
+    gbInterruptHandler.write(0xFF0F, 0);
+    gbInterruptHandler.requestTimerInterrupt();
+    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b100);
+
+    gbInterruptHandler.write(0xFF0F, 0);
+    gbInterruptHandler.requestSerialInterrupt();
+    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b1000);
+
+    gbInterruptHandler.write(0xFF0F, 0);
+    gbInterruptHandler.requestJoypadInterrupt();
+    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b10000);
+}
+
 }  // namespace qnemuTest

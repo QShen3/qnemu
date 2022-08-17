@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "qnemu/gb/GbDeviceInterface.h"
-#include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
@@ -17,7 +17,7 @@ class GbTimer : public GbDeviceInterface
 {
 public:
     GbTimer() = delete;
-    GbTimer(std::shared_ptr<GbInterruptHandler> interruptHander);
+    GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHander);
     ~GbTimer() = default;
 
     bool accepts(uint16_t address) const override;
@@ -40,7 +40,7 @@ private:
             uint8_t timerControl;
         };
     } registers;
-    std::shared_ptr<GbInterruptHandler> interruptHandler;
+    std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
     bool overflow;
     uint8_t previousBit;
     uint8_t ticksSinceOverflow;

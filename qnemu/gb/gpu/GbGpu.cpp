@@ -20,13 +20,14 @@
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
 
 GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
-        std::shared_ptr<GbInterruptHandler> interruptHandler,
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<SpriteAttributeTable> spriteAttributeTable) :
     cartridge(cartridge),
@@ -283,7 +284,7 @@ void GbGpu::checklcdYCoordinate()
     if (registers.lcdYCoordinate == registers.lcdYCoordinateCompare) {
         registers.coincidenceFlag = 1;
         if (registers.lyCoincidenceInterrupt) {
-            interruptHandler->registers.lcdRequest = 1;
+            interruptHandler->requestLcdInterrupt();
         }
     }
     else {

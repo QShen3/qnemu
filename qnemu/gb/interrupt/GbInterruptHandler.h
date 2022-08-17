@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "qnemu/gb/cpu/GbCpuInterface.h"
-#include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
@@ -17,7 +17,7 @@ class GbGpu;
 class GbJoypad;
 class GbTimer;
 
-class GbInterruptHandler : public GbDeviceInterface
+class GbInterruptHandler : public GbInterruptHandlerInterface
 {
 public:
     GbInterruptHandler() = delete;
@@ -30,10 +30,13 @@ public:
     void step() override;
     void reset() override;
 
+    void requestVBlankInterrupt() override;
+    void requestLcdInterrupt() override;
+    void requestTimerInterrupt() override;
+    void requestSerialInterrupt() override;
+    void requestJoypadInterrupt() override;
+
 private:
-    friend GbGpu;
-    friend GbJoypad;
-    friend GbTimer;
     struct {
         union {
             struct {

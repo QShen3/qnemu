@@ -16,14 +16,14 @@ void GbGpu::mode0()
         if (display) {
             display->requestRefresh();
         }
-        interruptHandler->registers.vBlankRequest = 1;
+        interruptHandler->requestVBlankInterrupt();
         if (registers.mode0HBlankInterrupt) {
-            interruptHandler->registers.lcdRequest = 1;
+            interruptHandler->requestLcdInterrupt();
         }
     } else {
         registers.modeFlag = 2;
         if (registers.mode2OAMInterrupt) {
-            interruptHandler->registers.lcdRequest = 1;
+            interruptHandler->requestLcdInterrupt();
         }
     }
     registers.lcdYCoordinate++;
@@ -56,7 +56,7 @@ void GbGpu::mode3()
     renderLine();
     registers.modeFlag = 0;
     if (registers.mode0HBlankInterrupt) {
-        interruptHandler->registers.lcdRequest = 1;
+        interruptHandler->requestLcdInterrupt();
     }
 }
 

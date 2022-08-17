@@ -11,13 +11,13 @@
 #include <QtCore/qnamespace.h>
 
 #include "qnemu/display/DisplayInterface.h"
-#include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 
 namespace qnemu
 {
 
-GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandler> interruptHandler)
+GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display, std::shared_ptr<GbInterruptHandlerInterface> interruptHandler)
     : display(display), interruptHandler(interruptHandler)
 {
     GbJoypad::reset();

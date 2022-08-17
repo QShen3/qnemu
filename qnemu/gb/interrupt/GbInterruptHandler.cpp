@@ -107,4 +107,29 @@ void GbInterruptHandler::reset()
     registers.interruptEnabled = 0;
 }
 
+void GbInterruptHandler::requestVBlankInterrupt()
+{
+    registers.vBlankRequest = 1;
+}
+
+void GbInterruptHandler::requestLcdInterrupt()
+{
+    registers.lcdRequest = 1;
+}
+
+void GbInterruptHandler::requestTimerInterrupt()
+{
+    registers.timerRequest = 1;
+}
+
+void GbInterruptHandler::requestSerialInterrupt()
+{
+    registers.serialRequest = 1;
+}
+
+void GbInterruptHandler::requestJoypadInterrupt()
+{
+    registers.joyPadRequest = 1;
+}
+
 }  // namespace qnemu

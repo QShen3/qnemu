@@ -24,7 +24,7 @@
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
-#include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
@@ -35,7 +35,7 @@ public:
     GbGpu() = delete;
     GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
-        std::shared_ptr<GbInterruptHandler> interruptHandler,
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<SpriteAttributeTable> spriteAttributeTable);
     ~GbGpu();
@@ -145,7 +145,7 @@ private:
     const GbCartridgeInterface& cartridge;
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
     std::shared_ptr<DisplayInterface> display;
-    std::shared_ptr<GbInterruptHandler> interruptHandler;
+    std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
     std::unique_ptr<GbcPalette> gbcPalette;
     std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
     std::stack<uint8_t> spriteStack;

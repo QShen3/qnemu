@@ -6,12 +6,13 @@
 #include <cstdint>
 #include <memory>
 
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 #include "qnemu/gb/timer/GbTimer.h"
 
 namespace qnemu
 {
 
-GbTimer::GbTimer(std::shared_ptr<GbInterruptHandler> interruptHandler) : interruptHandler(interruptHandler)
+GbTimer::GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) : interruptHandler(interruptHandler)
 {
     GbTimer::reset();
 }
@@ -72,7 +73,7 @@ void GbTimer::step()
     if (overflow) {
         ticksSinceOverflow++;
         if (ticksSinceOverflow == 4) {
-            interruptHandler->registers.timerRequest = 1;
+            interruptHandler->requestTimerInterrupt();
         } else if (ticksSinceOverflow == 5) {
             registers.timerCounter = registers.timerModulo;
         } else if (ticksSinceOverflow == 6) {
