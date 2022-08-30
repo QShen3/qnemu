@@ -110,26 +110,41 @@ void GbInterruptHandler::reset()
 void GbInterruptHandler::requestVBlankInterrupt()
 {
     registers.vBlankRequest = 1;
+    if (cpu.lock()->isInHaltMode()) {
+        cpu.lock()->exitHaltMode();
+    }
 }
 
 void GbInterruptHandler::requestLcdInterrupt()
 {
     registers.lcdRequest = 1;
+    if (cpu.lock()->isInHaltMode()) {
+        cpu.lock()->exitHaltMode();
+    }
 }
 
 void GbInterruptHandler::requestTimerInterrupt()
 {
     registers.timerRequest = 1;
+    if (cpu.lock()->isInHaltMode()) {
+        cpu.lock()->exitHaltMode();
+    }
 }
 
 void GbInterruptHandler::requestSerialInterrupt()
 {
     registers.serialRequest = 1;
+    if (cpu.lock()->isInHaltMode()) {
+        cpu.lock()->exitHaltMode();
+    }
 }
 
 void GbInterruptHandler::requestJoypadInterrupt()
 {
     registers.joyPadRequest = 1;
+    if (cpu.lock()->isInHaltMode()) {
+        cpu.lock()->exitHaltMode();
+    }
 }
 
 }  // namespace qnemu

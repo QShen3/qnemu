@@ -570,11 +570,22 @@ void GbCpu::reset()
     registers.sp = 0xFFFE;
 
     enableInterruptFlag = false;
+    halt_mode = false;
     started = false;
     ticks = 0;
     for (auto& device : devices) {
         device->reset();
     }
+}
+
+bool GbCpu::isInHaltMode() const
+{
+    return halt_mode.load();
+}
+
+void GbCpu::exitHaltMode()
+{
+    halt_mode.store(false);
 }
 
 void GbCpu::jumpToAddress(uint16_t address)
@@ -600,7 +611,9 @@ void GbCpu::exec()
         if (!started.load()) {
             return;
         }
-        step();
+        if (!halt_mode.load()) {
+            step();
+        }
         for (auto& device : devices) {
             device->step();
         }

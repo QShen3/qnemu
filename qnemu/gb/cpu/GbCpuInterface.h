@@ -16,6 +16,8 @@ namespace qnemu
 class GbCpuInterface : public CpuInterface
 {
 public:
+    virtual bool isInHaltMode() const = 0;
+    virtual void exitHaltMode() = 0;
     virtual void jumpToAddress(uint16_t address) = 0;
     virtual void cancelInterrupt() = 0;
     virtual void addDevice(std::shared_ptr<GbDeviceInterface> device) = 0;

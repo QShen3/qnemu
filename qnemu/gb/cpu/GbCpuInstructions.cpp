@@ -702,10 +702,7 @@ void GbCpu::ld_hlp_l()
 
 void GbCpu::halt()
 {
-    if(GbDeviceInterface::interruptMasterEnabled) {
-    }
-    else {
-    }
+    halt_mode.store(true);
 }
 
 void GbCpu::ld_hlp_a()
@@ -1405,9 +1402,6 @@ void GbCpu::rst_38()
 
 void GbCpu::undefined()
 {
-    if (fp) {
-        std::fclose(fp);
-    }
     throw std::runtime_error("Invalid instruction!");
 }
 

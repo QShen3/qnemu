@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <cstdlib>
-
 #include <array>
 #include <atomic>
 #include <memory>
@@ -31,6 +29,8 @@ public:
     void stop() override;
     void reset() override;
 
+    bool isInHaltMode() const override;
+    void exitHaltMode() override;
     void jumpToAddress(uint16_t address) override;
     void cancelInterrupt() override;
     void addDevice(std::shared_ptr<GbDeviceInterface> device) override;
@@ -83,13 +83,12 @@ private:
 
     std::vector<std::shared_ptr<GbDeviceInterface>> devices;
     bool enableInterruptFlag;
+    std::atomic_bool halt_mode;
     std::atomic_bool started;
     uint8_t ticks;
     std::thread work;
     const std::array<Instruction, 256> instructions;
     const std::array<Instruction, 256> prefixedInstructions;
-
-    std::FILE* fp;
 
     // Instructions
     void nop();       // 0x00
