@@ -20,7 +20,7 @@ GbcPalette::GbcPalette()
 
 bool GbcPalette::accepts(uint16_t address) const
 {
-    if (address >= 0xFE68 && address <= 0xFE6B) {
+    if (address >= 0xFF68 && address <= 0xFF6B) {
         return true;
     }
     return false;
