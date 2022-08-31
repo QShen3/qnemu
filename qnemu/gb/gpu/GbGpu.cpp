@@ -17,6 +17,7 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbGpu.h"
+#include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
@@ -29,12 +30,14 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbcPalette> gbcPalette,
-        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable) :
+        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable,
+        std::unique_ptr<GbVideoRam> gbVideoRam) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),
     gbcPalette(std::move(gbcPalette)),
     spriteAttributeTable(std::move(spriteAttributeTable)),
+    gbVideoRam(std::move(gbVideoRam)),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
@@ -46,6 +49,7 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
     GbGpu::reset();
     subDevices.push_back(*(this->gbcPalette));
     subDevices.push_back(*(this->spriteAttributeTable));
+    subDevices.push_back(*(this->gbVideoRam));
 }
 
 GbGpu::~GbGpu()
@@ -59,19 +63,10 @@ bool GbGpu::accepts(uint16_t address) const
             return true;
         }
     }
-    if (address >= VideoRamStart && address <= VideoRamEnd) {
-        return true;
-    }
     if (address >= 0xFF40 && address <= 0xFF45) {
         return true;
     }
     if (address >= 0xFF47 && address <= 0xFF4B) {
-        return true;
-    }
-    if (address == 0xFF4F) {
-        return true;
-    }
-    if (address >= 0xFF51 && address <= 0xFF55) {
         return true;
     }
     return false;
@@ -83,7 +78,6 @@ uint8_t GbGpu::read(uint16_t address) const
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return 0xFF;
         }
-        return videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart);
     }
     if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
         if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
@@ -123,24 +117,6 @@ uint8_t GbGpu::read(uint16_t address) const
     if (address == 0xFF4B) {
         return registers.windowXPosition;
     }
-    if (address == 0xFF4F) {
-        return registers.videoRamBank;
-    }
-    if (address == 0xFF51) {
-        return registers.newDMASourceHigh;
-    }
-    if (address == 0xFF52) {
-        return registers.newDMASourceLow;
-    }
-    if (address == 0xFF53) {
-        return registers.newDMADestinationHigh;
-    }
-    if (address == 0xFF54) {
-        return registers.newDMADestinationLow;
-    }
-    if (address == 0xFF55) {
-        return registers.newDMALength;
-    }
     if (address == 0xFF69) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return 0xFF;
@@ -166,7 +142,6 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
             return;
         }
-        videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart) = value;
     }
     if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
         if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
@@ -207,24 +182,6 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
     }
     if (address == 0xFF4B) {
         registers.windowXPosition = value;
-    }
-    if (address == 0xFF4F) {
-        registers.videoRamBank = value;
-    }
-    if (address == 0xFF51) {
-        registers.newDMASourceHigh = value;
-    }
-    if (address == 0xFF52) {
-        registers.newDMASourceLow = value;
-    }
-    if (address == 0xFF53) {
-        registers.newDMADestinationHigh = value;
-    }
-    if (address == 0xFF54) {
-        registers.newDMADestinationLow = value;
-    }
-    if (address == 0xFF55) {
-        registers.newDMALength = value;
     }
     if (address == 0xFF69) {
         if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
@@ -267,12 +224,6 @@ void GbGpu::reset()
     registers.lcdControl = 0x91;
     registers.lcdStatus = 0x85;
     registers.backgroundPaletteData = 0xFC;
-    registers.videoRamBank = 0xFF;
-    registers.newDMASourceHigh = 0xFF;
-    registers.newDMASourceLow = 0xFF;
-    registers.newDMADestinationHigh = 0xFF;
-    registers.newDMADestinationLow = 0xFF;
-    registers.newDMALength = 0xFF;
 
     for (auto& subDevice : subDevices) {
         subDevice.get().reset();
@@ -316,9 +267,9 @@ std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(u
 {
     uint8_t tileX = x / 8, tileY = y / 8;
     GbcTileAttribute tileAttribute { .attribute = 0};
-    uint8_t tileIndex = videoRamBanks[0].at(tileMapOffset + (tileY * 32 + tileX));
+    uint8_t tileIndex = gbVideoRam->getBank(0).at(tileMapOffset + (tileY * 32 + tileX));
     if (cartridge.isGbcCartridge()) {
-        tileAttribute.attribute = videoRamBanks[1].at(tileMapOffset + (tileY * 32 + tileX));
+        tileAttribute.attribute = gbVideoRam->getBank(1).at(tileMapOffset + (tileY * 32 + tileX));
     }
 
     bool isBank1 = cartridge.isGbcCartridge() && (tileAttribute.tileVideoRamBank == 1);
@@ -328,7 +279,7 @@ std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(u
     if (tileIndex < 128) {
         byteIndex += registers.backgroundAndWindowTileDataArea == 1 ? 0 : 0x1000;
     }
-    const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
+    const auto& videoRamBank = isBank1 ? gbVideoRam->getBank(1) : gbVideoRam->getBank(0);
     uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
     if (cartridge.isGbcCartridge()) {
         colorIndex = tileAttribute.backgroundPaletteNumber * 8 + colorIndex * 2;
@@ -396,7 +347,7 @@ void GbGpu::renderLine()
         spriteAttribute.attribute = spriteAttributeTable->at(spriteIndex + 3);
 
         bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
-        const auto& videoRamBank = isBank1 ? videoRamBanks[1] : videoRamBanks[0];
+        const auto& videoRamBank = isBank1 ? gbVideoRam->getBank(1) : gbVideoRam->getBank(0);
 
         for (uint8_t i = 0; i < 160; i++) {
             if (backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] && colorIndexMap[i][registers.lcdYCoordinate] > 0) {

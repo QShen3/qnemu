@@ -22,6 +22,7 @@
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/Mode.h"
 #include "qnemu/gb/gpu/SpriteAttributeTable.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
@@ -37,7 +38,8 @@ public:
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbcPalette> gbcPalette,
-        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable);
+        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable,
+        std::unique_ptr<GbVideoRam> gbVideoRam);
     ~GbGpu();
 
     bool accepts(uint16_t address) const override;
@@ -134,12 +136,6 @@ private:
         };  // FF49
         uint8_t windowYPosition;  // FF4A
         uint8_t windowXPosition;  // FF4B
-        uint8_t videoRamBank;  // FF4F
-        uint8_t newDMASourceHigh;  // FF51
-        uint8_t newDMASourceLow;  // FF52
-        uint8_t newDMADestinationHigh;  // FF53
-        uint8_t newDMADestinationLow;  // FF54
-        uint8_t newDMALength;  // FF55
     } registers;
     std::array<std::array<bool, 144>, 160> backgroundToOAMPriorityMap;
     const GbCartridgeInterface& cartridge;
@@ -148,10 +144,10 @@ private:
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
     std::unique_ptr<GbcPalette> gbcPalette;
     std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
+    std::unique_ptr<GbVideoRam> gbVideoRam;
     std::stack<uint8_t> spriteStack;
     std::vector<std::reference_wrapper<GbDeviceInterface>> subDevices;
     uint16_t ticks;
-    std::array<std::array<uint8_t, VideoRamBankSize>, 2> videoRamBanks;
     uint16_t windowLineCounter;
     const std::array<Mode, 4> modes;
 
