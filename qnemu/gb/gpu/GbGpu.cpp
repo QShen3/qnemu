@@ -17,6 +17,7 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbGpu.h"
+#include "qnemu/gb/gpu/GbPalette.h"
 #include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/Mode.h"
@@ -29,12 +30,14 @@ namespace qnemu
 GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+        std::unique_ptr<GbPalette> gbPalette,
         std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<SpriteAttributeTable> spriteAttributeTable,
         std::unique_ptr<GbVideoRam> gbVideoRam) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),
+    gbPalette(std::move(gbPalette)),
     gbcPalette(std::move(gbcPalette)),
     spriteAttributeTable(std::move(spriteAttributeTable)),
     gbVideoRam(std::move(gbVideoRam)),
@@ -47,6 +50,7 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
     })
 {
     GbGpu::reset();
+    subDevices.push_back(*(this->gbPalette));
     subDevices.push_back(*(this->gbcPalette));
     subDevices.push_back(*(this->spriteAttributeTable));
     subDevices.push_back(*(this->gbVideoRam));
@@ -66,7 +70,7 @@ bool GbGpu::accepts(uint16_t address) const
     if (address >= 0xFF40 && address <= 0xFF45) {
         return true;
     }
-    if (address >= 0xFF47 && address <= 0xFF4B) {
+    if (address >= 0xFF4A && address <= 0xFF4B) {
         return true;
     }
     return false;
@@ -101,15 +105,6 @@ uint8_t GbGpu::read(uint16_t address) const
     }
     if (address == 0xFF45) {
         return registers.lcdYCoordinateCompare;
-    }
-    if (address == 0xFF47) {
-        return registers.backgroundPaletteData;
-    }
-    if (address == 0xFF48) {
-        return registers.spritePalette0Data;
-    }
-    if (address == 0xFF49) {
-        return registers.spritePalette1Data;
     }
     if (address == 0xFF4A) {
         return registers.windowYPosition;
@@ -168,15 +163,6 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
     if (address == 0xFF45) {
         registers.lcdYCoordinateCompare = value;
     }
-    if (address == 0xFF47) {
-        registers.backgroundPaletteData = value;
-    }
-    if (address == 0xFF48) {
-        registers.spritePalette0Data = value;
-    }
-    if (address == 0xFF49) {
-        registers.spritePalette1Data = value;
-    }
     if (address == 0xFF4A) {
         registers.windowYPosition = value;
     }
@@ -223,7 +209,6 @@ void GbGpu::reset()
     std::memset(&registers, 0, sizeof(registers));
     registers.lcdControl = 0x91;
     registers.lcdStatus = 0x85;
-    registers.backgroundPaletteData = 0xFC;
 
     for (auto& subDevice : subDevices) {
         subDevice.get().reset();
@@ -241,26 +226,6 @@ void GbGpu::checklcdYCoordinate()
     else {
         registers.coincidenceFlag = 0;
     }
-}
-
-QRgb GbGpu::getGbColor(uint16_t colorIndex, uint8_t paletteData) const
-{
-    uint8_t shade = 0;
-    shade = static_cast<uint8_t>(paletteData << (6 - colorIndex * 2)) >> 6;
-
-    if (shade == 0) {
-        return qRgb(255, 255, 255);
-    }
-    if (shade == 1) {
-        return qRgb(170, 170, 170);
-    }
-    if (shade == 2) {
-        return qRgb(85, 85, 85);
-    }
-    if (shade == 3) {
-        return qRgb(0, 0, 0);
-    }
-    return qRgb(0xFF, 0xFF, 0xFF);
 }
 
 std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const
@@ -310,7 +275,7 @@ void GbGpu::renderLine()
             if (cartridge.isGbcCartridge()) {
                 line[i] = gbcPalette->getBackgroundColor(colorIndex);
             } else {
-                line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
+                line[i] = gbPalette->getBackgroundColor(colorIndex);
             }
         }
         if ((cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) &&
@@ -324,7 +289,7 @@ void GbGpu::renderLine()
             if (cartridge.isGbcCartridge()) {
                 line[i] = gbcPalette->getBackgroundColor(colorIndex);
             } else {
-                line[i] = getGbColor(colorIndex, registers.backgroundPaletteData);
+                line[i] = gbPalette->getBackgroundColor(colorIndex);
             }
             isWindowVisible = true;
         }
@@ -398,7 +363,7 @@ void GbGpu::renderLine()
             if (cartridge.isGbcCartridge()) {
                 line[i] = gbcPalette->getSpriteColor(colorIndex);
             } else {
-                line[i] = getGbColor(colorIndex, spriteAttribute.paletteNumber == 0 ? registers.spritePalette0Data : registers.spritePalette1Data);
+                line[i] = gbPalette->getSpriteColor(colorIndex, spriteAttribute.paletteNumber);
             }
         }
     }

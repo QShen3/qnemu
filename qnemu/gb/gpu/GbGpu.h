@@ -20,6 +20,7 @@
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/gpu/GbPalette.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/GbVideoRam.h"
@@ -37,6 +38,7 @@ public:
     GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+        std::unique_ptr<GbPalette> gbPalette,
         std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<SpriteAttributeTable> spriteAttributeTable,
         std::unique_ptr<GbVideoRam> gbVideoRam);
@@ -74,7 +76,6 @@ private:
 
     void checklcdYCoordinate();
     std::tuple<uint16_t, bool> getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const;
-    QRgb getGbColor(uint16_t colorIndex, uint8_t paletteData) const;
     void renderLine();
     void scanSprites();
 
@@ -107,33 +108,6 @@ private:
         uint8_t scrollX;  // FF43
         uint8_t lcdYCoordinate;  // FF44
         uint8_t lcdYCoordinateCompare;  // FF45
-        union {
-            struct {
-                uint8_t shadeForBackgroundColorIndex0 : 2;
-                uint8_t shadeForBackgroundColorIndex1 : 2;
-                uint8_t shadeForBackgroundColorIndex2 : 2;
-                uint8_t shadeForBackgroundColorIndex3 : 2;
-            };
-            uint8_t backgroundPaletteData;
-        };  // FF47
-        union {
-            struct {
-                uint8_t shadeForSprite0ColorIndex0 : 2;
-                uint8_t shadeForSprite0ColorIndex1 : 2;
-                uint8_t shadeForSprite0ColorIndex2 : 2;
-                uint8_t shadeForSprite0ColorIndex3 : 2;
-            };
-            uint8_t spritePalette0Data;
-        };  // FF48
-        union {
-            struct {
-                uint8_t shadeForSprite1ColorIndex0 : 2;
-                uint8_t shadeForSprite1ColorIndex1 : 2;
-                uint8_t shadeForSprite1ColorIndex2 : 2;
-                uint8_t shadeForSprite1ColorIndex3 : 2;
-            };
-            uint8_t spritePalette1Data;
-        };  // FF49
         uint8_t windowYPosition;  // FF4A
         uint8_t windowXPosition;  // FF4B
     } registers;
@@ -142,6 +116,7 @@ private:
     std::array<std::array<uint8_t, 144>, 160> colorIndexMap;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
+    std::unique_ptr<GbPalette> gbPalette;
     std::unique_ptr<GbcPalette> gbcPalette;
     std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
     std::unique_ptr<GbVideoRam> gbVideoRam;
