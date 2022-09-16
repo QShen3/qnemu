@@ -6,10 +6,12 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/const.h"
+#include "qnemu/gb/cpu/GbCpuInterface.h"
 
 namespace qnemu
 {
@@ -18,7 +20,7 @@ class GbVideoRam : public GbDeviceInterface
 {
 public:
     GbVideoRam() = delete;
-    explicit GbVideoRam(const GbCartridgeInterface& cartridge);
+    explicit GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu);
     ~GbVideoRam() = default;
 
     bool accepts(uint16_t address) const override;
@@ -39,6 +41,12 @@ private:
         uint8_t newDMALength;  // FF55
     } registers;
     const GbCartridgeInterface& cartridge;
+    std::weak_ptr<GbCpuInterface> cpu;
+    uint16_t destination;
+    uint16_t dmaTicks;
+    bool isDmaInProgress;
+    uint16_t length;
+    uint16_t source;
     std::array<std::array<uint8_t, VideoRamBankSize>, 2> videoRamBanks;
 };
 

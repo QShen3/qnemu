@@ -58,14 +58,18 @@ void SpriteAttributeTable::write(uint16_t address, const uint8_t& value)
 
 void SpriteAttributeTable::step()
 {
-    if (isDmaInProgress) {
-        dmaTicks--;
-        if (dmaTicks == 0) {
-            isDmaInProgress = false;
-            for (uint8_t i = 0; i < 0xA0; i++) {
-                data.at(i) = cpu.lock()->readByte(registers.dmaTransferAndStartAddress * 0x100 + i);
-            }
-        }
+    if (!isDmaInProgress) {
+        return;
+    }
+
+    dmaTicks--;
+
+    if (dmaTicks > 0) {
+        return;
+    }
+    isDmaInProgress = false;
+    for (uint8_t i = 0; i < 0xA0; i++) {
+        data.at(i) = cpu.lock()->readByte(registers.dmaTransferAndStartAddress * 0x100 + i);
     }
 }
 

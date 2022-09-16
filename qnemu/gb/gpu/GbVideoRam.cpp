@@ -13,7 +13,7 @@
 namespace qnemu
 {
 
-GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge) : cartridge(cartridge)
+GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu) : cartridge(cartridge), cpu(cpu)
 {
     GbVideoRam::reset();
 }
@@ -72,22 +72,54 @@ void GbVideoRam::write(uint16_t address, const uint8_t& value)
         registers.newDMASourceHigh = value;
     }
     if (address == 0xFF52) {
-        registers.newDMASourceLow = value;
+        registers.newDMASourceLow = (value & 0b11110000);
     }
     if (address == 0xFF53) {
-        registers.newDMADestinationHigh = value;
+        registers.newDMADestinationHigh = (value & 0b00011111);
     }
     if (address == 0xFF54) {
-        registers.newDMADestinationLow = value;
+        registers.newDMADestinationLow = (value & 0b11110000);
     }
     if (address == 0xFF55) {
-        registers.newDMALength = value;
+        if (isDmaInProgress && ((value & 0b10000000) == 0)) {
+            isDmaInProgress = false;
+            registers.newDMALength = registers.newDMALength | 0b10000000;
+        }
+        if (!isDmaInProgress) {
+            isDmaInProgress = true;
+            registers.newDMALength = value & 0b01111111;
+            source = (static_cast<uint16_t>(registers.newDMASourceHigh) << 8) | registers.newDMASourceLow;
+            destination = (static_cast<uint16_t>(registers.newDMADestinationHigh) << 8) | registers.newDMADestinationLow;
+            length = (registers.newDMALength + 1) * 0x10;
+            dmaTicks = 0x20;
+        }
     }
 }
 
 void GbVideoRam::step()
 {
+    if (!isDmaInProgress) {
+        return;
+    }
 
+    dmaTicks--;
+    if (dmaTicks > 0) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < 0x10; i++) {
+        write(destination, cpu.lock()->readByte(source));
+    }
+    length = length - 0x10;
+    if (length == 0) {
+        isDmaInProgress = false;
+        registers.newDMALength = 0xFF;
+        return;
+    }
+    registers.newDMALength = registers.newDMALength - 1;
+    source = source + 0x10;
+    destination = destination + 0x10;
+    dmaTicks = 0x20;
 }
 
 void GbVideoRam::reset()
@@ -98,6 +130,13 @@ void GbVideoRam::reset()
     registers.newDMADestinationHigh = 0xFF;
     registers.newDMADestinationLow = 0xFF;
     registers.newDMALength = 0xFF;
+
+    dmaTicks = 0;
+    isDmaInProgress = false;
+
+    source = 0;
+    destination = 0;
+    length = 0;
 }
 
 const std::array<uint8_t, VideoRamBankSize>& GbVideoRam::getBank(uint8_t index) const
