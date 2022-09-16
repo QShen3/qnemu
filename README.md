@@ -38,11 +38,11 @@ Just click the executable and load Rom file.
 | Start  | 3   |
 | Select | 2   |
 
-## Features
+## Functions & Features
 
 ### GameBoy & GameBoy Color
 
-| Feature   | Implement | Test   |
+| Function  | Implement | Test   |
 | --------- | --------- | ------ |
 | CPU       | ✅       | manual |
 | PPU       | ✅       | manual |
@@ -59,6 +59,15 @@ Just click the executable and load Rom file.
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |
 | HDMA      | ❌       | ❌    |
+
+| Feature         | Implement | Test |
+| --------------- | --------- | ---- |
+| key remap       | ❌       | ❌   |
+| Save & Load     | ❌       | ❌   |
+| Filtering       | ❌       | ❌   |
+| Vulkan backend  | ❌       | ❌   |
+| DirectX backend | ❌       | ❌   |
+| Speed setting   | ❌       | ❌   |
 
 ## Thanks
 
