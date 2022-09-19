@@ -24,6 +24,7 @@ public:
 
     MOCK_METHOD(bool, isInHaltMode, (), (const, override));
     MOCK_METHOD(void, exitHaltMode, (), (override));
+    MOCK_METHOD(uint8_t, gpuMode, (), (const, override));
     MOCK_METHOD(void, jumpToAddress, (uint16_t), (override));
     MOCK_METHOD(void, cancelInterrupt, (), (override));
     MOCK_METHOD(void, addDevice, (std::shared_ptr<qnemu::GbDeviceInterface>), (override));

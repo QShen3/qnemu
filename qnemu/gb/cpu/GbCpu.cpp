@@ -588,6 +588,11 @@ void GbCpu::exitHaltMode()
     halt_mode.store(false);
 }
 
+uint8_t GbCpu::gpuMode() const
+{
+    return readByte(0xFF41) & 0b11;
+}
+
 void GbCpu::jumpToAddress(uint16_t address)
 {
     push(registers.pc);
@@ -631,7 +636,7 @@ void GbCpu::step()
             enableInterruptFlag = false;
         }
         auto instruction = instructions.at(readByte(registers.pc));
-        uint16_t pc = registers.pc;
+        const uint16_t pc = registers.pc;
         ticks = instruction.ticks;
         instruction.execute();
         if (pc == registers.pc) {
@@ -663,7 +668,7 @@ void GbCpu::writeByte(uint16_t address, uint8_t value)
 
 uint16_t GbCpu::pop()
 {
-    uint16_t value = readByte(registers.sp) | (static_cast<uint16_t>(readByte(registers.sp + 1)) << 8);
+    const uint16_t value = readByte(registers.sp) | (static_cast<uint16_t>(readByte(registers.sp + 1)) << 8);
     registers.sp += 2;
 
     return value;
@@ -672,15 +677,15 @@ uint16_t GbCpu::pop()
 void GbCpu::push(uint16_t value)
 {
     registers.sp -= 2;
-    uint8_t low = value & 0x00FF;
-    uint8_t high = ((value & 0xFF00) >> 8);
+    const uint8_t low = value & 0x00FF;
+    const uint8_t high = ((value & 0xFF00) >> 8);
     writeByte(registers.sp, low);
     writeByte(registers.sp + 1, high);
 }
 
 void GbCpu::setHalfCarryFlag(uint8_t value1, uint8_t value2, bool isAdd) {
     if (isAdd) {
-        uint8_t result = (value1 & 0x0F) + (value2 & 0x0F);
+        const uint8_t result = (value1 & 0x0F) + (value2 & 0x0F);
         if (result & 0xF0) {
             registers.halfCarry = 1;
         }
@@ -700,7 +705,7 @@ void GbCpu::setHalfCarryFlag(uint8_t value1, uint8_t value2, bool isAdd) {
 
 void GbCpu::setCarryFlag(uint8_t value1, uint8_t value2, bool isAdd) {
     if (isAdd) {
-        uint16_t result = value1 + value2;
+        const uint16_t result = value1 + value2;
         if (result & 0xFF00) {
             registers.carry = 1;
         }
@@ -720,7 +725,7 @@ void GbCpu::setCarryFlag(uint8_t value1, uint8_t value2, bool isAdd) {
 
 void GbCpu::setCarryFlag(uint16_t value1, uint16_t value2, bool isAdd) {
     if (isAdd) {
-        uint32_t result = value1 + value2;
+        const uint32_t result = value1 + value2;
         if (result & 0xFFFF0000) {
             registers.carry = 1;
         }

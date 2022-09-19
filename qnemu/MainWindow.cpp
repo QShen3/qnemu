@@ -22,7 +22,7 @@ namespace qnemu
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    QRect rect = settings.value("window/geometry", QRect(0, 0, 320, 288)).toRect();
+    const QRect rect = settings.value("window/geometry", QRect(0, 0, 320, 288)).toRect();
     setGeometry(rect);
 
     QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
@@ -50,7 +50,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::openFile()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM file"), "", tr("ROM files (*.gb *.gbc *.gbz *.gba *.sgb *.zip)"));
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM file"), "", tr("ROM files (*.gb *.gbc *.gbz *.gba *.sgb *.zip)"));
     if (fileName.isEmpty()) {
         return;
     }

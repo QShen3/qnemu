@@ -1367,7 +1367,7 @@ void GbCpu::rrc(uint8_t& reg)
 
 void GbCpu::rl(uint8_t& reg)
 {
-    uint8_t carray = registers.carry;
+    const uint8_t carray = registers.carry;
     if (reg & 0x80) {
         registers.carry = 1;
     }
@@ -1382,7 +1382,7 @@ void GbCpu::rl(uint8_t& reg)
 
 void GbCpu::rr(uint8_t& reg)
 {
-    uint8_t carray = registers.carry;
+    const uint8_t carray = registers.carry;
     if (reg & 0x1) {
         registers.carry = 1;
     }

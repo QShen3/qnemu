@@ -230,16 +230,16 @@ void GbGpu::checklcdYCoordinate()
 
 std::tuple<uint16_t, bool> GbGpu::getColorIndexAndPriorityOfBackgroundOrWindow(uint8_t x, uint8_t y, size_t tileMapOffset) const
 {
-    uint8_t tileX = x / 8, tileY = y / 8;
+    const uint8_t tileX = x / 8, tileY = y / 8;
     GbcTileAttribute tileAttribute { .attribute = 0};
-    uint8_t tileIndex = gbVideoRam->getBank(0).at(tileMapOffset + (tileY * 32 + tileX));
+    const uint8_t tileIndex = gbVideoRam->getBank(0).at(tileMapOffset + (tileY * 32 + tileX));
     if (cartridge.isGbcCartridge()) {
         tileAttribute.attribute = gbVideoRam->getBank(1).at(tileMapOffset + (tileY * 32 + tileX));
     }
 
-    bool isBank1 = cartridge.isGbcCartridge() && (tileAttribute.tileVideoRamBank == 1);
-    uint8_t pixelXinTile = x % 8, pixelYinTile = y % 8;
-    uint8_t bitPositionInByte = tileAttribute.horizontalFlip ? 1 << pixelXinTile : 1 << (7 - pixelXinTile);
+    const bool isBank1 = cartridge.isGbcCartridge() && (tileAttribute.tileVideoRamBank == 1);
+    const uint8_t pixelXinTile = x % 8, pixelYinTile = y % 8;
+    const uint8_t bitPositionInByte = tileAttribute.horizontalFlip ? 1 << pixelXinTile : 1 << (7 - pixelXinTile);
     size_t byteIndex = tileIndex * 16 + (tileAttribute.verticalFlip ? (7 - pixelYinTile) : pixelYinTile) * 2;
     if (tileIndex < 128) {
         byteIndex += registers.backgroundAndWindowTileDataArea == 1 ? 0 : 0x1000;
@@ -266,9 +266,9 @@ void GbGpu::renderLine()
     for (uint8_t i = 0; i < 160; i++) {
         line[i] = 0xFFFFFFFF;
         if (cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) {
-            uint8_t x = (i + registers.scrollX) % 256;
-            uint8_t y = (registers.lcdYCoordinate + registers.scrollY) % 256;
-            size_t tileMapOffset = registers.backgroundTileMapArea == 0 ? 0x1800 : 0x1c00;
+            const uint8_t x = (i + registers.scrollX) % 256;
+            const uint8_t y = (registers.lcdYCoordinate + registers.scrollY) % 256;
+            const size_t tileMapOffset = registers.backgroundTileMapArea == 0 ? 0x1800 : 0x1c00;
             auto [ colorIndex, priority ] = getColorIndexAndPriorityOfBackgroundOrWindow(x, y, tileMapOffset);
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
@@ -280,9 +280,9 @@ void GbGpu::renderLine()
         }
         if ((cartridge.isGbcCartridge() || registers.backgroundAndWindowPriority == 1) &&
                 (registers.windowEnable == 1 && (registers.windowXPosition - 7) <= i && registers.windowYPosition <= registers.lcdYCoordinate)) {
-            uint8_t x = i - registers.windowXPosition + 7;
-            uint8_t y = windowLineCounter;
-            size_t tileMapOffset = registers.windowTileMapArea == 0 ? 0x1800 : 0x1c00;
+            const uint8_t x = i - registers.windowXPosition + 7;
+            const uint8_t y = windowLineCounter;
+            const size_t tileMapOffset = registers.windowTileMapArea == 0 ? 0x1800 : 0x1c00;
             auto [ colorIndex, priority ] = getColorIndexAndPriorityOfBackgroundOrWindow(x, y, tileMapOffset);
             colorIndexMap[i][registers.lcdYCoordinate] = colorIndex & 0b111;
             backgroundToOAMPriorityMap[i][registers.lcdYCoordinate] = priority;
@@ -301,7 +301,7 @@ void GbGpu::renderLine()
         return;
     }
     while (!spriteStack.empty()) {
-        uint8_t spriteIndex = spriteStack.top();
+        const uint8_t spriteIndex = spriteStack.top();
         spriteStack.pop();
 
         uint8_t tileIndex = spriteAttributeTable->at(spriteIndex + 2);
@@ -311,7 +311,7 @@ void GbGpu::renderLine()
         GbcSpriteAttribute spriteAttribute { .attribute = 0 };
         spriteAttribute.attribute = spriteAttributeTable->at(spriteIndex + 3);
 
-        bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
+        const bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
         const auto& videoRamBank = isBank1 ? gbVideoRam->getBank(1) : gbVideoRam->getBank(0);
 
         for (uint8_t i = 0; i < 160; i++) {
@@ -332,7 +332,7 @@ void GbGpu::renderLine()
                 }
             }
 
-            int16_t pixelXInTile = i - spriteAttributeTable->at(spriteIndex + 1) + 8;
+            const int16_t pixelXInTile = i - spriteAttributeTable->at(spriteIndex + 1) + 8;
             if (pixelXInTile >= 8) {
                 break;
             }
@@ -350,8 +350,8 @@ void GbGpu::renderLine()
             }
             pixelYInTile = pixelYInTile & 0x7;
 
-            uint8_t bitPositionInByte = spriteAttribute.horizontalFlip ? (1 << pixelXInTile) : (1 << (7 - pixelXInTile));
-            size_t byteIndex = realTileIndex * 16 + (spriteAttribute.verticalFlip ? (7 - pixelYInTile) : pixelYInTile) * 2;
+            const uint8_t bitPositionInByte = spriteAttribute.horizontalFlip ? (1 << pixelXInTile) : (1 << (7 - pixelXInTile));
+            const size_t byteIndex = realTileIndex * 16 + (spriteAttribute.verticalFlip ? (7 - pixelYInTile) : pixelYInTile) * 2;
             uint8_t colorIndex = ((videoRamBank.at(byteIndex) & bitPositionInByte) ? 1 : 0) + ((videoRamBank.at(byteIndex + 1) & bitPositionInByte) ? 2 : 0);
 
             if (colorIndex == 0) {
@@ -373,7 +373,7 @@ void GbGpu::scanSprites()
 {
     spriteStack = {};
     for (uint8_t i = 0; i < 160; i += 4) {
-        int16_t y = spriteAttributeTable->at(i) - 16;
+        const int16_t y = spriteAttributeTable->at(i) - 16;
         if (registers.spriteSize == 1) {
             if (static_cast<int16_t>(registers.lcdYCoordinate) >= y && static_cast<int16_t>(registers.lcdYCoordinate) < (y + 16)) {
                 spriteStack.push(i);

@@ -33,7 +33,7 @@ TEST(GbInterruptTest, ReadAndWriteRegister)
     EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0xE1);
     EXPECT_EQ(gbInterruptHandler.read(0xFFFF), 0);
 
-    uint8_t value = distrib(gen);
+    const uint8_t value = distrib(gen);
     gbInterruptHandler.write(0xFF0F, value);
     EXPECT_EQ(gbInterruptHandler.read(0xFF0F), value);
     gbInterruptHandler.write(0xFFFF, value);

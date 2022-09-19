@@ -52,7 +52,7 @@ void GbInterruptHandler::step()
     if (!GbDeviceInterface::interruptMasterEnabled) {
         return;
     }
-    uint8_t hasInterrupt = registers.interruptFlag & registers.interruptEnabled & 0x1F;
+    const uint8_t hasInterrupt = registers.interruptFlag & registers.interruptEnabled & 0x1F;
     if (hasInterrupt == 0) {
         return;
     }

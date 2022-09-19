@@ -31,6 +31,7 @@ public:
 
     bool isInHaltMode() const override;
     void exitHaltMode() override;
+    uint8_t gpuMode() const override;
     void jumpToAddress(uint16_t address) override;
     void cancelInterrupt() override;
     void addDevice(std::shared_ptr<GbDeviceInterface> device) override;

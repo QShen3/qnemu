@@ -47,7 +47,7 @@ void GbCpu::ld_b_n()
 
 void GbCpu::rlca()
 {
-    uint8_t carray = (registers.a & 0x80) >> 7;
+    const uint8_t carray = (registers.a & 0x80) >> 7;
     if (carray) {
         registers.carry = 1;
     }
@@ -63,7 +63,7 @@ void GbCpu::rlca()
 
 void GbCpu::ld_nnp_sp()
 {
-    uint16_t address = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
+    const uint16_t address = readByte(registers.pc + 1) | (static_cast<uint16_t>(readByte(registers.pc + 2)) << 8);
     writeByte(address, registers.sp & 0xFF);
     writeByte(address + 1, registers.sp >> 8);
 }
@@ -100,7 +100,7 @@ void GbCpu::ld_c_n()
 
 void GbCpu::rrca()
 {
-    uint8_t carray = registers.a & 0x01;
+    const uint8_t carray = registers.a & 0x01;
     if (carray) {
         registers.carry = 1;
     }
@@ -150,7 +150,7 @@ void GbCpu::ld_d_n()
 
 void GbCpu::rla()
 {
-    uint8_t carray = registers.carry;
+    const uint8_t carray = registers.carry;
     if (registers.a & 0x80) {
         registers.carry = 1;
     }
@@ -201,7 +201,7 @@ void GbCpu::ld_e_n()
 
 void GbCpu::rra()
 {
-    uint8_t carray = (registers.carry << 7);
+    const uint8_t carray = (registers.carry << 7);
     if (registers.a & 0x01) {
         registers.carry = 1;
     }
@@ -368,7 +368,7 @@ void GbCpu::dec_hlp()
 
 void GbCpu::ld_hlp_n()
 {
-    uint8_t value = readByte(registers.pc + 1);
+    const uint8_t value = readByte(registers.pc + 1);
     writeByte(registers.hl, value);
 }
 
@@ -782,7 +782,7 @@ void GbCpu::add_a_l()
 
 void GbCpu::add_a_hlp()
 {
-    uint8_t value = readByte(registers.hl);
+    const uint8_t value = readByte(registers.hl);
     add_a(value);
 }
 
@@ -1298,7 +1298,7 @@ void GbCpu::rst_20()
 
 void GbCpu::add_sp_n()
 {
-    uint16_t value = readByte(registers.pc + 1);
+    const uint16_t value = readByte(registers.pc + 1);
     setCarryFlag(registers.sp, value, true);
     setHalfCarryFlag(((registers.sp >> 8) & 0x0F), ((value >> 8) & 0x0F), true);
     registers.sp += value;
@@ -1366,7 +1366,7 @@ void GbCpu::rst_30()
 
 void GbCpu::ld_hl_sp_n()
 {
-    uint16_t value = readByte(registers.pc + 1);
+    const uint16_t value = readByte(registers.pc + 1);
     setCarryFlag(static_cast<uint16_t>(registers.sp + static_cast<int8_t>(value)), 0, true);
     setHalfCarryFlag(static_cast<uint8_t>(registers.sp), static_cast<uint8_t>(value), true);
     registers.subtraction = 0;
@@ -1440,7 +1440,7 @@ void GbCpu::add_a(uint8_t value)
 
 void GbCpu::adc(uint8_t reg)
 {
-    uint8_t value = reg + (registers.carry ? 1 : 0);
+    const uint8_t value = reg + (registers.carry ? 1 : 0);
     setCarryFlag(registers.a, value, true);
     setHalfCarryFlag(registers.a, value, true);
     registers.a += value;
@@ -1459,7 +1459,7 @@ void GbCpu::sub(uint8_t value)
 
 void GbCpu::sbc(uint8_t reg)
 {
-    uint8_t value = reg + (registers.carry ? 1 : 0);
+    const uint8_t value = reg + (registers.carry ? 1 : 0);
     setCarryFlag(registers.a, value, false);
     setHalfCarryFlag(registers.a, value, false);
     registers.a -= value;
