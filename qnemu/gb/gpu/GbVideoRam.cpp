@@ -91,6 +91,7 @@ void GbVideoRam::write(uint16_t address, const uint8_t& value)
             source = (static_cast<uint16_t>(registers.newDMASourceHigh) << 8) | registers.newDMASourceLow;
             destination = (static_cast<uint16_t>(registers.newDMADestinationHigh) << 8) | registers.newDMADestinationLow;
             length = (registers.newDMALength + 1) * 0x10;
+            isHBlankDma = ((value & 0b10000000) > 0);
             dmaTicks = 0x20;
         }
     }
@@ -99,6 +100,10 @@ void GbVideoRam::write(uint16_t address, const uint8_t& value)
 void GbVideoRam::step()
 {
     if (!isDmaInProgress) {
+        return;
+    }
+
+    if (isHBlankDma && (cpu.lock()->gpuMode() != 0)) {
         return;
     }
 
@@ -132,6 +137,7 @@ void GbVideoRam::reset()
     registers.newDMALength = 0xFF;
 
     dmaTicks = 0;
+    isHBlankDma = false;
     isDmaInProgress = false;
 
     source = 0;
