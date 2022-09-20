@@ -58,7 +58,7 @@ Just click the executable and load Rom file.
 | MBC6      | ❌       | ❌    |
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |
-| HDMA      | ❌       | ❌    |
+| HDMA      | ✅       | ❌    |
 
 | Feature         | Implement | Test |
 | --------------- | --------- | ---- |
