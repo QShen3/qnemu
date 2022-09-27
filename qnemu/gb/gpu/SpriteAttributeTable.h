@@ -11,6 +11,7 @@
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/gpu/GbGpuInterface.h"
 
 namespace qnemu
 {
@@ -19,7 +20,7 @@ class SpriteAttributeTable : public GbDeviceInterface
 {
 public:
     SpriteAttributeTable() = delete;
-    explicit SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu);
+    explicit SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu);
     ~SpriteAttributeTable() = default;
 
     bool accepts(uint16_t address) const override;
@@ -38,6 +39,7 @@ private:
     std::weak_ptr<GbCpuInterface> cpu;
     std::array<uint8_t, SpriteAttributeTableSize> data;
     uint16_t dmaTicks;
+    const GbGpuInterface& gpu;
     bool isDmaInProgress;
 };
 

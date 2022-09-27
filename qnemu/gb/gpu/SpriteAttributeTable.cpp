@@ -14,7 +14,7 @@
 namespace qnemu
 {
 
-SpriteAttributeTable::SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu) : cpu(cpu)
+SpriteAttributeTable::SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : cpu(cpu), gpu(gpu)
 {
     SpriteAttributeTable::reset();
 }

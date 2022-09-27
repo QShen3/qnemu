@@ -37,11 +37,7 @@ public:
     GbGpu() = delete;
     GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
-        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
-        std::unique_ptr<GbPalette> gbPalette,
-        std::unique_ptr<GbcPalette> gbcPalette,
-        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable,
-        std::unique_ptr<GbVideoRam> gbVideoRam);
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler);
     ~GbGpu();
 
     bool accepts(uint16_t address) const override;
@@ -50,7 +46,16 @@ public:
     void step() override;
     void reset() override;
 
+    void addGbPalette(std::unique_ptr<GbPalette> gbPalette);
+    void addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette);
+    void addSpriteAttributeTable(std::unique_ptr<SpriteAttributeTable> spriteAttributeTable);
+    void addGbVideoRam(std::unique_ptr<GbVideoRam> gbVideoRam);
+
 private:
+    friend GbPalette;
+    friend GbcPalette;
+    friend SpriteAttributeTable;
+    friend GbVideoRam;
     union GbcTileAttribute {
         struct {
             uint backgroundPaletteNumber : 3;

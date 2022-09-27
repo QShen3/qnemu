@@ -13,7 +13,7 @@
 namespace qnemu
 {
 
-GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu) : cartridge(cartridge), cpu(cpu)
+GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : cartridge(cartridge), cpu(cpu), gpu(gpu)
 {
     GbVideoRam::reset();
 }

@@ -29,18 +29,10 @@ namespace qnemu
 
 GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
-        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
-        std::unique_ptr<GbPalette> gbPalette,
-        std::unique_ptr<GbcPalette> gbcPalette,
-        std::unique_ptr<SpriteAttributeTable> spriteAttributeTable,
-        std::unique_ptr<GbVideoRam> gbVideoRam) :
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),
-    gbPalette(std::move(gbPalette)),
-    gbcPalette(std::move(gbcPalette)),
-    spriteAttributeTable(std::move(spriteAttributeTable)),
-    gbVideoRam(std::move(gbVideoRam)),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
@@ -50,10 +42,6 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
     })
 {
     GbGpu::reset();
-    subDevices.push_back(*(this->gbPalette));
-    subDevices.push_back(*(this->gbcPalette));
-    subDevices.push_back(*(this->spriteAttributeTable));
-    subDevices.push_back(*(this->gbVideoRam));
 }
 
 GbGpu::~GbGpu()
@@ -213,6 +201,30 @@ void GbGpu::reset()
     for (auto& subDevice : subDevices) {
         subDevice.get().reset();
     }
+}
+
+void GbGpu::addGbPalette(std::unique_ptr<GbPalette> gbPalette)
+{
+    subDevices.push_back(*gbPalette);
+    this->gbPalette = std::move(gbPalette);
+}
+
+void GbGpu::addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette)
+{
+    subDevices.push_back(*gbcPalette);
+    this->gbcPalette = std::move(gbcPalette);
+}
+
+void GbGpu::addSpriteAttributeTable(std::unique_ptr<SpriteAttributeTable> spriteAttributeTable)
+{
+    subDevices.push_back(*spriteAttributeTable);
+    this->spriteAttributeTable = std::move(spriteAttributeTable);
+}
+
+void GbGpu::addGbVideoRam(std::unique_ptr<GbVideoRam> gbVideoRam)
+{
+    subDevices.push_back(*gbVideoRam);
+    this->gbVideoRam = std::move(gbVideoRam);
 }
 
 void GbGpu::checklcdYCoordinate()

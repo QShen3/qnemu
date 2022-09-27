@@ -12,6 +12,7 @@
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/gpu/GbGpuInterface.h"
 
 namespace qnemu
 {
@@ -20,7 +21,7 @@ class GbVideoRam : public GbDeviceInterface
 {
 public:
     GbVideoRam() = delete;
-    explicit GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu);
+    explicit GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu);
     ~GbVideoRam() = default;
 
     bool accepts(uint16_t address) const override;
@@ -44,6 +45,7 @@ private:
     std::weak_ptr<GbCpuInterface> cpu;
     uint16_t destination;
     uint16_t dmaTicks;
+    const GbGpuInterface& gpu;
     bool isHBlankDma;
     bool isDmaInProgress;
     uint16_t length;
