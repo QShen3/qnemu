@@ -588,11 +588,6 @@ void GbCpu::exitHaltMode()
     halt_mode.store(false);
 }
 
-uint8_t GbCpu::gpuMode() const
-{
-    return readByte(0xFF41) & 0b11;
-}
-
 void GbCpu::jumpToAddress(uint16_t address)
 {
     push(registers.pc);

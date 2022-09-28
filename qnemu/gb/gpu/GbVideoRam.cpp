@@ -8,12 +8,16 @@
 
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/const.h"
+#include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/gpu/GbVideoRam.h"
 
 namespace qnemu
 {
 
-GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : cartridge(cartridge), cpu(cpu), gpu(gpu)
+GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) :
+    cartridge(cartridge),
+    cpu(cpu),
+    gpu(dynamic_cast<const GbGpu&>(gpu))
 {
     GbVideoRam::reset();
 }
@@ -103,7 +107,7 @@ void GbVideoRam::step()
         return;
     }
 
-    if (isHBlankDma && (cpu.lock()->gpuMode() != 0)) {
+    if (isHBlankDma && (gpu.registers.modeFlag != 0)) {
         return;
     }
 
