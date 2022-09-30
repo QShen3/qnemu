@@ -208,6 +208,11 @@ uint8_t GbGpu::currentMode() const
     return registers.modeFlag;
 }
 
+bool GbGpu::isLcdEnable() const
+{
+    return registers.lcdEnable;
+}
+
 void GbGpu::addGbPalette(std::unique_ptr<GbPalette> gbPalette)
 {
     subDevices.push_back(*gbPalette);

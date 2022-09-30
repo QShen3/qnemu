@@ -47,6 +47,7 @@ public:
     void reset() override;
 
     uint8_t currentMode() const override;
+    bool isLcdEnable() const override;
 
     void addGbPalette(std::unique_ptr<GbPalette> gbPalette);
     void addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette);
