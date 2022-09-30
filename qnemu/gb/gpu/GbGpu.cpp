@@ -203,6 +203,11 @@ void GbGpu::reset()
     }
 }
 
+uint8_t GbGpu::currentMode() const
+{
+    return registers.modeFlag;
+}
+
 void GbGpu::addGbPalette(std::unique_ptr<GbPalette> gbPalette)
 {
     subDevices.push_back(*gbPalette);

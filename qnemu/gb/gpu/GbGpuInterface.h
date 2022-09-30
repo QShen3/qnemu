@@ -12,6 +12,10 @@ namespace qnemu
 
 class GbGpuInterface : public GbDeviceInterface
 {
+public:
+    virtual ~GbGpuInterface() = default;
+
+    virtual uint8_t currentMode() const = 0;
 };
 
 }  // namespace qnemu

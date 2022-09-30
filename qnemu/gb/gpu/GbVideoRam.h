@@ -17,8 +17,6 @@
 namespace qnemu
 {
 
-class GbGpu;
-
 class GbVideoRam : public GbDeviceInterface
 {
 public:
@@ -47,7 +45,7 @@ private:
     std::weak_ptr<GbCpuInterface> cpu;
     uint16_t destination;
     uint16_t dmaTicks;
-    const GbGpu& gpu;
+    const GbGpuInterface& gpu;
     bool isHBlankDma;
     bool isDmaInProgress;
     uint16_t length;
