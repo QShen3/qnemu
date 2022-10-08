@@ -116,6 +116,10 @@ void GbCpu::rrca()
 
 void GbCpu::stop_p()
 {
+    if (display) {
+        display->disable();
+    }
+    stop_mode.store(true);
 }
 
 void GbCpu::ld_de_nn()

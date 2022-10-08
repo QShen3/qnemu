@@ -17,6 +17,9 @@ class DisplayInterface
 public:
     virtual ~DisplayInterface() = default;
 
+    virtual void enable() = 0;
+    virtual void disable() = 0;
+
     virtual void requestRefresh() = 0;
     virtual void waitFroRefresh() = 0;
 

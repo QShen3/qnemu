@@ -87,6 +87,7 @@ TEST(GbInterruptTest, RequesetInterrupt)
     qnemu::GbInterruptHandler gbInterruptHandler(mockGbCpu);
 
     EXPECT_CALL(*mockGbCpu, isInHaltMode()).Times(5).WillRepeatedly(testing::Return(false));
+    EXPECT_CALL(*mockGbCpu, isInStopMode()).Times(3).WillRepeatedly(testing::Return(false));
     gbInterruptHandler.write(0xFF0F, 0);
     gbInterruptHandler.requestVBlankInterrupt();
     EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b1);
@@ -109,7 +110,9 @@ TEST(GbInterruptTest, RequesetInterrupt)
 
 
     EXPECT_CALL(*mockGbCpu, isInHaltMode()).Times(5).WillRepeatedly(testing::Return(true));
+    EXPECT_CALL(*mockGbCpu, isInStopMode()).Times(3).WillRepeatedly(testing::Return(true));
     EXPECT_CALL(*mockGbCpu, exitHaltMode()).Times(5);
+    EXPECT_CALL(*mockGbCpu, exitStopMode()).Times(3);
     gbInterruptHandler.write(0xFF0F, 0);
     gbInterruptHandler.requestVBlankInterrupt();
     EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b1);

@@ -31,12 +31,13 @@ if("" STREQUAL OS_NAME)
 endif()
 
 find_package(GTest REQUIRED)
+find_package(Qt6 COMPONENTS Widgets)
 
 # Library
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    target_link_libraries(qnemu_test GTest::gmock_main)
+    target_link_libraries(qnemu_test GTest::gmock_main Qt6::Widgets)
 else()
-    target_link_libraries(qnemu_test GTest::gtest GTest::gmock GTest::gtest_main)
+    target_link_libraries(qnemu_test GTest::gtest GTest::gmock GTest::gtest_main Qt6::Widgets)
 endif()
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)

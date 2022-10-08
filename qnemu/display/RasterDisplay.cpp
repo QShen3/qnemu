@@ -48,6 +48,16 @@ void RasterDisplay::paintEvent(QPaintEvent*)
     cv.notify_all();
 }
 
+void RasterDisplay::enable()
+{
+    started.store(true);
+}
+
+void RasterDisplay::disable()
+{
+    started.store(false);
+}
+
 void RasterDisplay::requestRefresh()
 {
     std::unique_lock<std::mutex> lock(mutex);

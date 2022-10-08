@@ -129,6 +129,9 @@ void GbInterruptHandler::requestTimerInterrupt()
     if (cpu.lock()->isInHaltMode()) {
         cpu.lock()->exitHaltMode();
     }
+    if (cpu.lock()->isInStopMode()) {
+        cpu.lock()->exitStopMode();
+    }
 }
 
 void GbInterruptHandler::requestSerialInterrupt()
@@ -137,6 +140,9 @@ void GbInterruptHandler::requestSerialInterrupt()
     if (cpu.lock()->isInHaltMode()) {
         cpu.lock()->exitHaltMode();
     }
+    if (cpu.lock()->isInStopMode()) {
+        cpu.lock()->exitStopMode();
+    }
 }
 
 void GbInterruptHandler::requestJoypadInterrupt()
@@ -144,6 +150,9 @@ void GbInterruptHandler::requestJoypadInterrupt()
     registers.joyPadRequest = 1;
     if (cpu.lock()->isInHaltMode()) {
         cpu.lock()->exitHaltMode();
+    }
+    if (cpu.lock()->isInStopMode()) {
+        cpu.lock()->exitStopMode();
     }
 }
 

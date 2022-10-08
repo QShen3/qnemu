@@ -56,6 +56,8 @@ Gb::Gb()
     cpu->addDevice(joypad);
     cpu->addDevice(interruptHandler);
 
+    cpu->addDisplay(rasterDisplay);
+
     display = rasterDisplay;
 }
 

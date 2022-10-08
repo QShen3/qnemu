@@ -571,6 +571,7 @@ void GbCpu::reset()
 
     enableInterruptFlag = false;
     halt_mode = false;
+    stop_mode = false;
     started = false;
     ticks = 0;
     for (auto& device : devices) {
@@ -588,6 +589,19 @@ void GbCpu::exitHaltMode()
     halt_mode.store(false);
 }
 
+bool GbCpu::isInStopMode() const
+{
+    return stop_mode.load();
+}
+
+void GbCpu::exitStopMode()
+{
+    stop_mode.store(false);
+    if (display) {
+        display->enable();
+    }
+}
+
 void GbCpu::jumpToAddress(uint16_t address)
 {
     push(registers.pc);
@@ -598,6 +612,11 @@ void GbCpu::jumpToAddress(uint16_t address)
 void GbCpu::cancelInterrupt()
 {
     registers.pc = 0;
+}
+
+void GbCpu::addDisplay(std::shared_ptr<DisplayInterface> display)
+{
+    this->display = display;
 }
 
 void GbCpu::addDevice(std::shared_ptr<GbDeviceInterface> device)
@@ -611,7 +630,7 @@ void GbCpu::exec()
         if (!started.load()) {
             return;
         }
-        if (!halt_mode.load()) {
+        if ((!halt_mode.load()) && (!stop_mode.load())) {
             step();
         }
         for (auto& device : devices) {

@@ -10,6 +10,7 @@
 #include <thread>
 #include <vector>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/cpu/Instruction.h"
 #include "qnemu/gb/GbDeviceInterface.h"
@@ -31,9 +32,12 @@ public:
 
     bool isInHaltMode() const override;
     void exitHaltMode() override;
+    bool isInStopMode() const override;
+    void exitStopMode() override;
     void jumpToAddress(uint16_t address) override;
     void cancelInterrupt() override;
     void addDevice(std::shared_ptr<GbDeviceInterface> device) override;
+    void addDisplay(std::shared_ptr<DisplayInterface> display) override;
 
 private:
     friend GbGpu;
@@ -82,8 +86,10 @@ private:
     } registers;
 
     std::vector<std::shared_ptr<GbDeviceInterface>> devices;
+    std::shared_ptr<DisplayInterface> display;
     bool enableInterruptFlag;
     std::atomic_bool halt_mode;
+    std::atomic_bool stop_mode;
     std::atomic_bool started;
     uint8_t ticks;
     std::thread work;

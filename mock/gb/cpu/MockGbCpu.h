@@ -9,6 +9,7 @@
 
 #include <gmock/gmock.h>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 
@@ -24,9 +25,12 @@ public:
 
     MOCK_METHOD(bool, isInHaltMode, (), (const, override));
     MOCK_METHOD(void, exitHaltMode, (), (override));
+    MOCK_METHOD(bool, isInStopMode, (), (const, override));
+    MOCK_METHOD(void, exitStopMode, (), (override));
     MOCK_METHOD(void, jumpToAddress, (uint16_t), (override));
     MOCK_METHOD(void, cancelInterrupt, (), (override));
     MOCK_METHOD(void, addDevice, (std::shared_ptr<qnemu::GbDeviceInterface>), (override));
+    MOCK_METHOD(void, addDisplay, (std::shared_ptr<qnemu::DisplayInterface>), (override));
 
     MOCK_METHOD(uint8_t, readByte, (uint16_t), (const, override));
     MOCK_METHOD(void, writeByte, (uint16_t, uint8_t), (override));

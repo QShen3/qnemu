@@ -27,6 +27,9 @@ public:
 
     void paintEvent(QPaintEvent* event) override;
 
+    void enable() override;
+    void disable() override;
+
     void requestRefresh() override;
     void waitFroRefresh() override;
 
