@@ -33,6 +33,9 @@ bool SpriteAttributeTable::accepts(uint16_t address) const
 uint8_t SpriteAttributeTable::read(uint16_t address) const
 {
     if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+        if ((gpu.currentMode() == 2 || gpu.currentMode() == 3) && gpu.isLcdEnable()) {
+            return 0xFF;
+        }
         return data.at(address - SpriteAttributeTableStart);
     }
     if (address == 0xFF46) {
@@ -45,6 +48,9 @@ uint8_t SpriteAttributeTable::read(uint16_t address) const
 void SpriteAttributeTable::write(uint16_t address, const uint8_t& value)
 {
     if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+        if ((gpu.currentMode() == 2 || gpu.currentMode() == 3) && gpu.isLcdEnable()) {
+            return;
+        }
         data.at(address - SpriteAttributeTableStart) = value;
     }
     if (address == 0xFF46) {

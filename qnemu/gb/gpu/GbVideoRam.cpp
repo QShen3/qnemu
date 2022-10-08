@@ -39,6 +39,9 @@ bool GbVideoRam::accepts(uint16_t address) const
 uint8_t GbVideoRam::read(uint16_t address) const
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
+        if (gpu.currentMode() == 3 && gpu.isLcdEnable()) {
+            return 0xFF;
+        }
         return videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart);
     }
     if (address == 0xFF4F) {
@@ -67,6 +70,9 @@ uint8_t GbVideoRam::read(uint16_t address) const
 void GbVideoRam::write(uint16_t address, const uint8_t& value)
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
+        if (gpu.currentMode() == 3 && gpu.isLcdEnable()) {
+            return;
+        }
         videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart) = value;
     }
     if (address == 0xFF4F) {

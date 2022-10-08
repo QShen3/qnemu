@@ -66,16 +66,6 @@ bool GbGpu::accepts(uint16_t address) const
 
 uint8_t GbGpu::read(uint16_t address) const
 {
-    if (address >= VideoRamStart && address <= VideoRamEnd) {
-        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
-            return 0xFF;
-        }
-    }
-    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
-        if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
-            return 0xFF;
-        }
-    }
     if (address == 0xFF40) {
         return registers.lcdControl;
     }
@@ -121,16 +111,6 @@ uint8_t GbGpu::read(uint16_t address) const
 
 void GbGpu::write(uint16_t address, const uint8_t& value)
 {
-    if (address >= VideoRamStart && address <= VideoRamEnd) {
-        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
-            return;
-        }
-    }
-    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
-        if ((registers.modeFlag == 2 || registers.modeFlag == 3) && registers.lcdEnable == 1) {
-            return;
-        }
-    }
     if (address == 0xFF40) {
         registers.lcdControl = value;
     }
