@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <gmock/gmock.h>
 
-#include "qnemu/gb/interrupt/GbInterruptHanlerInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemuMock
 {
@@ -14,6 +16,12 @@ namespace qnemuMock
 class MockGbInterruptHanlder : public qnemu::GbInterruptHandlerInterface
 {
 public:
+    MOCK_METHOD(uint8_t, read, (uint16_t), (const, override));
+    MOCK_METHOD(void, write, (uint16_t, (const uint8_t&)), (override));
+    MOCK_METHOD(void, reset, (), (override));
+    MOCK_METHOD(void, step, (), (override));
+    MOCK_METHOD(bool, accepts, (uint16_t), (const, override));
+
     MOCK_METHOD(void, requestVBlankInterrupt, (), (override));
     MOCK_METHOD(void, requestLcdInterrupt, (), (override));
     MOCK_METHOD(void, requestTimerInterrupt, (), (override));

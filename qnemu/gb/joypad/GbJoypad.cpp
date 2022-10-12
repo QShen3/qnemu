@@ -72,20 +72,44 @@ void GbJoypad::processKeyPressEvent(int key)
     std::lock_guard lock(mutex);
     if (key == Qt::Key_S) {
         directionButtionState.down = 0;
+        if (registers.selectDirectionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else if (key == Qt::Key_W) {
         directionButtionState.up = 0;
+        if (registers.selectDirectionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else if (key == Qt::Key_A) {
         directionButtionState.left = 0;
+        if (registers.selectDirectionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else if (key == Qt::Key_D) {
         directionButtionState.right = 0;
+        if (registers.selectDirectionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else  if (key == Qt::Key_3) {
         actionButtonsState.start = 0;
+        if (registers.selectActionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else if (key == Qt::Key_2) {
         actionButtonsState.select = 0;
+        if (registers.selectActionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else if (key == Qt::Key_K) {
         actionButtonsState.b = 0;
+        if (registers.selectActionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     } else if (key == Qt::Key_J) {
         actionButtonsState.a = 0;
+        if (registers.selectActionButtons == 0) {
+            interruptHandler->requestJoypadInterrupt();
+        }
     }
 }
 

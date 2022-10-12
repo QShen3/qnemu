@@ -48,7 +48,7 @@ Just click the executable and load Rom file.
 | PPU       | ✅       | manual |
 | Sound     | ❌       | ❌    |
 | Interrupt | ✅       | ✅    |
-| Joypad    | ✅       | manual |
+| Joypad    | ✅       | ✅    |
 | Timer     | ✅       | ❌    |
 | no MBC    | ✅       | ✅    |
 | MBC1      | ✅       | ✅    |
