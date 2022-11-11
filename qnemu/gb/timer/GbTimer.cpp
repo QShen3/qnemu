@@ -125,15 +125,6 @@ void GbTimer::reset()
 
     overflow = false;
     previousBit = 0;
-    // if (registers.inputClockSelect == 0) {
-    //     previousBit = (registers.divider & 1024) >> 10;
-    // } else if (registers.inputClockSelect == 1) {
-    //     previousBit = (registers.divider & 16) >> 4;
-    // } else if (registers.inputClockSelect == 2) {
-    //     previousBit = (registers.divider & 64) >> 6;
-    // } else if (registers.inputClockSelect == 3) {
-    //     previousBit = (registers.divider & 256) >> 8;
-    // }
     ticksSinceOverflow = 0;
 }
 
