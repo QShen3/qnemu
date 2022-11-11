@@ -48,6 +48,7 @@ void GbTimer::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF04) {
         registers.divider = 0;
+        previousBit = 0;
         return;
     } 
     if (address == 0xFF05) {
@@ -60,6 +61,15 @@ void GbTimer::write(uint16_t address, const uint8_t& value)
     }
     if (address == 0xFF07) {
         registers.timerControl = value;
+        if (registers.inputClockSelect == 0) {
+            previousBit = (registers.divider & 1024) >> 10;
+        } else if (registers.inputClockSelect == 1) {
+            previousBit = (registers.divider & 16) >> 4;
+        } else if (registers.inputClockSelect == 2) {
+            previousBit = (registers.divider & 64) >> 6;
+        } else if (registers.inputClockSelect == 3) {
+            previousBit = (registers.divider & 256) >> 8;
+        }
         return;
     }
 
@@ -115,6 +125,15 @@ void GbTimer::reset()
 
     overflow = false;
     previousBit = 0;
+    // if (registers.inputClockSelect == 0) {
+    //     previousBit = (registers.divider & 1024) >> 10;
+    // } else if (registers.inputClockSelect == 1) {
+    //     previousBit = (registers.divider & 16) >> 4;
+    // } else if (registers.inputClockSelect == 2) {
+    //     previousBit = (registers.divider & 64) >> 6;
+    // } else if (registers.inputClockSelect == 3) {
+    //     previousBit = (registers.divider & 256) >> 8;
+    // }
     ticksSinceOverflow = 0;
 }
 
