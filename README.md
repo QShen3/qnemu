@@ -49,7 +49,7 @@ Just click the executable and load Rom file.
 | Sound     | ❌       | ❌    |
 | Interrupt | ✅       | ✅    |
 | Joypad    | ✅       | ✅    |
-| Timer     | ✅       | ❌    |
+| Timer     | ✅       | ✅    |
 | no MBC    | ✅       | ✅    |
 | MBC1      | ✅       | ✅    |
 | MBC2      | ❌       | ❌    |
