@@ -30,6 +30,22 @@ static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_int_distribution<> distrib(0, 255);
 
+TEST(GbMbc1Test, Accept)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
+
+    for (uint32_t i = 0; i <= 0xFFFF; i++) {
+        if((i <= qnemu::MemoryRomBank01End) || (i >= qnemu::ExternalRamStart && i <= qnemu::ExternalRamEnd)) {
+            EXPECT_TRUE(gbMbc1.accepts(i));
+        } else {
+            EXPECT_FALSE(gbMbc1.accepts(i));
+        }
+    }
+}
+
 TEST(GbMbc1Test, ReadFrom1BankRom)
 {
     std::array<uint8_t, qnemu::RomBankSize> data;
@@ -114,6 +130,19 @@ TEST(GbMbc1Test, ReadWhenRamDisabled)
         EXPECT_EQ(0xFF, gbMbc1.read(i + qnemu::ExternalRamStart));
     }
 }
+
+TEST(GbMbc1Test, ReadFromWrongAddress)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
+    for (uint32_t i = 0; i <= 0xFFFF; i++) {
+        if (gbMbc1.accepts(i) == false) {
+            EXPECT_EQ(0xFF, gbMbc1.read(i));
+        }
+    }
+}
 #endif
 
 TEST(GbMbc1Test, ReadFromRam)
@@ -172,6 +201,15 @@ TEST(GbMbc1Test, WriteToRam)
             EXPECT_EQ(gbMbc1.read(j + qnemu::ExternalRamStart), value);
         }
     }
+}
+
+TEST(GbMbc1Test, Step)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
+    EXPECT_NO_THROW(gbMbc1.step());
 }
 
 }  // namespace qnemuTest

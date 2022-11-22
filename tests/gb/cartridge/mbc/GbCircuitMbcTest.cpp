@@ -29,6 +29,21 @@ static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_int_distribution<> distrib(0, 255);
 
+TEST(GbCircuitMbcTest, Accept)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
+    for (uint32_t i = 0; i <= 0xFFFF; i++) {
+        if ((i <= qnemu::MemoryRomBank01End) || (i >= qnemu::ExternalRamStart && i <= qnemu::ExternalRamEnd)) {
+            EXPECT_TRUE(gbCircuitMbc.accepts(i));
+        } else {
+            EXPECT_FALSE(gbCircuitMbc.accepts(i));
+        }
+    }
+}
+
 TEST(GbCircuitMbcTest, ReadFromRom)
 {
     std::array<uint8_t, qnemu::RomBankSize> data0;
@@ -66,6 +81,19 @@ TEST(GbCircuitMbcTest, ReadFromNoneExistRam)
         EXPECT_EQ(0xFF, gbCircuitMbc.read(i + qnemu::ExternalRamStart));
     }
 }
+
+TEST(GbCircuitMbcTest, ReadFromWrongAddress)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
+    for (uint32_t i = 0; i <= 0xFFFF; i++) {
+        if (gbCircuitMbc.accepts(i) == false) {
+            EXPECT_EQ(0xFF, gbCircuitMbc.read(i));
+        }
+    }
+}
 #endif
 
 TEST(GbCircuitMbcTest, ReadFromRam)
@@ -98,6 +126,17 @@ TEST(GbCircuitMbcTest, WriteToRam)
         gbCircuitMbc.write(i + qnemu::ExternalRamStart, value);
         EXPECT_EQ(gbCircuitMbc.read(i + qnemu::ExternalRamStart), value);
     }
+}
+
+TEST(GbCircuitMbcTest, StepAndReset)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
+
+    EXPECT_NO_THROW(gbCircuitMbc.step());
+    EXPECT_NO_THROW(gbCircuitMbc.reset());
 }
 
 }  // namespace qnemuTest
