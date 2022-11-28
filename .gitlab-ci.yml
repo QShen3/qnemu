@@ -225,7 +225,7 @@ linux ubuntu x64 build:
   script:
     - mkdir -p build
     - cd build
-    - cmake .. -G Ninja
+    - cmake .. -DQNEMU_ENABLE_COVERAGE=ON -G Ninja
     - ninja
 
 linux ubuntu arm64 build:
@@ -442,6 +442,8 @@ linux ubuntu x64 test:
     script:
         - cd build
         - ninja test
+        - ninja coverage
+    coverage: /^\s*lines:\s*\d+.\d+\%/
 
 linux ubuntu arm64 test:
     stage: test
