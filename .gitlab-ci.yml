@@ -260,6 +260,38 @@ linux void x64 build:
     - cmake .. -G Ninja
     - ninja
 
+linux rocky x64 build:
+  stage: build
+  image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:rocky
+  tags:
+    - linux
+    - docker
+    - x64
+  artifacts:
+    paths:
+        - build/
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -G Ninja
+    - ninja
+
+linux rocky arm64 build:
+  stage: build
+  image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:rocky
+  tags:
+    - linux
+    - docker
+    - arm64
+  artifacts:
+    paths:
+        - build/
+  script:
+    - mkdir -p build
+    - cd build
+    - cmake .. -G Ninja
+    - ninja
+
 #################################### test ####################################
 
 windows msvc x64 test:
@@ -467,6 +499,32 @@ linux void x64 test:
         - x64
     needs:
       - job: linux void x64 build
+    script:
+        - cd build
+        - ninja test
+
+linux rocky x64 test:
+    stage: test
+    image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:rocky
+    tags:
+        - linux
+        - docker
+        - x64
+    needs:
+      - job: linux rocky x64 build
+    script:
+        - cd build
+        - ninja test
+
+linux rocky arm64 test:
+    stage: test
+    image: registry.cn-shanghai.aliyuncs.com/shen3/qnemu-devel:rocky
+    tags:
+        - linux
+        - docker
+        - arm64
+    needs:
+      - job: linux rocky arm64 build
     script:
         - cd build
         - ninja test
