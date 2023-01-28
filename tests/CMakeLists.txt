@@ -4,8 +4,9 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge/mbc GB_CARTRIDGE_M
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge GB_CARTRIDGETEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/interrupt GB_INTERRUPTTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/memory GB_MEMORYTEST_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/joypad GB_JOYPAD_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/timer GB_TIMER_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/joypad GB_JOYPADTEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/timer GB_TIMERTEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/gpu GB_GPUTEST_SRCS)
 
 # Qt
 set(CMAKE_AUTOMOC ON)
@@ -18,8 +19,9 @@ add_executable(
     ${GB_CARTRIDGETEST_SRCS}
     ${GB_INTERRUPTTEST_SRCS}
     ${GB_MEMORYTEST_SRCS}
-    ${GB_JOYPAD_SRCS}
-    ${GB_TIMER_SRCS}
+    ${GB_JOYPADTEST_SRCS}
+    ${GB_TIMERTEST_SRCS}
+    ${GB_GPUTEST_SRCS}
 )
 include(GoogleTest)
 gtest_discover_tests(qnemu_test)
