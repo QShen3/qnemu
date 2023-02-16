@@ -18,11 +18,6 @@ GbCircuitMbc::GbCircuitMbc(std::vector<std::array<uint8_t, RomBankSize>>&& romBa
 {
 }
 
-bool GbCircuitMbc::accepts(uint16_t address) const
-{
-    return (address <= MemoryRomBank01End) || (address >= ExternalRamStart && address <= ExternalRamEnd);
-}
-
 uint8_t GbCircuitMbc::read(uint16_t address) const
 {
     if (address <= MemoryRomBank00End) {
@@ -42,7 +37,7 @@ uint8_t GbCircuitMbc::read(uint16_t address) const
     return 0xFF;
 }
 
-void GbCircuitMbc::write(uint16_t address, const uint8_t& value)
+void GbCircuitMbc::write(uint16_t address, const uint8_t value)
 {
     if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         if (type != 0) {
@@ -52,10 +47,6 @@ void GbCircuitMbc::write(uint16_t address, const uint8_t& value)
         // assert(false && "No Ram available");
     }
     // assert(false && "Wrong address");
-}
-
-void GbCircuitMbc::step()
-{
 }
 
 void GbCircuitMbc::reset()

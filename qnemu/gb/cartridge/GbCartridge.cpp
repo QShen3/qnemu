@@ -102,7 +102,7 @@ GbCartridge::~GbCartridge()
 
 bool GbCartridge::accepts(uint16_t address) const
 {
-    return mbc->accepts(address);
+    return (address <= MemoryRomBank01End) || (address >= ExternalRamStart && address <= ExternalRamEnd);
 }
 
 uint8_t GbCartridge::read(uint16_t address) const
@@ -117,7 +117,6 @@ void GbCartridge::write(uint16_t address, const uint8_t& value)
 
 void GbCartridge::step()
 {
-    mbc->step();
 }
 
 void GbCartridge::reset()

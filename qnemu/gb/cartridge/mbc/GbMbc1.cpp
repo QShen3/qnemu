@@ -20,11 +20,6 @@ GbMbc1::GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
     GbMbc1::reset();
 }
 
-bool GbMbc1::accepts(uint16_t address) const
-{
-    return (address <= MemoryRomBank01End) || (address >= ExternalRamStart && address <= ExternalRamEnd);
-}
-
 uint8_t GbMbc1::read(uint16_t address) const
 {
     if (address <= MemoryRomBank01End) {
@@ -46,7 +41,7 @@ uint8_t GbMbc1::read(uint16_t address) const
     return 0xFF;
 }
 
-void GbMbc1::write(uint16_t address, const uint8_t& value)
+void GbMbc1::write(uint16_t address, const uint8_t value)
 {
     if (address < romBankNumberAddress) {
         registers.ramEnable = value;
@@ -74,10 +69,6 @@ void GbMbc1::write(uint16_t address, const uint8_t& value)
         return;
     }
     assert(false && "Wrong address");
-}
-
-void GbMbc1::step()
-{
 }
 
 void GbMbc1::reset()
