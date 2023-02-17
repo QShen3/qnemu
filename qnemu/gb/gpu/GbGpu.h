@@ -25,7 +25,7 @@
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/Mode.h"
-#include "qnemu/gb/gpu/SpriteAttributeTable.h"
+#include "qnemu/gb/gpu/GbOam.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
@@ -51,13 +51,13 @@ public:
 
     void addGbPalette(std::unique_ptr<GbPalette> gbPalette);
     void addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette);
-    void addSpriteAttributeTable(std::unique_ptr<SpriteAttributeTable> spriteAttributeTable);
+    void addGbOam(std::unique_ptr<GbOam> gbOam);
     void addGbVideoRam(std::unique_ptr<GbVideoRam> gbVideoRam);
 
 private:
     friend GbPalette;
     friend GbcPalette;
-    friend SpriteAttributeTable;
+    friend GbOam;
     friend GbVideoRam;
     union GbcTileAttribute {
         struct {
@@ -126,7 +126,7 @@ private:
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
     std::unique_ptr<GbPalette> gbPalette;
     std::unique_ptr<GbcPalette> gbcPalette;
-    std::unique_ptr<SpriteAttributeTable> spriteAttributeTable;
+    std::unique_ptr<GbOam> gbOam;
     std::unique_ptr<GbVideoRam> gbVideoRam;
     std::stack<uint8_t> spriteStack;
     std::vector<std::reference_wrapper<GbDeviceInterface>> subDevices;

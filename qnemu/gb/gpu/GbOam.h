@@ -16,12 +16,12 @@
 namespace qnemu
 {
 
-class SpriteAttributeTable : public GbDeviceInterface
+class GbOam : public GbDeviceInterface
 {
 public:
-    SpriteAttributeTable() = delete;
-    explicit SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu);
-    ~SpriteAttributeTable() = default;
+    GbOam() = delete;
+    explicit GbOam(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu);
+    ~GbOam() = default;
 
     bool accepts(uint16_t address) const override;
     uint8_t read(uint16_t address) const override;
@@ -37,7 +37,7 @@ private:
     } registers;
 
     std::weak_ptr<GbCpuInterface> cpu;
-    std::array<uint8_t, SpriteAttributeTableSize> data;
+    std::array<uint8_t, OamSize> data;
     uint16_t dmaTicks;
     const GbGpuInterface& gpu;
     bool isDmaInProgress;

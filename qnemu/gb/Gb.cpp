@@ -13,7 +13,7 @@
 #include "qnemu/gb/gpu/GbPalette.h"
 #include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
-#include "qnemu/gb/gpu/SpriteAttributeTable.h"
+#include "qnemu/gb/gpu/GbOam.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
@@ -34,12 +34,12 @@ Gb::Gb()
 
     auto gbPalette = std::make_unique<GbPalette>();
     auto gbcPalette = std::make_unique<GbcPalette>();
-    auto spriteAttributeTable = std::make_unique<SpriteAttributeTable>(cpu, *gpu);
+    auto gbOam = std::make_unique<GbOam>(cpu, *gpu);
     auto gbVideoRam = std::make_unique<GbVideoRam>(*cartridge, cpu, *gpu);
     
     gpu->addGbPalette(std::move(gbPalette));
     gpu->addGbcPalette(std::move(gbcPalette));
-    gpu->addSpriteAttributeTable(std::move(spriteAttributeTable));
+    gpu->addGbOam(std::move(gbOam));
     gpu->addGbVideoRam(std::move(gbVideoRam));
 
     auto workRam = std::make_shared<GbWorkRam>();

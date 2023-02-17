@@ -21,7 +21,7 @@
 #include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/Mode.h"
-#include "qnemu/gb/gpu/SpriteAttributeTable.h"
+#include "qnemu/gb/gpu/GbOam.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
@@ -205,10 +205,10 @@ void GbGpu::addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette)
     this->gbcPalette = std::move(gbcPalette);
 }
 
-void GbGpu::addSpriteAttributeTable(std::unique_ptr<SpriteAttributeTable> spriteAttributeTable)
+void GbGpu::addGbOam(std::unique_ptr<GbOam> gbOam)
 {
-    subDevices.push_back(*spriteAttributeTable);
-    this->spriteAttributeTable = std::move(spriteAttributeTable);
+    subDevices.push_back(*gbOam);
+    this->gbOam = std::move(gbOam);
 }
 
 void GbGpu::addGbVideoRam(std::unique_ptr<GbVideoRam> gbVideoRam)
@@ -306,12 +306,12 @@ void GbGpu::renderLine()
         const uint8_t spriteIndex = spriteStack.top();
         spriteStack.pop();
 
-        uint8_t tileIndex = spriteAttributeTable->at(spriteIndex + 2);
+        uint8_t tileIndex = gbOam->at(spriteIndex + 2);
         if (registers.spriteSize == 1) {
             tileIndex &= 0xFE;
         }
         GbcSpriteAttribute spriteAttribute { .attribute = 0 };
-        spriteAttribute.attribute = spriteAttributeTable->at(spriteIndex + 3);
+        spriteAttribute.attribute = gbOam->at(spriteIndex + 3);
 
         const bool isBank1 = cartridge.isGbcCartridge() && (spriteAttribute.tileVideoRamBank == 1);
         const auto& videoRamBank = isBank1 ? gbVideoRam->getBank(1) : gbVideoRam->getBank(0);
@@ -334,14 +334,14 @@ void GbGpu::renderLine()
                 }
             }
 
-            const int16_t pixelXInTile = i - spriteAttributeTable->at(spriteIndex + 1) + 8;
+            const int16_t pixelXInTile = i - gbOam->at(spriteIndex + 1) + 8;
             if (pixelXInTile >= 8) {
                 break;
             }
             if (pixelXInTile < 0) {
                 continue;
             }
-            int16_t pixelYInTile = registers.lcdYCoordinate - spriteAttributeTable->at(spriteIndex) + 16;
+            int16_t pixelYInTile = registers.lcdYCoordinate - gbOam->at(spriteIndex) + 16;
             uint8_t realTileIndex = tileIndex;
             if (registers.spriteSize == 1) {
                 if (pixelYInTile < 8 && spriteAttribute.verticalFlip == 1) {
@@ -375,7 +375,7 @@ void GbGpu::scanSprites()
 {
     spriteStack = {};
     for (uint8_t i = 0; i < 160; i += 4) {
-        const int16_t y = spriteAttributeTable->at(i) - 16;
+        const int16_t y = gbOam->at(i) - 16;
         if (registers.spriteSize == 1) {
             if (static_cast<int16_t>(registers.lcdYCoordinate) >= y && static_cast<int16_t>(registers.lcdYCoordinate) < (y + 16)) {
                 spriteStack.push(i);

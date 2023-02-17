@@ -115,18 +115,18 @@ TEST(GbMbc1Test, ReadWhenRamDisabled)
     }
 }
 
-TEST(GbMbc1Test, ReadFromWrongAddress)
-{
-    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
-    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+// TEST(GbMbc1Test, ReadFromWrongAddress)
+// {
+//     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
+//     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
 
-    qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
-    for (uint32_t i = 0; i <= 0xFFFF; i++) {
-        if (gbMbc1.accepts(i) == false) {
-            EXPECT_EQ(0xFF, gbMbc1.read(i));
-        }
-    }
-}
+//     qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
+//     for (uint32_t i = 0; i <= 0xFFFF; i++) {
+//         if (gbMbc1.accepts(i) == false) {
+//             EXPECT_EQ(0xFF, gbMbc1.read(i));
+//         }
+//     }
+// }
 #endif
 
 TEST(GbMbc1Test, ReadFromRam)

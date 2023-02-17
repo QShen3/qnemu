@@ -9,19 +9,19 @@
 
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
-#include "qnemu/gb/gpu/SpriteAttributeTable.h"
+#include "qnemu/gb/gpu/GbOam.h"
 
 namespace qnemu
 {
 
-SpriteAttributeTable::SpriteAttributeTable(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : cpu(cpu), gpu(gpu)
+GbOam::GbOam(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : cpu(cpu), gpu(gpu)
 {
-    SpriteAttributeTable::reset();
+    GbOam::reset();
 }
 
-bool SpriteAttributeTable::accepts(uint16_t address) const
+bool GbOam::accepts(uint16_t address) const
 {
-    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+    if (address >= OamStart && address <= OamEnd) {
         return true;
     }
     if (address == 0xFF46) {
@@ -30,13 +30,13 @@ bool SpriteAttributeTable::accepts(uint16_t address) const
     return false;
 }
 
-uint8_t SpriteAttributeTable::read(uint16_t address) const
+uint8_t GbOam::read(uint16_t address) const
 {
-    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+    if (address >= OamStart && address <= OamEnd) {
         if ((gpu.currentMode() == 2 || gpu.currentMode() == 3) && gpu.isLcdEnable()) {
             return 0xFF;
         }
-        return data.at(address - SpriteAttributeTableStart);
+        return data.at(address - OamStart);
     }
     if (address == 0xFF46) {
         return registers.dmaTransferAndStartAddress;
@@ -45,13 +45,13 @@ uint8_t SpriteAttributeTable::read(uint16_t address) const
     return 0xFF;
 }
 
-void SpriteAttributeTable::write(uint16_t address, const uint8_t& value)
+void GbOam::write(uint16_t address, const uint8_t& value)
 {
-    if (address >= SpriteAttributeTableStart && address <= SpriteAttributeTableEnd) {
+    if (address >= OamStart && address <= OamEnd) {
         if ((gpu.currentMode() == 2 || gpu.currentMode() == 3) && gpu.isLcdEnable()) {
             return;
         }
-        data.at(address - SpriteAttributeTableStart) = value;
+        data.at(address - OamStart) = value;
     }
     if (address == 0xFF46) {
         registers.dmaTransferAndStartAddress = value;
@@ -62,7 +62,7 @@ void SpriteAttributeTable::write(uint16_t address, const uint8_t& value)
     }
 }
 
-void SpriteAttributeTable::step()
+void GbOam::step()
 {
     if (!isDmaInProgress) {
         return;
@@ -79,7 +79,7 @@ void SpriteAttributeTable::step()
     }
 }
 
-void SpriteAttributeTable::reset()
+void GbOam::reset()
 {
     std::memset(&registers, 0, sizeof(registers));
 
@@ -87,7 +87,7 @@ void SpriteAttributeTable::reset()
     dmaTicks = 0;
 }
 
-uint8_t SpriteAttributeTable::at(uint16_t address) const
+uint8_t GbOam::at(uint16_t address) const
 {
     return data.at(address);
 }
