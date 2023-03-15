@@ -18,6 +18,7 @@
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/memory/GbWorkRam.h"
+#include "qnemu/gb/mmu/GbMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
 
 namespace qnemu
@@ -47,6 +48,8 @@ Gb::Gb()
 
     auto timer = std::make_shared<GbTimer>(interruptHandler);
     auto joypad = std::make_shared<GbJoypad>(rasterDisplay, interruptHandler);
+
+    auto mmu = std::make_unique<GbMmu>(cartridge, gpu);
 
     cpu->addDevice(cartridge);
     cpu->addDevice(gpu);

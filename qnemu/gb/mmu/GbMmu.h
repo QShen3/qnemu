@@ -5,7 +5,10 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 
+#include "qnemu/gb/cartridge/GbCartridgeInterface.h"
+#include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/mmu/GbMmuInterface.h"
 
 namespace qnemu
@@ -14,11 +17,17 @@ namespace qnemu
 class GbMmu : public GbMmuInterface
 {
 public:
-    GbMmu();
+    GbMmu() = delete;
+    GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
+        std::shared_ptr<GbGpuInterface> gpu);
     ~GbMmu() = default;
 
     uint8_t read(uint16_t address) const;
     void write(uint16_t address, const uint8_t& value);
+
+private:
+    std::shared_ptr<GbCartridgeInterface> cartridge;
+    std::shared_ptr<GbGpuInterface> gpu;
 };
 
 }  // namespace qnemu
