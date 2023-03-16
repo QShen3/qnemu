@@ -8,15 +8,18 @@
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/memory/GbWorkRam.h"
 #include "qnemu/gb/mmu/GbMmu.h"
 
 namespace qnemu
 {
 
 GbMmu::GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
-        std::shared_ptr<GbGpuInterface> gpu) :
+        std::shared_ptr<GbGpuInterface> gpu,
+        std::shared_ptr<GbWorkRam> workRam) :
     cartridge(cartridge),
-    gpu(gpu)
+    gpu(gpu),
+    workRam(workRam)
 {
 
 }
@@ -29,6 +32,10 @@ uint8_t GbMmu::read(uint16_t address) const
         return gpu->read(address);
     } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         return cartridge->read(address);
+    } else if (address >= WorkRamBank00Start && address <= EchoRamEnd) {
+        return workRam->read(address);
+    } else if (address >= OamStart && address <= OamEnd) {
+        return gpu->read(address);
     } else {
         return 0xFF;
     }
@@ -42,6 +49,10 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         gpu->write(address, value);
     } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
         cartridge->write(address, value);
+    } else if (address >= WorkRamBank00Start && address <= EchoRamEnd) {
+        workRam->write(address, value);
+    } else if (address >= OamStart && address <= OamEnd) {
+        gpu->write(address, value);
     } else {
         return;
     }
