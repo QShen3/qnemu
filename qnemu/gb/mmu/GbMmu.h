@@ -9,6 +9,7 @@
 
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbWorkRam.h"
 #include "qnemu/gb/mmu/GbMmuInterface.h"
 
@@ -21,6 +22,7 @@ public:
     GbMmu() = delete;
     GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<GbGpuInterface> gpu,
+        std::shared_ptr<GbJoypad> joypad,
         std::shared_ptr<GbWorkRam> workRam);
     ~GbMmu() = default;
 
@@ -30,6 +32,7 @@ public:
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::shared_ptr<GbGpuInterface> gpu;
+    std::shared_ptr<GbJoypad> joypad;
     std::shared_ptr<GbWorkRam> workRam;
 };
 

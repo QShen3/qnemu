@@ -16,9 +16,11 @@ namespace qnemu
 
 GbMmu::GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<GbGpuInterface> gpu,
+        std::shared_ptr<GbJoypad> joypad,
         std::shared_ptr<GbWorkRam> workRam) :
     cartridge(cartridge),
     gpu(gpu),
+    joypad(joypad),
     workRam(workRam)
 {
 
@@ -36,6 +38,8 @@ uint8_t GbMmu::read(uint16_t address) const
         return workRam->read(address);
     } else if (address >= OamStart && address <= OamEnd) {
         return gpu->read(address);
+    } else if (address == 0xFF00) {
+        return joypad->read(address);
     } else {
         return 0xFF;
     }
@@ -53,6 +57,8 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         workRam->write(address, value);
     } else if (address >= OamStart && address <= OamEnd) {
         gpu->write(address, value);
+    } else if (address == 0xFF00) {
+        joypad->write(address, value);
     } else {
         return;
     }

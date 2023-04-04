@@ -49,7 +49,7 @@ Gb::Gb()
     auto timer = std::make_shared<GbTimer>(interruptHandler);
     auto joypad = std::make_shared<GbJoypad>(rasterDisplay, interruptHandler);
 
-    auto mmu = std::make_unique<GbMmu>(cartridge, gpu, workRam);
+    auto mmu = std::make_unique<GbMmu>(cartridge, gpu, joypad, workRam);
 
     cpu->addDevice(cartridge);
     cpu->addDevice(gpu);
