@@ -102,4 +102,26 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
     }
 }
 
+void GbMmu::step()
+{
+    cartridge->step();
+    gpu->step();
+    workRam->step();
+    highRam->step();
+    timer->step();
+    joypad->step();
+    interruptHandler->step();
+}
+
+void GbMmu::reset()
+{
+    cartridge->reset();
+    gpu->reset();
+    workRam->reset();
+    highRam->reset();
+    timer->reset();
+    joypad->reset();
+    interruptHandler->reset();
+}
+
 }  // namespace qnemu

@@ -51,14 +51,6 @@ Gb::Gb()
 
     auto mmu = std::make_unique<GbMmu>(cartridge, gpu, highRam, interruptHandler, joypad, workRam, timer);
 
-    cpu->addDevice(cartridge);
-    cpu->addDevice(gpu);
-    cpu->addDevice(workRam);
-    cpu->addDevice(highRam);
-    cpu->addDevice(timer);
-    cpu->addDevice(joypad);
-    cpu->addDevice(interruptHandler);
-
     cpu->addDisplay(rasterDisplay);
     cpu->addMmu(std::move(mmu));
 

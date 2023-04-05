@@ -574,9 +574,10 @@ void GbCpu::reset()
     stop_mode = false;
     started = false;
     ticks = 0;
-    for (auto& device : devices) {
-        device->reset();
+    if (mmu) {
+        mmu->reset();
     }
+    
 }
 
 bool GbCpu::isInHaltMode() const
@@ -624,11 +625,6 @@ void GbCpu::addMmu(std::unique_ptr<GbMmuInterface> mmu)
     this->mmu = std::move(mmu);
 }
 
-void GbCpu::addDevice(std::shared_ptr<GbDeviceInterface> device)
-{
-    devices.push_back(device);
-}
-
 void GbCpu::exec()
 {
     while(true) {
@@ -638,9 +634,7 @@ void GbCpu::exec()
         if ((!halt_mode.load()) && (!stop_mode.load())) {
             step();
         }
-        for (auto& device : devices) {
-            device->step();
-        }
+        mmu->step();
     }
 }
 

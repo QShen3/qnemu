@@ -24,7 +24,6 @@ public:
     virtual void exitStopMode() = 0;
     virtual void jumpToAddress(uint16_t address) = 0;
     virtual void cancelInterrupt() = 0;
-    virtual void addDevice(std::shared_ptr<GbDeviceInterface> device) = 0;
     virtual void addMmu(std::unique_ptr<GbMmuInterface> mmu) = 0;
     virtual void addDisplay(std::shared_ptr<DisplayInterface> display) = 0;
 

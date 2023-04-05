@@ -30,7 +30,6 @@ public:
     MOCK_METHOD(void, exitStopMode, (), (override));
     MOCK_METHOD(void, jumpToAddress, (uint16_t), (override));
     MOCK_METHOD(void, cancelInterrupt, (), (override));
-    MOCK_METHOD(void, addDevice, (std::shared_ptr<qnemu::GbDeviceInterface>), (override));
     MOCK_METHOD(void, addDisplay, (std::shared_ptr<qnemu::DisplayInterface>), (override));
     MOCK_METHOD(void, addMmu, (std::unique_ptr<qnemu::GbMmuInterface>), (override));
 
