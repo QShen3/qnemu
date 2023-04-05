@@ -9,6 +9,7 @@
 
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/memory/GbWorkRam.h"
@@ -25,6 +26,7 @@ public:
     GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<GbGpuInterface> gpu,
         std::shared_ptr<GbHighRam> highRam,
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::shared_ptr<GbJoypad> joypad,
         std::shared_ptr<GbWorkRam> workRam,
         std::shared_ptr<GbTimer> timer);
@@ -37,6 +39,7 @@ private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::shared_ptr<GbGpuInterface> gpu;
     std::shared_ptr<GbHighRam> highRam;
+    std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
     std::shared_ptr<GbJoypad> joypad;
     std::shared_ptr<GbWorkRam> workRam;
     std::shared_ptr<GbTimer> timer;
