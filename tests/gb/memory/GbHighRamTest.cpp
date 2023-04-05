@@ -25,18 +25,6 @@ static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_int_distribution<> distrib(0, 255);
 
-TEST(GbHighRamTest, Accepts)
-{
-    qnemu::GbHighRam gbHighRam;
-    for (uint16_t i = 0; i < qnemu::HighRamStart; i++) {
-        EXPECT_FALSE(gbHighRam.accepts(i));
-    }
-    for (uint16_t i = qnemu::HighRamStart; i <= qnemu::HighRamEnd; i++) {
-        EXPECT_TRUE(gbHighRam.accepts(i));
-    }
-    EXPECT_FALSE(gbHighRam.accepts(qnemu::HighRamEnd + 1));
-}
-
 TEST(GbHighRamTest, ReadAndWrite)
 {
     qnemu::GbHighRam gbHighRam;

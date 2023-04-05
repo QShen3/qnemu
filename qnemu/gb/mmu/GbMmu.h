@@ -32,8 +32,8 @@ public:
         std::shared_ptr<GbTimer> timer);
     ~GbMmu() = default;
 
-    uint8_t read(uint16_t address) const;
-    void write(uint16_t address, const uint8_t& value);
+    uint8_t read(uint16_t address) const override;
+    void write(uint16_t address, const uint8_t& value) override;
 
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;

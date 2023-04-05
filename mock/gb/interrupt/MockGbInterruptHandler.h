@@ -20,7 +20,6 @@ public:
     MOCK_METHOD(void, write, (uint16_t, (const uint8_t&)), (override));
     MOCK_METHOD(void, reset, (), (override));
     MOCK_METHOD(void, step, (), (override));
-    MOCK_METHOD(bool, accepts, (uint16_t), (const, override));
 
     MOCK_METHOD(void, requestVBlankInterrupt, (), (override));
     MOCK_METHOD(void, requestLcdInterrupt, (), (override));

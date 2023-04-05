@@ -24,24 +24,6 @@ static std::random_device rd;
 static std::mt19937 gen(rd());
 static std::uniform_int_distribution<> distrib(0, 255);
 
-TEST(GbWorkRamTest, Accepts)
-{
-    qnemu::GbWorkRam gbWorkRam;
-    for (uint16_t i = 0; i < qnemu::WorkRamBank00Start; i++) {
-        EXPECT_FALSE(gbWorkRam.accepts(i));
-    }
-    for (uint16_t i = qnemu::WorkRamBank00Start; i <= qnemu::EchoRamEnd; i++) {
-        EXPECT_TRUE(gbWorkRam.accepts(i));
-    }
-    for (uint32_t i = qnemu::EchoRamEnd + 1; i <= qnemu::MemorySpaceSize; i++) {
-        if (i == 0xFF70) {
-            EXPECT_TRUE(gbWorkRam.accepts(i));
-            continue;
-        }
-        EXPECT_FALSE(gbWorkRam.accepts(i));
-    }
-}
-
 TEST(GbWorkRamTest, ReadAndWrite)
 {
     qnemu::GbWorkRam gbWorkRam;

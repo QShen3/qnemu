@@ -40,17 +40,6 @@ protected:
     std::function<void(int)> keyRelease;
 };
 
-TEST_F(GbJoypadTest, Accepts)
-{
-    for (uint32_t i = 0; i <= 0xFFFF; i++) {
-        if (i == 0xFF00) {
-            EXPECT_TRUE(gbJoypad->accepts(i));
-        } else {
-            EXPECT_FALSE(gbJoypad->accepts(i));
-        }
-    }
-}
-
 TEST_F(GbJoypadTest, ProcessKeyEvent)
 {
     gbJoypad->write(0xFF00, 0b1110'0000);

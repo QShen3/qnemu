@@ -100,11 +100,6 @@ GbCartridge::~GbCartridge()
     }
 }
 
-bool GbCartridge::accepts(uint16_t address) const
-{
-    return (address <= MemoryRomBank01End) || (address >= ExternalRamStart && address <= ExternalRamEnd);
-}
-
 uint8_t GbCartridge::read(uint16_t address) const
 {
     return mbc->read(address);

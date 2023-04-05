@@ -14,6 +14,7 @@
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/cpu/Instruction.h"
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/mmu/GbMmuInterface.h"
 
 namespace qnemu
 {
@@ -37,6 +38,7 @@ public:
     void jumpToAddress(uint16_t address) override;
     void cancelInterrupt() override;
     void addDevice(std::shared_ptr<GbDeviceInterface> device) override;
+    void addMmu(std::unique_ptr<GbMmuInterface> mmu) override;
     void addDisplay(std::shared_ptr<DisplayInterface> display) override;
 
 private:
@@ -86,6 +88,7 @@ private:
     } registers;
 
     std::vector<std::shared_ptr<GbDeviceInterface>> devices;
+    std::unique_ptr<GbMmuInterface> mmu;
     std::shared_ptr<DisplayInterface> display;
     bool enableInterruptFlag;
     std::atomic_bool halt_mode;

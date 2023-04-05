@@ -15,14 +15,6 @@ GbPalette::GbPalette()
     GbPalette::reset();
 }
 
-bool GbPalette::accepts(uint16_t address) const
-{
-    if (address >= 0xFF47 && address <= 0xFF49) {
-        return true;
-    }
-    return false;
-}
-
 uint8_t GbPalette::read(uint16_t address) const
 {
     if (address == 0xFF47) {

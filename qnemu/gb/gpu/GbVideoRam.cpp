@@ -22,20 +22,6 @@ GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<Gb
     GbVideoRam::reset();
 }
 
-bool GbVideoRam::accepts(uint16_t address) const
-{
-    if (address >= VideoRamStart && address <= VideoRamEnd) {
-        return true;
-    }
-    if (address == 0xFF4F) {
-        return true;
-    }
-    if (address >= 0xFF51 && address <= 0xFF55) {
-        return true;
-    }
-    return false;
-}
-
 uint8_t GbVideoRam::read(uint16_t address) const
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {

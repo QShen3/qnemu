@@ -25,11 +25,6 @@ GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display, std::shared_ptr<Gb
     display->setKeyReleaseCallback(std::bind(&GbJoypad::processKeyReleaseEvent, this, std::placeholders::_1));
 }
 
-bool GbJoypad::accepts(uint16_t address) const
-{
-    return address == 0xFF00;
-}
-
 uint8_t GbJoypad::read(uint16_t address) const
 {
     if (address == 0xFF00) {

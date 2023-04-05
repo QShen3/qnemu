@@ -60,6 +60,7 @@ Gb::Gb()
     cpu->addDevice(interruptHandler);
 
     cpu->addDisplay(rasterDisplay);
+    cpu->addMmu(std::move(mmu));
 
     display = rasterDisplay;
 }

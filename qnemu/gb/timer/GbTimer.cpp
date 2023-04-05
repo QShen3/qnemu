@@ -17,14 +17,6 @@ GbTimer::GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) 
     GbTimer::reset();
 }
 
-bool GbTimer::accepts(uint16_t address) const
-{
-    if (address >= 0xFF04 && address <= 0xFF07) {
-        return true;
-    }
-    return false;
-}
-
 uint8_t GbTimer::read(uint16_t address) const
 {
     if (address == 0xFF04) {

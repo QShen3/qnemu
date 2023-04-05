@@ -16,17 +16,6 @@ GbWorkRam::GbWorkRam()
     GbWorkRam::reset();
 }
 
-bool GbWorkRam::accepts(uint16_t address) const
-{
-    if (address >= WorkRamBank00Start && address <= EchoRamEnd) {
-        return true;
-    }
-    if (address == 0xFF70) {
-        return true;
-    }
-    return false;
-}
-
 uint8_t GbWorkRam::read(uint16_t address) const
 {
     if (address >= WorkRamBank00Start && address <= WorkRamBank00End) {

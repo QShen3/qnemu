@@ -35,19 +35,6 @@ protected:
     std::unique_ptr<qnemu::GbOam> gbOam;
 };
 
-TEST_F(GbOamTest, Accept)
-{
-    for (uint32_t i = 0; i <= qnemu::MemorySpaceSize; i++) {
-        if (i >= qnemu::OamStart && i <= qnemu::OamEnd) {
-            EXPECT_TRUE(gbOam->accepts(i));
-        } else if (i == 0xFF46){
-            EXPECT_TRUE(gbOam->accepts(i));
-        } else {
-            EXPECT_FALSE(gbOam->accepts(i));
-        }
-    }
-}
-
 TEST_F(GbOamTest, ReadAndWriteDataInMode2)
 {
     EXPECT_CALL(*mockGbGpu, currentMode()).WillRepeatedly(testing::Return(2));

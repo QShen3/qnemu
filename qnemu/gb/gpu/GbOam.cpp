@@ -19,17 +19,6 @@ GbOam::GbOam(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : c
     GbOam::reset();
 }
 
-bool GbOam::accepts(uint16_t address) const
-{
-    if (address >= OamStart && address <= OamEnd) {
-        return true;
-    }
-    if (address == 0xFF46) {
-        return true;
-    }
-    return false;
-}
-
 uint8_t GbOam::read(uint16_t address) const
 {
     if (address >= OamStart && address <= OamEnd) {

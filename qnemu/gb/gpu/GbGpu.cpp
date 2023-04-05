@@ -48,62 +48,43 @@ GbGpu::~GbGpu()
 {
 }
 
-bool GbGpu::accepts(uint16_t address) const
-{
-    for (const auto& subDevice : subDevices) {
-        if (subDevice.get().accepts(address)) {
-            return true;
-        }
-    }
-    if (address >= 0xFF40 && address <= 0xFF45) {
-        return true;
-    }
-    if (address >= 0xFF4A && address <= 0xFF4B) {
-        return true;
-    }
-    return false;
-}
-
 uint8_t GbGpu::read(uint16_t address) const
 {
-    if (address == 0xFF40) {
+    if (address >= VideoRamStart && address <= VideoRamEnd) {
+        return gbVideoRam->read(address);
+    } else if (address >= OamStart && address <= OamEnd) {
+        return gbOam->read(address);
+    } else if (address == 0xFF40) {
         return registers.lcdControl;
-    }
-    if (address == 0xFF41) {
+    } else if (address == 0xFF41) {
         return registers.lcdStatus;
-    }
-    if (address == 0xFF42) {
+    } else if (address == 0xFF42) {
         return registers.scrollY;
-    }
-    if (address == 0xFF43) {
+    } else if (address == 0xFF43) {
         return registers.scrollX;
-    }
-    if (address == 0xFF44) {
+    } else if (address == 0xFF44) {
         return registers.lcdYCoordinate;
-    }
-    if (address == 0xFF45) {
+    } else if (address == 0xFF45) {
         return registers.lcdYCoordinateCompare;
-    }
-    if (address == 0xFF4A) {
+    } else if (address == 0xFF46) {
+        return gbOam->read(address);
+    } else if (address >= 0xFF47 && address <= 0xFF49) {
+        return gbPalette->read(address);
+    } else if (address == 0xFF4A) {
         return registers.windowYPosition;
-    }
-    if (address == 0xFF4B) {
+    } else if (address == 0xFF4B) {
         return registers.windowXPosition;
-    }
-    if (address == 0xFF69) {
-        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
-            return 0xFF;
+    } else if (address == 0xFF4F) {
+        return gbVideoRam->read(address);
+    } else if (address >= 0xFF51 && address <= 0xFF55) {
+        return gbVideoRam->read(address);
+    } else if (address >= 0xFF68 && address <= 0xFF6B) {
+        if (address == 0xFF69 || address == 0xFF6B) {
+            if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+                return 0xFF;
+            }
         }
-    }
-    if (address == 0xFF6B) {
-        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
-            return 0xFF;
-        }
-    }
-    for (const auto& subDevice : subDevices) {
-        if (subDevice.get().accepts(address)) {
-            return subDevice.get().read(address);
-        }
+        return gbcPalette->read(address);
     }
     assert(false && "Wrong address");
     return 0xFF;
@@ -111,46 +92,43 @@ uint8_t GbGpu::read(uint16_t address) const
 
 void GbGpu::write(uint16_t address, const uint8_t& value)
 {
-    if (address == 0xFF40) {
+    if (address >= VideoRamStart && address <= VideoRamEnd) {
+        gbVideoRam->write(address, value);
+    } else if (address >= OamStart && address <= OamEnd) {
+        gbOam->write(address, value);
+    } else if (address == 0xFF40) {
         registers.lcdControl = value;
-    }
-    if (address == 0xFF41) {
+    } else if (address == 0xFF41) {
         uint8_t valueToWrite = value & 0b11111000;
         valueToWrite |= (registers.lcdStatus & 0b00000111);
         registers.lcdStatus = valueToWrite;
-    }
-    if (address == 0xFF42) {
+    } else if (address == 0xFF42) {
         registers.scrollY = value;
-    }
-    if (address == 0xFF43) {
+    } else if (address == 0xFF43) {
         registers.scrollX = value;
-    }
-    if (address == 0xFF44) {
+    } else if (address == 0xFF44) {
         registers.lcdYCoordinate = value;
-    }
-    if (address == 0xFF45) {
+    } else if (address == 0xFF45) {
         registers.lcdYCoordinateCompare = value;
-    }
-    if (address == 0xFF4A) {
+    } else if (address == 0xFF46) {
+        gbOam->write(address, value);
+    } else if (address >= 0xFF47 && address <= 0xFF49) {
+        gbPalette->write(address, value);
+    } else if (address == 0xFF4A) {
         registers.windowYPosition = value;
-    }
-    if (address == 0xFF4B) {
+    } else if (address == 0xFF4B) {
         registers.windowXPosition = value;
-    }
-    if (address == 0xFF69) {
-        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
-            return;
+    } else if (address == 0xFF4F) {
+        gbVideoRam->write(address, value);
+    } else if (address >= 0xFF51 && address <= 0xFF55) {
+        gbVideoRam->write(address, value);
+    } else if (address >= 0xFF68 && address <= 0xFF6B) {
+        if (address == 0xFF69 || address == 0xFF6B) {
+            if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
+                return;
+            }
         }
-    }
-    if (address == 0xFF6B) {
-        if (registers.modeFlag == 3 && registers.lcdEnable == 1) {
-            return;
-        }
-    }
-    for (auto& subDevice : subDevices) {
-        if (subDevice.get().accepts(address)) {
-            return subDevice.get().write(address, value);
-        }
+        gbcPalette->write(address, value);
     }
 }
 

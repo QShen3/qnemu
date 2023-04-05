@@ -18,7 +18,6 @@ public:
     MOCK_METHOD(void, write, (uint16_t, (const uint8_t&)), (override));
     MOCK_METHOD(void, reset, (), (override));
     MOCK_METHOD(void, step, (), (override));
-    MOCK_METHOD(bool, accepts, (uint16_t), (const, override));
 
     MOCK_METHOD(uint8_t, currentMode, (), (const, override));
     MOCK_METHOD(bool, isLcdEnable, (), (const, override));

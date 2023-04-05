@@ -10,11 +10,6 @@
 namespace qnemu
 {
 
-bool GbHighRam::accepts(uint16_t address) const
-{
-    return address >= HighRamStart && address <= HighRamEnd;
-}
-
 uint8_t GbHighRam::read(uint16_t address) const
 {
     return data.at(address - HighRamStart);

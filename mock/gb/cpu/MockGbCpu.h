@@ -12,6 +12,7 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/mmu/GbMmuInterface.h"
 
 namespace qnemuMock
 {
@@ -31,6 +32,7 @@ public:
     MOCK_METHOD(void, cancelInterrupt, (), (override));
     MOCK_METHOD(void, addDevice, (std::shared_ptr<qnemu::GbDeviceInterface>), (override));
     MOCK_METHOD(void, addDisplay, (std::shared_ptr<qnemu::DisplayInterface>), (override));
+    MOCK_METHOD(void, addMmu, (std::unique_ptr<qnemu::GbMmuInterface>), (override));
 
     MOCK_METHOD(uint8_t, readByte, (uint16_t), (const, override));
     MOCK_METHOD(void, writeByte, (uint16_t, uint8_t), (override));

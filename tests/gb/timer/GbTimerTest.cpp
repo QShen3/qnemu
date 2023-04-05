@@ -23,17 +23,6 @@ protected:
     std::unique_ptr<qnemu::GbTimer> gbTimer;
 };
 
-TEST_F(GbTimerTest, Accepts)
-{
-    for (uint32_t i = 0; i <= 0xFFFF; i++) {
-        if (i >= 0xFF04 && i <= 0xFF07) {
-            EXPECT_TRUE(gbTimer->accepts(i));
-        } else {
-            EXPECT_FALSE(gbTimer->accepts(i));
-        }
-    }
-}
-
 TEST_F(GbTimerTest, Divider)
 {
     EXPECT_EQ(gbTimer->read(0xFF04), 0xAB);

@@ -619,6 +619,11 @@ void GbCpu::addDisplay(std::shared_ptr<DisplayInterface> display)
     this->display = display;
 }
 
+void GbCpu::addMmu(std::unique_ptr<GbMmuInterface> mmu)
+{
+    this->mmu = std::move(mmu);
+}
+
 void GbCpu::addDevice(std::shared_ptr<GbDeviceInterface> device)
 {
     devices.push_back(device);
@@ -663,21 +668,12 @@ void GbCpu::step()
 
 uint8_t GbCpu::readByte(uint16_t address) const
 {
-    for (const auto& device : devices) {
-        if (device->accepts(address)) {
-            return device->read(address);
-        }
-    }
-    return 0xFF;
+    return mmu->read(address);
 }
 
 void GbCpu::writeByte(uint16_t address, uint8_t value)
 {
-    for (auto& device : devices) {
-        if (device->accepts(address)) {
-            device->write(address, value);
-        }
-    }
+    mmu->write(address, value);
 }
 
 uint16_t GbCpu::pop()

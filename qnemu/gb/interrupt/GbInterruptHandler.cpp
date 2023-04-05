@@ -17,11 +17,6 @@ GbInterruptHandler::GbInterruptHandler(std::shared_ptr<GbCpuInterface> cpu) : cp
     GbInterruptHandler::reset();
 }
 
-bool GbInterruptHandler::accepts(uint16_t address) const
-{
-    return address == 0xFF0F || address == 0xFFFF;
-}
-
 uint8_t GbInterruptHandler::read(uint16_t address) const
 {
     if (address == 0xFFFF) {
