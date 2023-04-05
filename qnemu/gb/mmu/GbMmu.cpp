@@ -16,12 +16,16 @@ namespace qnemu
 
 GbMmu::GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<GbGpuInterface> gpu,
+        std::shared_ptr<GbHighRam> highRam,
         std::shared_ptr<GbJoypad> joypad,
-        std::shared_ptr<GbWorkRam> workRam) :
+        std::shared_ptr<GbWorkRam> workRam,
+        std::shared_ptr<GbTimer> timer) :
     cartridge(cartridge),
     gpu(gpu),
+    highRam(highRam),
     joypad(joypad),
-    workRam(workRam)
+    workRam(workRam),
+    timer(timer)
 {
 
 }
@@ -40,6 +44,20 @@ uint8_t GbMmu::read(uint16_t address) const
         return gpu->read(address);
     } else if (address == 0xFF00) {
         return joypad->read(address);
+    } else if (address >= 0xFF04 && address <= 0xFF07) {
+        return timer->read(address);
+    } else if (address >= 0xFF40 && address <= 0xFF4B) {
+        return gpu->read(address);
+    } else if (address == 0xFF4F) {
+        return gpu->read(address);
+    } else if (address >= 0xFF51 && address <= 0xFF55) {
+        return gpu->read(address);
+    } else if (address >= 0xFF68 && address <= 0xFF6B) {
+        return gpu->read(address);
+    } else if (address == 0xFF70) {
+        return workRam->read(address);
+    } else if (address >= HighRamStart && address <= HighRamEnd) {
+        return highRam->read(address);
     } else {
         return 0xFF;
     }
@@ -59,6 +77,20 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         gpu->write(address, value);
     } else if (address == 0xFF00) {
         joypad->write(address, value);
+    } else if (address >= 0xFF04 && address <= 0xFF07) {
+        timer->write(address, value);
+    } else if (address >= 0xFF40 && address <= 0xFF4B) {
+        gpu->write(address, value);
+    } else if (address == 0xFF4F) {
+        gpu->write(address, value);
+    } else if (address >= 0xFF51 && address <= 0xFF55) {
+        gpu->write(address, value);
+    } else if (address >= 0xFF68 && address <= 0xFF6B) {
+        gpu->write(address, value);
+    } else if (address == 0xFF70) {
+        workRam->write(address, value);
+    } else if (address >= HighRamStart && address <= HighRamEnd) {
+        highRam->write(address, value);
     } else {
         return;
     }

@@ -37,7 +37,7 @@ Gb::Gb()
     auto gbcPalette = std::make_unique<GbcPalette>();
     auto gbOam = std::make_unique<GbOam>(cpu, *gpu);
     auto gbVideoRam = std::make_unique<GbVideoRam>(*cartridge, cpu, *gpu);
-    
+
     gpu->addGbPalette(std::move(gbPalette));
     gpu->addGbcPalette(std::move(gbcPalette));
     gpu->addGbOam(std::move(gbOam));
@@ -49,7 +49,7 @@ Gb::Gb()
     auto timer = std::make_shared<GbTimer>(interruptHandler);
     auto joypad = std::make_shared<GbJoypad>(rasterDisplay, interruptHandler);
 
-    auto mmu = std::make_unique<GbMmu>(cartridge, gpu, joypad, workRam);
+    auto mmu = std::make_unique<GbMmu>(cartridge, gpu, highRam, joypad, workRam, timer);
 
     cpu->addDevice(cartridge);
     cpu->addDevice(gpu);
