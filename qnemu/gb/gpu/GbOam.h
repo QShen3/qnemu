@@ -20,7 +20,7 @@ class GbOam : public GbDeviceInterface
 {
 public:
     GbOam() = delete;
-    explicit GbOam(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu);
+    explicit GbOam(std::shared_ptr<GbCpuInterface> cpu);
     ~GbOam() = default;
 
     uint8_t read(uint16_t address) const override;
@@ -38,7 +38,6 @@ private:
     std::weak_ptr<GbCpuInterface> cpu;
     std::array<uint8_t, OamSize> data;
     uint16_t dmaTicks;
-    const GbGpuInterface& gpu;
     bool isDmaInProgress;
 };
 

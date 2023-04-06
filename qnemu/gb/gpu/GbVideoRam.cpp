@@ -14,10 +14,9 @@
 namespace qnemu
 {
 
-GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) :
+GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu) :
     cartridge(cartridge),
-    cpu(cpu),
-    gpu(gpu)
+    cpu(cpu)
 {
     GbVideoRam::reset();
 }
@@ -25,9 +24,6 @@ GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<Gb
 uint8_t GbVideoRam::read(uint16_t address) const
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
-        if (gpu.currentMode() == 3 && gpu.isLcdEnable()) {
-            return 0xFF;
-        }
         return videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart);
     }
     if (address == 0xFF4F) {
@@ -56,9 +52,6 @@ uint8_t GbVideoRam::read(uint16_t address) const
 void GbVideoRam::write(uint16_t address, const uint8_t& value)
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
-        if (gpu.currentMode() == 3 && gpu.isLcdEnable()) {
-            return;
-        }
         videoRamBanks.at(cartridge.isGbcCartridge() ? registers.videoRamBank : 0).at(address - VideoRamStart) = value;
     }
     if (address == 0xFF4F) {
@@ -99,7 +92,7 @@ void GbVideoRam::step()
         return;
     }
 
-    if (isHBlankDma && (gpu.currentMode() != 0)) {
+    if (isHBlankDma && (modeFlag != 0)) {
         return;
     }
 
@@ -144,6 +137,11 @@ void GbVideoRam::reset()
 const std::array<uint8_t, VideoRamBankSize>& GbVideoRam::getBank(uint8_t index) const
 {
     return videoRamBanks.at(index);
+}
+
+void GbVideoRam::setModeFlag(uint8_t modeFlag)
+{
+    this->modeFlag = modeFlag;
 }
 
 }  // namespace qnemu

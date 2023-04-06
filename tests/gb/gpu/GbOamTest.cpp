@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include "mock/gb/cpu/MockGbCpu.h"
-#include "mock/gb/gpu/MockGbGpu.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbOam.h"
 
@@ -25,40 +24,16 @@ public:
     void SetUp() override
     {
         mockGbCpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbCpu>>();
-        mockGbGpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbGpu>>();
-        gbOam = std::make_unique<qnemu::GbOam>(mockGbCpu, *mockGbGpu);
+        gbOam = std::make_unique<qnemu::GbOam>(mockGbCpu);
     }
 
 protected:
     std::shared_ptr<testing::StrictMock<qnemuMock::MockGbCpu>> mockGbCpu;
-    std::shared_ptr<testing::StrictMock<qnemuMock::MockGbGpu>> mockGbGpu;
     std::unique_ptr<qnemu::GbOam> gbOam;
 };
 
-TEST_F(GbOamTest, ReadAndWriteDataInMode2)
-{
-    EXPECT_CALL(*mockGbGpu, currentMode()).WillRepeatedly(testing::Return(2));
-    EXPECT_CALL(*mockGbGpu, isLcdEnable()).WillRepeatedly(testing::Return(true));
-    for (uint32_t i = qnemu::OamStart; i <= qnemu::OamEnd; i++) {
-        gbOam->write(i, 0);
-        EXPECT_EQ(0xFF, gbOam->read(i));
-    }
-}
-
-TEST_F(GbOamTest, ReadAndWriteDataInMode3)
-{
-    EXPECT_CALL(*mockGbGpu, currentMode()).WillRepeatedly(testing::Return(3));
-    EXPECT_CALL(*mockGbGpu, isLcdEnable()).WillRepeatedly(testing::Return(true));
-    for (uint32_t i = qnemu::OamStart; i <= qnemu::OamEnd; i++) {
-        gbOam->write(i, 0);
-        EXPECT_EQ(0xFF, gbOam->read(i));
-    }
-}
-
 TEST_F(GbOamTest, ReadAndWriteData)
 {
-    EXPECT_CALL(*mockGbGpu, currentMode()).WillRepeatedly(testing::Return(1));
-    EXPECT_CALL(*mockGbGpu, isLcdEnable()).WillRepeatedly(testing::Return(false));
     for (uint32_t i = qnemu::OamStart; i <= qnemu::OamEnd; i++) {
         uint8_t value = distrib(gen);
         gbOam->write(i, value);

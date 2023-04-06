@@ -37,7 +37,11 @@ public:
     GbGpu() = delete;
     GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
-        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler);
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+        std::unique_ptr<GbPalette> gbPalette,
+        std::unique_ptr<GbcPalette> gbcPalette,
+        std::unique_ptr<GbOam> gbOam,
+        std::unique_ptr<GbVideoRam> gbVideoRam);
     ~GbGpu();
 
     uint8_t read(uint16_t address) const override;
@@ -47,11 +51,6 @@ public:
 
     uint8_t currentMode() const override;
     bool isLcdEnable() const override;
-
-    void addGbPalette(std::unique_ptr<GbPalette> gbPalette);
-    void addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette);
-    void addGbOam(std::unique_ptr<GbOam> gbOam);
-    void addGbVideoRam(std::unique_ptr<GbVideoRam> gbVideoRam);
 
 private:
     friend GbPalette;
@@ -128,7 +127,6 @@ private:
     std::unique_ptr<GbOam> gbOam;
     std::unique_ptr<GbVideoRam> gbVideoRam;
     std::stack<uint8_t> spriteStack;
-    std::vector<std::reference_wrapper<GbDeviceInterface>> subDevices;
     uint16_t ticks;
     uint16_t windowLineCounter;
     const std::array<Mode, 4> modes;

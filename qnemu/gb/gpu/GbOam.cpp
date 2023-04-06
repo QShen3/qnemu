@@ -14,7 +14,7 @@
 namespace qnemu
 {
 
-GbOam::GbOam(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : cpu(cpu), gpu(gpu)
+GbOam::GbOam(std::shared_ptr<GbCpuInterface> cpu) : cpu(cpu)
 {
     GbOam::reset();
 }
@@ -22,9 +22,6 @@ GbOam::GbOam(std::shared_ptr<GbCpuInterface> cpu, const GbGpuInterface& gpu) : c
 uint8_t GbOam::read(uint16_t address) const
 {
     if (address >= OamStart && address <= OamEnd) {
-        if ((gpu.currentMode() == 2 || gpu.currentMode() == 3) && gpu.isLcdEnable()) {
-            return 0xFF;
-        }
         return data.at(address - OamStart);
     }
     if (address == 0xFF46) {
@@ -37,9 +34,6 @@ uint8_t GbOam::read(uint16_t address) const
 void GbOam::write(uint16_t address, const uint8_t& value)
 {
     if (address >= OamStart && address <= OamEnd) {
-        if ((gpu.currentMode() == 2 || gpu.currentMode() == 3) && gpu.isLcdEnable()) {
-            return;
-        }
         data.at(address - OamStart) = value;
     }
     if (address == 0xFF46) {

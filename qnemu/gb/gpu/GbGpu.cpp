@@ -29,10 +29,18 @@ namespace qnemu
 
 GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::shared_ptr<DisplayInterface> display,
-        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+        std::unique_ptr<GbPalette> gbPalette,
+        std::unique_ptr<GbcPalette> gbcPalette,
+        std::unique_ptr<GbOam> gbOam,
+        std::unique_ptr<GbVideoRam> gbVideoRam) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),
+    gbPalette(std::move(gbPalette)),
+    gbcPalette(std::move(gbcPalette)),
+    gbOam(std::move(gbOam)),
+    gbVideoRam(std::move(gbVideoRam)),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
@@ -51,8 +59,14 @@ GbGpu::~GbGpu()
 uint8_t GbGpu::read(uint16_t address) const
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
+        if (currentMode() == 3 && isLcdEnable()) {
+            return 0xFF;
+        }
         return gbVideoRam->read(address);
     } else if (address >= OamStart && address <= OamEnd) {
+        if ((currentMode() == 2 || currentMode() == 3) && isLcdEnable()) {
+            return 0xFF;
+        }
         return gbOam->read(address);
     } else if (address == 0xFF40) {
         return registers.lcdControl;
@@ -93,8 +107,14 @@ uint8_t GbGpu::read(uint16_t address) const
 void GbGpu::write(uint16_t address, const uint8_t& value)
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
+        if (currentMode() == 3 && isLcdEnable()) {
+            return;
+        }
         gbVideoRam->write(address, value);
     } else if (address >= OamStart && address <= OamEnd) {
+        if ((currentMode() == 2 || currentMode() == 3) && isLcdEnable()) {
+            return;
+        }
         gbOam->write(address, value);
     } else if (address == 0xFF40) {
         registers.lcdControl = value;
@@ -134,9 +154,10 @@ void GbGpu::write(uint16_t address, const uint8_t& value)
 
 void GbGpu::step()
 {
-    for (auto& subDevice : subDevices) {
-        subDevice.get().step();
-    }
+    gbPalette->step();
+    gbcPalette->step();
+    gbOam->step();
+    gbVideoRam->step();
     if (registers.lcdEnable == 0) {
         ticks = 0;
         return;
@@ -145,6 +166,7 @@ void GbGpu::step()
         auto mode = modes.at(registers.modeFlag);
         ticks = mode.ticks;
         mode.execute();
+        gbVideoRam->setModeFlag(registers.modeFlag);
     } else {
         ticks--;
     }
@@ -156,9 +178,10 @@ void GbGpu::reset()
     registers.lcdControl = 0x91;
     registers.lcdStatus = 0x85;
 
-    for (auto& subDevice : subDevices) {
-        subDevice.get().reset();
-    }
+    gbPalette->reset();
+    gbcPalette->reset();
+    gbOam->reset();
+    gbVideoRam->reset();
 }
 
 uint8_t GbGpu::currentMode() const
@@ -169,30 +192,6 @@ uint8_t GbGpu::currentMode() const
 bool GbGpu::isLcdEnable() const
 {
     return registers.lcdEnable;
-}
-
-void GbGpu::addGbPalette(std::unique_ptr<GbPalette> gbPalette)
-{
-    subDevices.push_back(*gbPalette);
-    this->gbPalette = std::move(gbPalette);
-}
-
-void GbGpu::addGbcPalette(std::unique_ptr<GbcPalette> gbcPalette)
-{
-    subDevices.push_back(*gbcPalette);
-    this->gbcPalette = std::move(gbcPalette);
-}
-
-void GbGpu::addGbOam(std::unique_ptr<GbOam> gbOam)
-{
-    subDevices.push_back(*gbOam);
-    this->gbOam = std::move(gbOam);
-}
-
-void GbGpu::addGbVideoRam(std::unique_ptr<GbVideoRam> gbVideoRam)
-{
-    subDevices.push_back(*gbVideoRam);
-    this->gbVideoRam = std::move(gbVideoRam);
 }
 
 void GbGpu::checklcdYCoordinate()

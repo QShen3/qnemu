@@ -31,21 +31,15 @@ Gb::Gb()
     auto interruptHandler = std::make_shared<GbInterruptHandler>(cpu);
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();
-    auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, interruptHandler);
 
     auto gbPalette = std::make_unique<GbPalette>();
     auto gbcPalette = std::make_unique<GbcPalette>();
-    auto gbOam = std::make_unique<GbOam>(cpu, *gpu);
-    auto gbVideoRam = std::make_unique<GbVideoRam>(*cartridge, cpu, *gpu);
-
-    gpu->addGbPalette(std::move(gbPalette));
-    gpu->addGbcPalette(std::move(gbcPalette));
-    gpu->addGbOam(std::move(gbOam));
-    gpu->addGbVideoRam(std::move(gbVideoRam));
+    auto gbOam = std::make_unique<GbOam>(cpu);
+    auto gbVideoRam = std::make_unique<GbVideoRam>(*cartridge, cpu);
+    auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, interruptHandler, std::move(gbPalette), std::move(gbcPalette), std::move(gbOam), std::move(gbVideoRam));
 
     auto workRam = std::make_shared<GbWorkRam>();
     auto highRam = std::make_shared<GbHighRam>();
-
     auto timer = std::make_shared<GbTimer>(interruptHandler);
     auto joypad = std::make_shared<GbJoypad>(rasterDisplay, interruptHandler);
 
