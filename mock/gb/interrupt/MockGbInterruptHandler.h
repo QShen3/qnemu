@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 
 #include <gmock/gmock.h>
 
@@ -21,6 +22,7 @@ public:
     MOCK_METHOD(void, reset, (), (override));
     MOCK_METHOD(void, step, (), (override));
 
+    MOCK_METHOD(void, registerCpuCallback, (std::function<void(qnemu::GbInterrupt)>), (override));
     MOCK_METHOD(void, requestVBlankInterrupt, (), (override));
     MOCK_METHOD(void, requestLcdInterrupt, (), (override));
     MOCK_METHOD(void, requestTimerInterrupt, (), (override));

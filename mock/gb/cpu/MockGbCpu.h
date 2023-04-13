@@ -12,6 +12,7 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cpu/GbCpuInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 #include "qnemu/gb/mmu/GbMmuInterface.h"
 
 namespace qnemuMock
@@ -24,6 +25,7 @@ public:
     MOCK_METHOD(void, stop, (), (override));
     MOCK_METHOD(void, reset, (), (override));
 
+    MOCK_METHOD(void, interruptCallback, (qnemu::GbInterrupt), (override));
     MOCK_METHOD(bool, isInHaltMode, (), (const, override));
     MOCK_METHOD(void, exitHaltMode, (), (override));
     MOCK_METHOD(bool, isInStopMode, (), (const, override));

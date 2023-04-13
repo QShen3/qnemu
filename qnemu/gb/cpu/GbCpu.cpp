@@ -6,14 +6,16 @@
 
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <thread>
 
 #include "qnemu/gb/cpu/GbCpu.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
 
-GbCpu::GbCpu() :
+GbCpu::GbCpu(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
     instructions({
         Instruction
         { "NOP",                     1, 4,  [this](){nop();}       },
@@ -534,6 +536,8 @@ GbCpu::GbCpu() :
     })
 {
     GbCpu::reset();
+
+    interruptHandler->registerCpuCallback(std::bind(&GbCpu::interruptCallback, this,  std::placeholders::_1));
 }
 
 GbCpu::~GbCpu()
@@ -577,7 +581,31 @@ void GbCpu::reset()
     if (mmu) {
         mmu->reset();
     }
-    
+}
+
+void GbCpu::interruptCallback(GbInterrupt interrupt)
+{
+    if (interrupt == GbInterrupt::vBlank) {
+        jumpToAddress(0x40);
+    } else if (interrupt == GbInterrupt::lcd) {
+        jumpToAddress(0x48);
+    } else if (interrupt == GbInterrupt::timer) {
+        jumpToAddress(0x50);
+    } else if (interrupt == GbInterrupt::serial) {
+        jumpToAddress(0x58);
+    } else if (interrupt == GbInterrupt::joypad) {
+        jumpToAddress(0x60);
+    } else if (interrupt == GbInterrupt::cancel) {
+        cancelInterrupt();
+    } else if (interrupt == GbInterrupt::exitHalt) {
+        if (isInHaltMode()) {
+            exitHaltMode();
+        }
+    } else if (interrupt == GbInterrupt::exitStop) {
+        if (isInStopMode()) {
+            exitStopMode();
+        }
+    } 
 }
 
 bool GbCpu::isInHaltMode() const

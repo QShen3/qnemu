@@ -26,9 +26,10 @@ namespace qnemu
 
 Gb::Gb()
 {
-    cpu = std::make_shared<GbCpu>();
+    auto interruptHandler = std::make_shared<GbInterruptHandler>();
 
-    auto interruptHandler = std::make_shared<GbInterruptHandler>(cpu);
+    cpu = std::make_shared<GbCpu>(interruptHandler);
+
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();
 

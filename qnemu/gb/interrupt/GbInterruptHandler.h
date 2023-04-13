@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
@@ -20,14 +19,15 @@ class GbTimer;
 class GbInterruptHandler : public GbInterruptHandlerInterface
 {
 public:
-    GbInterruptHandler() = delete;
-    explicit GbInterruptHandler(std::shared_ptr<GbCpuInterface> cpu);
+    GbInterruptHandler();
     ~GbInterruptHandler() = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
+
+    void registerCpuCallback(std::function<void(GbInterrupt)>) override;
 
     void requestVBlankInterrupt() override;
     void requestLcdInterrupt() override;
@@ -60,7 +60,7 @@ private:
             uint8_t interruptEnabled;
         };
     } registers;
-    std::weak_ptr<GbCpuInterface> cpu;
+    std::function<void(GbInterrupt)> cpuCallback;
 };
 
 }  // namespace qnemu

@@ -14,6 +14,7 @@
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/cpu/Instruction.h"
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 #include "qnemu/gb/mmu/GbMmuInterface.h"
 
 namespace qnemu
@@ -24,13 +25,15 @@ class GbGpu;
 class GbCpu : public GbCpuInterface
 {
 public:
-    GbCpu();
+    GbCpu() = delete;
+    explicit GbCpu(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler);
     ~GbCpu();
 
     void start() override;
     void stop() override;
     void reset() override;
 
+    void interruptCallback(GbInterrupt interrupt) override;
     bool isInHaltMode() const override;
     void exitHaltMode() override;
     bool isInStopMode() const override;

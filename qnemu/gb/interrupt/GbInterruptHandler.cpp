@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <memory>
 
 #include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
@@ -12,7 +11,7 @@
 namespace qnemu
 {
 
-GbInterruptHandler::GbInterruptHandler(std::shared_ptr<GbCpuInterface> cpu) : cpu(cpu)
+GbInterruptHandler::GbInterruptHandler()
 {
     GbInterruptHandler::reset();
 }
@@ -52,9 +51,13 @@ void GbInterruptHandler::step()
         return;
     }
     if (registers.vBlankEnabled & registers.vBlankRequest) {
-        cpu.lock()->jumpToAddress(0x40);
+        if (cpuCallback) {
+            cpuCallback(GbInterrupt::vBlank);
+        }
         if (!registers.vBlankEnabled) {
-            cpu.lock()->cancelInterrupt();
+            if (cpuCallback) {
+                cpuCallback(GbInterrupt::cancel);
+            }
         } else {
             registers.vBlankRequest = 0;
             GbDeviceInterface::interruptMasterEnabled = false;
@@ -62,9 +65,13 @@ void GbInterruptHandler::step()
         }
     }
     if (registers.lcdEnabled & registers.lcdRequest) {
-        cpu.lock()->jumpToAddress(0x48);
+        if (cpuCallback) {
+            cpuCallback(GbInterrupt::lcd);
+        }
         if (!registers.lcdEnabled) {
-            cpu.lock()->cancelInterrupt();
+            if (cpuCallback) {
+                cpuCallback(GbInterrupt::cancel);
+            }
         } else {
             registers.lcdRequest = 0;
             GbDeviceInterface::interruptMasterEnabled = false;
@@ -72,9 +79,13 @@ void GbInterruptHandler::step()
         }
     }
     if (registers.timerEnabled & registers.timerRequest) {
-        cpu.lock()->jumpToAddress(0x50);
+        if (cpuCallback) {
+            cpuCallback(GbInterrupt::timer);
+        }
         if (!registers.timerEnabled) {
-            cpu.lock()->cancelInterrupt();
+            if (cpuCallback) {
+                cpuCallback(GbInterrupt::cancel);
+            }
         } else {
             registers.timerRequest = 0;
             GbDeviceInterface::interruptMasterEnabled = false;
@@ -82,13 +93,17 @@ void GbInterruptHandler::step()
         }
     }
     if (registers.serialEnabled & registers.serialRequest) {
-        cpu.lock()->jumpToAddress(0x58);
+        if (cpuCallback) {
+            cpuCallback(GbInterrupt::serial);
+        }
         registers.serialRequest = 0;
         GbDeviceInterface::interruptMasterEnabled = false;
         return;
     }
     if (registers.joyPadEnabled & registers.joyPadRequest) {
-        cpu.lock()->jumpToAddress(0x60);
+        if (cpuCallback) {
+            cpuCallback(GbInterrupt::joypad);
+        }
         registers.joyPadRequest = 0;
         GbDeviceInterface::interruptMasterEnabled = false;
         return;
@@ -102,52 +117,57 @@ void GbInterruptHandler::reset()
     registers.interruptEnabled = 0;
 }
 
+void GbInterruptHandler::registerCpuCallback(std::function<void(GbInterrupt)> cpuCallback)
+{
+    this->cpuCallback = cpuCallback;
+}
+
 void GbInterruptHandler::requestVBlankInterrupt()
 {
     registers.vBlankRequest = 1;
-    if (cpu.lock()->isInHaltMode()) {
-        cpu.lock()->exitHaltMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitHalt);
     }
 }
 
 void GbInterruptHandler::requestLcdInterrupt()
 {
     registers.lcdRequest = 1;
-    if (cpu.lock()->isInHaltMode()) {
-        cpu.lock()->exitHaltMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitHalt);
     }
 }
 
 void GbInterruptHandler::requestTimerInterrupt()
 {
     registers.timerRequest = 1;
-    if (cpu.lock()->isInHaltMode()) {
-        cpu.lock()->exitHaltMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitHalt);
     }
-    if (cpu.lock()->isInStopMode()) {
-        cpu.lock()->exitStopMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitStop);
     }
 }
 
 void GbInterruptHandler::requestSerialInterrupt()
 {
     registers.serialRequest = 1;
-    if (cpu.lock()->isInHaltMode()) {
-        cpu.lock()->exitHaltMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitHalt);
     }
-    if (cpu.lock()->isInStopMode()) {
-        cpu.lock()->exitStopMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitStop);
     }
 }
 
 void GbInterruptHandler::requestJoypadInterrupt()
 {
     registers.joyPadRequest = 1;
-    if (cpu.lock()->isInHaltMode()) {
-        cpu.lock()->exitHaltMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitHalt);
     }
-    if (cpu.lock()->isInStopMode()) {
-        cpu.lock()->exitStopMode();
+    if (cpuCallback) {
+        cpuCallback(GbInterrupt::exitStop);
     }
 }
 
