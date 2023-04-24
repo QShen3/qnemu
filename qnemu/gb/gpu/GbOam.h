@@ -6,12 +6,12 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
 
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/const.h"
-#include "qnemu/gb/cpu/GbCpuInterface.h"
-#include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/gpu/GbVideoRam.h"
+#include "qnemu/gb/memory/GbWorkRam.h"
 
 namespace qnemu
 {
@@ -20,7 +20,9 @@ class GbOam : public GbDeviceInterface
 {
 public:
     GbOam() = delete;
-    explicit GbOam(std::shared_ptr<GbCpuInterface> cpu);
+    explicit GbOam(const GbCartridgeInterface& cartridge,
+        const GbVideoRam& videoRam,
+        const GbWorkRam& workRam);
     ~GbOam() = default;
 
     uint8_t read(uint16_t address) const override;
@@ -35,9 +37,12 @@ private:
         uint8_t dmaTransferAndStartAddress;  // FF46
     } registers;
 
-    std::weak_ptr<GbCpuInterface> cpu;
     std::array<uint8_t, OamSize> data;
     uint16_t dmaTicks;
+    const GbCartridgeInterface& cartridge;
+    const GbVideoRam& videoRam;
+    const GbWorkRam& workRam;
+
     bool isDmaInProgress;
 };
 

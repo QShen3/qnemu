@@ -41,7 +41,7 @@ public:
         std::unique_ptr<GbPalette> gbPalette,
         std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<GbOam> gbOam,
-        std::unique_ptr<GbVideoRam> gbVideoRam);
+        std::shared_ptr<GbVideoRam> gbVideoRam);
     ~GbGpu();
 
     uint8_t read(uint16_t address) const override;
@@ -125,7 +125,7 @@ private:
     std::unique_ptr<GbPalette> gbPalette;
     std::unique_ptr<GbcPalette> gbcPalette;
     std::unique_ptr<GbOam> gbOam;
-    std::unique_ptr<GbVideoRam> gbVideoRam;
+    std::shared_ptr<GbVideoRam> gbVideoRam;
     std::stack<uint8_t> spriteStack;
     uint16_t ticks;
     uint16_t windowLineCounter;

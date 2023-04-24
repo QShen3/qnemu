@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include <gmock/gmock.h>
 
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"

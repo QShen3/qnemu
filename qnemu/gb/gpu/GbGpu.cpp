@@ -33,14 +33,14 @@ GbGpu::GbGpu(const GbCartridgeInterface& cartridge,
         std::unique_ptr<GbPalette> gbPalette,
         std::unique_ptr<GbcPalette> gbcPalette,
         std::unique_ptr<GbOam> gbOam,
-        std::unique_ptr<GbVideoRam> gbVideoRam) :
+        std::shared_ptr<GbVideoRam> gbVideoRam) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),
     gbPalette(std::move(gbPalette)),
     gbcPalette(std::move(gbcPalette)),
     gbOam(std::move(gbOam)),
-    gbVideoRam(std::move(gbVideoRam)),
+    gbVideoRam(gbVideoRam),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
