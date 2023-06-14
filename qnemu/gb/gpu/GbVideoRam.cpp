@@ -10,13 +10,14 @@
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbGpu.h"
 #include "qnemu/gb/gpu/GbVideoRam.h"
+#include "qnemu/gb/memory/GbWorkRam.h"
 
 namespace qnemu
 {
 
-GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, std::shared_ptr<GbCpuInterface> cpu) :
+GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, const GbWorkRam& workRam) :
     cartridge(cartridge),
-    cpu(cpu)
+    workRam(workRam)
 {
     GbVideoRam::reset();
 }
@@ -102,7 +103,18 @@ void GbVideoRam::step()
     }
 
     for (uint8_t i = 0; i < 0x10; i++) {
-        write(destination, cpu.lock()->readByte(source));
+        uint16_t address = source + i;
+        if (address <= MemoryRomBank01End) {
+            write(destination, cartridge.read(address));
+        } else if (address >= VideoRamStart && address <= VideoRamEnd) {
+            write(destination, read(address));
+        } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
+            write(destination, cartridge.read(address));
+        } else if (address >= WorkRamBank00Start && address <= WorkRamBank01End) {
+            write(destination, workRam.read(address));
+        } else {
+            assert(false && "Wrong dma address");
+        }
     }
     length = length - 0x10;
     if (length == 0) {

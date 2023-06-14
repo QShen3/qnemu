@@ -38,7 +38,7 @@ Gb::Gb()
 
     auto palette = std::make_unique<GbPalette>();
     auto coloredPalette = std::make_unique<GbcPalette>();
-    auto gbVideoRam = std::make_shared<GbVideoRam>(*cartridge, cpu);
+    auto gbVideoRam = std::make_shared<GbVideoRam>(*cartridge, *workRam);
     auto oam = std::make_unique<GbOam>(*cartridge, *gbVideoRam, *workRam);
     auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, interruptHandler, std::move(palette), std::move(coloredPalette), std::move(oam), gbVideoRam);
 
