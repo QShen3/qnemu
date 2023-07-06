@@ -11,11 +11,15 @@
 
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
+#include "qnemu/gb/mmu/GbMmuInterface.h"
 
 namespace qnemu
 {
 
-GbCpu::GbCpu(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
+GbCpu::GbCpu(
+    std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+    std::unique_ptr<GbMmuInterface> mmu) :
+    mmu(std::move(mmu)),
     instructions({
         Instruction
         { "NOP",                     1, 4,  [this](){nop();}       },
@@ -643,14 +647,9 @@ void GbCpu::cancelInterrupt()
     registers.pc = 0;
 }
 
-void GbCpu::addDisplay(std::shared_ptr<DisplayInterface> display)
+void GbCpu::setDisplay(std::shared_ptr<DisplayInterface> display)
 {
     this->display = display;
-}
-
-void GbCpu::addMmu(std::unique_ptr<GbMmuInterface> mmu)
-{
-    this->mmu = std::move(mmu);
 }
 
 void GbCpu::exec()

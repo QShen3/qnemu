@@ -26,7 +26,9 @@ class GbCpu : public GbCpuInterface
 {
 public:
     GbCpu() = delete;
-    explicit GbCpu(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler);
+    explicit GbCpu(
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+        std::unique_ptr<GbMmuInterface> mmu);
     ~GbCpu();
 
     void start() override;
@@ -40,8 +42,7 @@ public:
     void exitStopMode() override;
     void jumpToAddress(uint16_t address) override;
     void cancelInterrupt() override;
-    void addMmu(std::unique_ptr<GbMmuInterface> mmu) override;
-    void addDisplay(std::shared_ptr<DisplayInterface> display) override;
+    void setDisplay(std::shared_ptr<DisplayInterface> display) override;
 
 private:
     friend GbGpu;

@@ -26,8 +26,7 @@ public:
     virtual void exitStopMode() = 0;
     virtual void jumpToAddress(uint16_t address) = 0;
     virtual void cancelInterrupt() = 0;
-    virtual void addMmu(std::unique_ptr<GbMmuInterface> mmu) = 0;
-    virtual void addDisplay(std::shared_ptr<DisplayInterface> display) = 0;
+    virtual void setDisplay(std::shared_ptr<DisplayInterface> display) = 0;
 
     virtual uint8_t readByte(uint16_t address) const = 0;
     virtual void writeByte(uint16_t address, uint8_t value) = 0;
