@@ -24,12 +24,12 @@ class GbMmu : public GbMmuInterface
 public:
     GbMmu() = delete;
     GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
-        std::shared_ptr<GbGpuInterface> gpu,
-        std::shared_ptr<GbHighRam> highRam,
+        std::unique_ptr<GbGpuInterface> gpu,
+        std::unique_ptr<GbHighRam> highRam,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
-        std::shared_ptr<GbJoypad> joypad,
-        std::shared_ptr<GbWorkRam> workRam,
-        std::shared_ptr<GbTimer> timer);
+        std::unique_ptr<GbJoypad> joypad,
+        std::unique_ptr<GbWorkRam> workRam,
+        std::unique_ptr<GbTimer> timer);
     ~GbMmu() = default;
 
     uint8_t read(uint16_t address) const override;
@@ -39,12 +39,12 @@ public:
 
 private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
-    std::shared_ptr<GbGpuInterface> gpu;
-    std::shared_ptr<GbHighRam> highRam;
+    std::unique_ptr<GbGpuInterface> gpu;
+    std::unique_ptr<GbHighRam> highRam;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
-    std::shared_ptr<GbJoypad> joypad;
-    std::shared_ptr<GbWorkRam> workRam;
-    std::shared_ptr<GbTimer> timer;
+    std::unique_ptr<GbJoypad> joypad;
+    std::unique_ptr<GbWorkRam> workRam;
+    std::unique_ptr<GbTimer> timer;
 };
 
 }  // namespace qnemu

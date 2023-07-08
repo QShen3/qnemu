@@ -29,20 +29,21 @@ Gb::Gb()
 {
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();
-    auto workRam = std::make_shared<GbWorkRam>();
-    auto highRam = std::make_shared<GbHighRam>();
     auto interruptHandler = std::make_shared<GbInterruptHandler>();
-    auto timer = std::make_shared<GbTimer>(interruptHandler);
-    auto joypad = std::make_shared<GbJoypad>(rasterDisplay, interruptHandler);
+
+    auto workRam = std::make_unique<GbWorkRam>();
+    auto highRam = std::make_unique<GbHighRam>();
+    auto timer = std::make_unique<GbTimer>(interruptHandler);
+    auto joypad = std::make_unique<GbJoypad>(rasterDisplay, interruptHandler);
 
     auto palette = std::make_unique<GbPalette>();
     auto coloredPalette = std::make_unique<GbcPalette>();
     auto videoRam = std::make_unique<GbVideoRam>(*cartridge, *workRam);
     auto oam = std::make_unique<GbOam>(*cartridge, *videoRam, *workRam);
     auto render = std::make_unique<GbRender>(*cartridge, rasterDisplay, interruptHandler, *palette, *coloredPalette, *oam, *videoRam);
-    auto gpu = std::make_shared<GbGpu>(std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
+    auto gpu = std::make_unique<GbGpu>(std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
 
-    auto mmu = std::make_unique<GbMmu>(cartridge, gpu, highRam, interruptHandler, joypad, workRam, timer);
+    auto mmu = std::make_unique<GbMmu>(cartridge, std::move(gpu), std::move(highRam), interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
 
     cpu = std::make_shared<GbCpu>(interruptHandler, std::move(mmu));
     cpu->setDisplay(rasterDisplay);

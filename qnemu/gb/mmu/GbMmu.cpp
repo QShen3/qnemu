@@ -15,19 +15,19 @@ namespace qnemu
 {
 
 GbMmu::GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
-        std::shared_ptr<GbGpuInterface> gpu,
-        std::shared_ptr<GbHighRam> highRam,
+        std::unique_ptr<GbGpuInterface> gpu,
+        std::unique_ptr<GbHighRam> highRam,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
-        std::shared_ptr<GbJoypad> joypad,
-        std::shared_ptr<GbWorkRam> workRam,
-        std::shared_ptr<GbTimer> timer) :
+        std::unique_ptr<GbJoypad> joypad,
+        std::unique_ptr<GbWorkRam> workRam,
+        std::unique_ptr<GbTimer> timer) :
     cartridge(cartridge),
-    gpu(gpu),
-    highRam(highRam),
+    gpu(std::move(gpu)),
+    highRam(std::move(highRam)),
     interruptHandler(interruptHandler),
-    joypad(joypad),
-    workRam(workRam),
-    timer(timer)
+    joypad(std::move(joypad)),
+    workRam(std::move(workRam)),
+    timer(std::move(timer))
 {
 
 }
