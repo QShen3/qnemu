@@ -14,6 +14,7 @@
 #include "qnemu/gb/gpu/GbVideoRam.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/GbOam.h"
+#include "qnemu/gb/gpu/GbRender.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
@@ -36,9 +37,10 @@ Gb::Gb()
 
     auto palette = std::make_unique<GbPalette>();
     auto coloredPalette = std::make_unique<GbcPalette>();
-    auto gbVideoRam = std::make_shared<GbVideoRam>(*cartridge, *workRam);
-    auto oam = std::make_unique<GbOam>(*cartridge, *gbVideoRam, *workRam);
-    auto gpu = std::make_shared<GbGpu>(*cartridge, rasterDisplay, interruptHandler, std::move(palette), std::move(coloredPalette), std::move(oam), gbVideoRam);
+    auto videoRam = std::make_unique<GbVideoRam>(*cartridge, *workRam);
+    auto oam = std::make_unique<GbOam>(*cartridge, *videoRam, *workRam);
+    auto render = std::make_unique<GbRender>(*cartridge, rasterDisplay, interruptHandler, *palette, *coloredPalette, *oam, *videoRam);
+    auto gpu = std::make_shared<GbGpu>(std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
 
     auto mmu = std::make_unique<GbMmu>(cartridge, gpu, highRam, interruptHandler, joypad, workRam, timer);
 

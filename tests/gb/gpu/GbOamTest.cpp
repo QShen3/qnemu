@@ -24,25 +24,25 @@ class GbOamTest : public testing::Test
 public:
     void SetUp() override
     {
-        // gbOam = std::make_unique<qnemu::GbOam>();
+        // oam = std::make_unique<qnemu::GbOam>();
     }
 
 protected:
     testing::StrictMock<qnemuMock::MockGbCartridge> mockCartridge;
-    std::unique_ptr<qnemu::GbOam> gbOam;
+    std::unique_ptr<qnemu::GbOam> oam;
 };
 
 TEST_F(GbOamTest, ReadAndWriteData)
 {
     // for (uint32_t i = qnemu::OamStart; i <= qnemu::OamEnd; i++) {
     //     uint8_t value = distrib(gen);
-    //     gbOam->write(i, value);
-    //     EXPECT_EQ(value, gbOam->read(i));
+    //     oam->write(i, value);
+    //     EXPECT_EQ(value, oam->read(i));
     // }
 
     // uint8_t value = distrib(gen);
-    // gbOam->write(0xFF46, value);
-    // EXPECT_EQ(value, gbOam->read(0xFF46));
+    // oam->write(0xFF46, value);
+    // EXPECT_EQ(value, oam->read(0xFF46));
 }
 
 }  // namespace qnemuTest
