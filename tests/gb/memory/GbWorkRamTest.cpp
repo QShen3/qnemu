@@ -83,4 +83,10 @@ TEST(GbWorkRamTest, Reset)
     EXPECT_EQ(gbWorkRam.read(0xFF70), 1);
 }
 
+TEST(GbWorkRamTest, Step)
+{
+    qnemu::GbWorkRam gbWorkRam;
+    EXPECT_NO_THROW(gbWorkRam.step());
+}
+
 }  // namespace qnemuTest

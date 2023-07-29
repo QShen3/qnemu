@@ -19,12 +19,12 @@ namespace qnemu
 {
 
 GbRender::GbRender(const GbCartridgeInterface& cartridge,
-    std::shared_ptr<DisplayInterface> display,
-    std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
-    const GbPalette& gbPalette,
-    const GbcPalette& gbcPalette,
-    const GbOam& oam,
-    const GbVideoRam& videoRam) :
+        std::shared_ptr<DisplayInterface> display,
+        std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
+        const GbPalette& gbPalette,
+        const GbcPalette& gbcPalette,
+        const GbOam& oam,
+        const GbVideoRam& videoRam) :
     cartridge(cartridge),
     display(display),
     interruptHandler(interruptHandler),

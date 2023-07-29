@@ -67,18 +67,18 @@ TEST(GbCircuitMbcTest, ReadFromNoneExistRam)
     }
 }
 
-// TEST(GbCircuitMbcTest, ReadFromWrongAddress)
-// {
-//     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
-//     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+TEST(GbCircuitMbcTest, ReadFromWrongAddress)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
 
-//     qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
-//     for (uint32_t i = 0; i <= 0xFFFF; i++) {
-//         if (gbCircuitMbc.accepts(i) == false) {
-//             EXPECT_EQ(0xFF, gbCircuitMbc.read(i));
-//         }
-//     }
-// }
+    qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
+    for (uint32_t i = 0; i <= 0xFFFF; i++) {
+        if (gbCircuitMbc.accepts(i) == false) {
+            EXPECT_EQ(0xFF, gbCircuitMbc.read(i));
+        }
+    }
+}
 #endif
 
 TEST(GbCircuitMbcTest, ReadFromRam)

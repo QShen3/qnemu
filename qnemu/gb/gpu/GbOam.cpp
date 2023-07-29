@@ -14,8 +14,8 @@ namespace qnemu
 {
 
 GbOam::GbOam(const GbCartridgeInterface& cartridge,
-        const GbVideoRam& videoRam,
-        const GbWorkRam& workRam) :
+        const GbDeviceInterface& videoRam,
+        const GbDeviceInterface& workRam) :
     cartridge(cartridge),
     videoRam(videoRam),
     workRam(workRam)

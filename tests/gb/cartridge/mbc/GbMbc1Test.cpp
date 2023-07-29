@@ -85,7 +85,7 @@ TEST(GbMbc1Test, ReadFromRom)
         }
 
         for (uint16_t i = qnemu::RomBankSize; i < qnemu::RomBankSize * 2; i++) {
-            for (uint8_t j = 1; j < (size & 32); j++) {
+            for (uint8_t j = 1; j < (size > 32 ? 32 : size); j++) {
                 gbMbc1.write(qnemu::GbMbc1::romBankNumberAddress, (j & 0b11111));
                 if (size < 64) {
                     EXPECT_EQ(gbMbc1.read(i), romDataBanks->at(j).at(i - qnemu::MemoryRomBank01Start));
@@ -115,18 +115,18 @@ TEST(GbMbc1Test, ReadWhenRamDisabled)
     }
 }
 
-// TEST(GbMbc1Test, ReadFromWrongAddress)
-// {
-//     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
-//     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+TEST(GbMbc1Test, ReadFromWrongAddress)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
 
-//     qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
-//     for (uint32_t i = 0; i <= 0xFFFF; i++) {
-//         if (gbMbc1.accepts(i) == false) {
-//             EXPECT_EQ(0xFF, gbMbc1.read(i));
-//         }
-//     }
-// }
+    qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 0);
+    for (uint32_t i = 0; i <= 0xFFFF; i++) {
+        if (gbMbc1.accepts(i) == false) {
+            EXPECT_EQ(0xFF, gbMbc1.read(i));
+        }
+    }
+}
 #endif
 
 TEST(GbMbc1Test, ReadFromRam)

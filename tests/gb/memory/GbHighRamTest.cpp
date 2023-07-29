@@ -41,4 +41,11 @@ TEST(GbHighRamTest, ReadAndWrite)
     }
 }
 
+TEST(GbHighRamTest, StepAndReset)
+{
+    qnemu::GbHighRam gbHighRam;
+    EXPECT_NO_THROW(gbHighRam.step());
+    EXPECT_NO_THROW(gbHighRam.reset());
+}
+
 }  // namespace qnemuTest

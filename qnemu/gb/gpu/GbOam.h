@@ -10,8 +10,6 @@
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/const.h"
-#include "qnemu/gb/gpu/GbVideoRam.h"
-#include "qnemu/gb/memory/GbWorkRam.h"
 
 namespace qnemu
 {
@@ -21,8 +19,8 @@ class GbOam : public GbDeviceInterface
 public:
     GbOam() = delete;
     explicit GbOam(const GbCartridgeInterface& cartridge,
-        const GbVideoRam& videoRam,
-        const GbWorkRam& workRam);
+        const GbDeviceInterface& videoRam,
+        const GbDeviceInterface& workRam);
     ~GbOam() = default;
 
     uint8_t read(uint16_t address) const override;
@@ -40,8 +38,8 @@ private:
     std::array<uint8_t, OamSize> data;
     uint16_t dmaTicks;
     const GbCartridgeInterface& cartridge;
-    const GbVideoRam& videoRam;
-    const GbWorkRam& workRam;
+    const GbDeviceInterface& videoRam;
+    const GbDeviceInterface& workRam;
 
     bool isDmaInProgress;
 };
