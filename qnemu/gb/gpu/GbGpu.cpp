@@ -47,10 +47,6 @@ GbGpu::GbGpu(std::unique_ptr<GbPalette> palette,
     GbGpu::reset();
 }
 
-GbGpu::~GbGpu()
-{
-}
-
 uint8_t GbGpu::read(uint16_t address) const
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {

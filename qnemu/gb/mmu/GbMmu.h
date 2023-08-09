@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "qnemu/gb/apu/GbApu.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
@@ -23,7 +24,8 @@ class GbMmu : public GbMmuInterface
 {
 public:
     GbMmu() = delete;
-    GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
+    GbMmu(std::unique_ptr<GbApu> apu,
+        std::shared_ptr<GbCartridgeInterface> cartridge,
         std::unique_ptr<GbGpuInterface> gpu,
         std::unique_ptr<GbHighRam> highRam,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
@@ -38,6 +40,7 @@ public:
     void reset() override;
 
 private:
+    std::unique_ptr<GbApu> apu;
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GbGpuInterface> gpu;
     std::unique_ptr<GbHighRam> highRam;

@@ -8,6 +8,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gpu GPU_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/joypad JOYPAD_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/timer TIMER_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/mmu MMU_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/apu APU_SRCS)
 
 add_library(
     gb OBJECT
@@ -21,6 +22,7 @@ add_library(
     ${JOYPAD_SRCS}
     ${TIMER_SRCS}
     ${MMU_SRCS}
+    ${APU_SRCS}
 )
 
 # Library

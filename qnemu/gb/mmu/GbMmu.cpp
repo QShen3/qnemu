@@ -14,13 +14,15 @@
 namespace qnemu
 {
 
-GbMmu::GbMmu(std::shared_ptr<GbCartridgeInterface> cartridge,
+GbMmu::GbMmu(std::unique_ptr<GbApu> apu,
+        std::shared_ptr<GbCartridgeInterface> cartridge,
         std::unique_ptr<GbGpuInterface> gpu,
         std::unique_ptr<GbHighRam> highRam,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<GbWorkRam> workRam,
         std::unique_ptr<GbTimer> timer) :
+    apu(std::move(apu)),
     cartridge(cartridge),
     gpu(std::move(gpu)),
     highRam(std::move(highRam)),
@@ -48,6 +50,8 @@ uint8_t GbMmu::read(uint16_t address) const
         return joypad->read(address);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
         return timer->read(address);
+    } else if (address >= 0xFF10 && address <= 0xFF26) {
+        return apu->read(address);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
         return gpu->read(address);
     } else if (address == 0xFF4F) {
@@ -83,6 +87,8 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         joypad->write(address, value);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
         timer->write(address, value);
+    } else if (address >= 0xFF10 && address <= 0xFF26) {
+        apu->write(address, value);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
         gpu->write(address, value);
     } else if (address == 0xFF4F) {
@@ -104,6 +110,7 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
 
 void GbMmu::step()
 {
+    apu->step();
     cartridge->step();
     gpu->step();
     workRam->step();
@@ -115,6 +122,7 @@ void GbMmu::step()
 
 void GbMmu::reset()
 {
+    apu->reset();
     cartridge->reset();
     gpu->reset();
     workRam->reset();

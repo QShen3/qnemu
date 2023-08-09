@@ -7,6 +7,7 @@
 
 #include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
+#include "qnemu/gb/apu/GbApu.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/GbGpu.h"
@@ -27,6 +28,8 @@ namespace qnemu
 
 Gb::Gb()
 {
+    auto apu = std::make_unique<GbApu>();
+
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();
     auto interruptHandler = std::make_shared<GbInterruptHandler>();
@@ -43,7 +46,7 @@ Gb::Gb()
     auto render = std::make_unique<GbRender>(*cartridge, rasterDisplay, interruptHandler, *palette, *coloredPalette, *oam, *videoRam);
     auto gpu = std::make_unique<GbGpu>(std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
 
-    auto mmu = std::make_unique<GbMmu>(cartridge, std::move(gpu), std::move(highRam), interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
+    auto mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(gpu), std::move(highRam), interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
 
     cpu = std::make_shared<GbCpu>(interruptHandler, std::move(mmu));
     cpu->setDisplay(rasterDisplay);

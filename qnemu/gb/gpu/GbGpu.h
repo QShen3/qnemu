@@ -38,7 +38,7 @@ public:
         std::unique_ptr<GbOam> oam,
         std::unique_ptr<GbVideoRam> videoRam,
         std::unique_ptr<GbRender> gbRender);
-    ~GbGpu();
+    ~GbGpu() = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
