@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <array>
+#include <cstdint>
+
 #include "qnemu/gb/GbDeviceInterface.h"
 
 namespace qnemu
@@ -51,7 +54,7 @@ private:
             struct {
                 uint8_t channel1PeriodHigh : 3;
                 uint8_t : 3;
-                uint8_t channel1SoundLenghtEnable : 1;
+                uint8_t channel1SoundLengthEnable : 1;
                 uint8_t channel1Trigger : 1;
             };
             uint8_t channel1PeriodHighAndControl;
@@ -76,7 +79,7 @@ private:
             struct {
                 uint8_t channel2PeriodHigh : 3;
                 uint8_t : 3;
-                uint8_t channel2SoundLenghtEnable : 1;
+                uint8_t channel2SoundLengthEnable : 1;
                 uint8_t channel2Trigger : 1;
             };
             uint8_t channel2PeriodHighAndControl;
@@ -102,12 +105,71 @@ private:
             struct {
                 uint8_t channel3PeriodHigh : 3;
                 uint8_t : 3;
-                uint8_t channel3SoundLenghtEnable : 1;
+                uint8_t channel3SoundLengthEnable : 1;
                 uint8_t channel3Trigger : 1;
             };
             uint8_t channel3PeriodHighAndControl;
         };  // FF1E
+        uint8_t channel4LengthTimer;  // FF20
+        union {
+            struct {
+                uint8_t channel4SweepPace : 3;
+                uint8_t channel4EnvelopeDirection : 1;
+                uint8_t channel4InitialVolumeOfEnvelope : 4;
+            };
+            uint8_t channel4VolumeAndEnvelope;
+        };  // FF21
+        union {
+            struct {
+                uint8_t channel4ClockDivider : 3;
+                uint8_t channel4LfsrWidth : 1;
+                uint8_t channel4ClockShift : 4;
+            };
+            uint8_t channel4FrequencyAndRandomness;
+        };  // FF22
+        union {
+            struct {
+                uint8_t : 6;
+                uint8_t channel4SoundLengthEnable : 1;
+                uint8_t channel4Trigger : 4;
+            };
+            uint8_t channel4Control;
+        };  // FF23
+        union {
+            struct {
+                uint8_t rightOutputVolume : 3;
+                uint8_t mixVinIntoRightOutput : 1;
+                uint8_t LeftOutputVolume : 3;
+                uint8_t mixVinIntoLeftOutput : 1;
+            };
+            uint8_t masterVolumeAndVinPanning;
+        };  // FF24
+        union {
+            struct {
+                uint8_t mixChannel1IntoRightOutput : 1;
+                uint8_t mixChannel2IntoRightOutput : 1;
+                uint8_t mixChannel3IntoRightOutput : 1;
+                uint8_t mixChannel4IntoRightOutput : 1;
+                uint8_t mixChannel1IntoLeftOutput : 1;
+                uint8_t mixChannel2IntoLeftOutput : 1;
+                uint8_t mixChannel3IntoLeftOutput : 1;
+                uint8_t mixChannel4IntoLeftOutput : 1;
+            };
+            uint8_t soundPanning;
+        };  // FF25
+        union {
+            struct {
+                uint8_t channel1OnFlag : 1;
+                uint8_t channel2OnFlag : 1;
+                uint8_t channel3OnFlag : 1;
+                uint8_t channel4OnFlag : 1;
+                uint8_t : 3;
+                uint8_t allSoundOnOrOff : 1;
+            };
+            uint8_t soundOnOrOff;
+        };  // FF26
     } registers;
+    std::array<uint8_t, 0xF> wavePatternRam;
 };
 
 }  // namespace qnemu

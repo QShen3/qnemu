@@ -26,13 +26,6 @@ add_executable(
 include(GoogleTest)
 gtest_discover_tests(qnemu_test)
 
-include(os_release_info)
-
-get_os_release_info(OS_NAME OS_VERSION OS_CODENAME)
-if("" STREQUAL OS_NAME)
-    set(OS_NAME "UNKNOWN")
-endif()
-
 find_package(GTest REQUIRED)
 find_package(Qt6 COMPONENTS Widgets)
 

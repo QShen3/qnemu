@@ -52,6 +52,8 @@ uint8_t GbMmu::read(uint16_t address) const
         return timer->read(address);
     } else if (address >= 0xFF10 && address <= 0xFF26) {
         return apu->read(address);
+    } else if (address >= 0xFF30 && address <= 0xFF3F) {
+        return apu->read(address);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
         return gpu->read(address);
     } else if (address == 0xFF4F) {
@@ -88,6 +90,8 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
     } else if (address >= 0xFF04 && address <= 0xFF07) {
         timer->write(address, value);
     } else if (address >= 0xFF10 && address <= 0xFF26) {
+        apu->write(address, value);
+    } else if (address >= 0xFF30 && address <= 0xFF3F) {
         apu->write(address, value);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
         gpu->write(address, value);
