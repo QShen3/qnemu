@@ -27,9 +27,9 @@ private:
     struct {
         union {
             struct {
-                uint8_t channel1SweepSlopeControl : 3;
-                uint8_t channel1SweepIncreaseOrDecrease : 1;
-                uint8_t channel1SweepPace : 3;
+                uint8_t channel1IndividualStep : 3;
+                uint8_t channel1Direction : 1;
+                uint8_t channel1Pace : 3;
                 uint8_t : 1;
             };
             uint8_t channel1Sweep;
@@ -45,7 +45,7 @@ private:
             struct {
                 uint8_t channel1SweepPace : 3;
                 uint8_t channel1EnvelopeDirection : 1;
-                uint8_t channel1InitialVolumeOfEnvelope : 4;
+                uint8_t channel1InitialVolume : 4;
             };
             uint8_t channel1VolumeAndEnvelope;
         };  // FF12
@@ -54,7 +54,7 @@ private:
             struct {
                 uint8_t channel1PeriodHigh : 3;
                 uint8_t : 3;
-                uint8_t channel1SoundLengthEnable : 1;
+                uint8_t channel1LengthEnable : 1;
                 uint8_t channel1Trigger : 1;
             };
             uint8_t channel1PeriodHighAndControl;
@@ -70,7 +70,7 @@ private:
             struct {
                 uint8_t channel2SweepPace : 3;
                 uint8_t channel2EnvelopeDirection : 1;
-                uint8_t channel2InitialVolumeOfEnvelope : 4;
+                uint8_t channel2InitialVolume : 4;
             };
             uint8_t channel2VolumeAndEnvelope;
         };  // FF17
@@ -79,7 +79,7 @@ private:
             struct {
                 uint8_t channel2PeriodHigh : 3;
                 uint8_t : 3;
-                uint8_t channel2SoundLengthEnable : 1;
+                uint8_t channel2LengthEnable : 1;
                 uint8_t channel2Trigger : 1;
             };
             uint8_t channel2PeriodHighAndControl;
@@ -87,7 +87,7 @@ private:
         union {
             struct {
                 uint8_t : 7;
-                uint8_t channel3Dac : 1;
+                uint8_t channel3DacOn : 1;
             };
             uint8_t channel3DacEnable;
         };  // FF1A
@@ -105,7 +105,7 @@ private:
             struct {
                 uint8_t channel3PeriodHigh : 3;
                 uint8_t : 3;
-                uint8_t channel3SoundLengthEnable : 1;
+                uint8_t channel3LengthEnable : 1;
                 uint8_t channel3Trigger : 1;
             };
             uint8_t channel3PeriodHighAndControl;
@@ -115,7 +115,7 @@ private:
             struct {
                 uint8_t channel4SweepPace : 3;
                 uint8_t channel4EnvelopeDirection : 1;
-                uint8_t channel4InitialVolumeOfEnvelope : 4;
+                uint8_t channel4InitialVolume : 4;
             };
             uint8_t channel4VolumeAndEnvelope;
         };  // FF21
@@ -130,43 +130,43 @@ private:
         union {
             struct {
                 uint8_t : 6;
-                uint8_t channel4SoundLengthEnable : 1;
+                uint8_t channel4LengthEnable : 1;
                 uint8_t channel4Trigger : 4;
             };
             uint8_t channel4Control;
         };  // FF23
         union {
             struct {
-                uint8_t rightOutputVolume : 3;
-                uint8_t mixVinIntoRightOutput : 1;
-                uint8_t LeftOutputVolume : 3;
-                uint8_t mixVinIntoLeftOutput : 1;
+                uint8_t rightVolume : 3;
+                uint8_t vinRight : 1;
+                uint8_t leftVolume : 3;
+                uint8_t vinLeft : 1;
             };
             uint8_t masterVolumeAndVinPanning;
         };  // FF24
         union {
             struct {
-                uint8_t mixChannel1IntoRightOutput : 1;
-                uint8_t mixChannel2IntoRightOutput : 1;
-                uint8_t mixChannel3IntoRightOutput : 1;
-                uint8_t mixChannel4IntoRightOutput : 1;
-                uint8_t mixChannel1IntoLeftOutput : 1;
-                uint8_t mixChannel2IntoLeftOutput : 1;
-                uint8_t mixChannel3IntoLeftOutput : 1;
-                uint8_t mixChannel4IntoLeftOutput : 1;
+                uint8_t channel1Right : 1;
+                uint8_t channel2Right : 1;
+                uint8_t channel3Right : 1;
+                uint8_t channel4Right : 1;
+                uint8_t channel1Left : 1;
+                uint8_t channel2Left : 1;
+                uint8_t channel3Left : 1;
+                uint8_t channel4Left : 1;
             };
             uint8_t soundPanning;
         };  // FF25
         union {
             struct {
-                uint8_t channel1OnFlag : 1;
-                uint8_t channel2OnFlag : 1;
-                uint8_t channel3OnFlag : 1;
-                uint8_t channel4OnFlag : 1;
+                uint8_t channel1On : 1;
+                uint8_t channel2On : 1;
+                uint8_t channel3On : 1;
+                uint8_t channel4On : 1;
                 uint8_t : 3;
-                uint8_t allSoundOnOrOff : 1;
+                uint8_t audioOn : 1;
             };
-            uint8_t soundOnOrOff;
+            uint8_t audioMasterControl;
         };  // FF26
     } registers;
     std::array<uint8_t, 0xF> wavePatternRam;
