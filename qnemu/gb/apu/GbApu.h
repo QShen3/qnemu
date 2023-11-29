@@ -6,6 +6,11 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
+
+#include "QtCore/QBuffer"
+#include "QtCore/QByteArray"
+#include "QtMultimedia/QAudioSink"
 
 #include "qnemu/gb/GbDeviceInterface.h"
 
@@ -15,8 +20,8 @@ namespace qnemu
 class GbApu : public GbDeviceInterface
 {
 public:
-    GbApu() = default;
-    ~GbApu() = default;
+    GbApu();
+    ~GbApu();
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
@@ -169,6 +174,12 @@ private:
             uint8_t audioMasterControl;
         };  // FF26
     } registers;
+
+    void handleAudioSinkStateChanged(QAudio::State newState);
+
+    std::unique_ptr<QAudioSink> audioSink;
+    QBuffer buffer;
+    QByteArray data;
     std::array<uint8_t, 0xF> wavePatternRam;
 };
 

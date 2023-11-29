@@ -2,10 +2,80 @@
  *  Copyright [2023] <qazxdrcssc2006@163.com>
  */
 
+#include <cmath>
+#include <cstdint>
+#include <numbers>
+#include <iostream>
+
+#include "QtCore/QBuffer"
+#include "QtCore/QByteArray"
+#include "QtCore/QtGlobal"
+#include "QtMultimedia/QAudioDevice"
+#include "QtMultimedia/QAudioFormat"
+#include "QtMultimedia/QAudioSink"
+#include "QtMultimedia/QMediaDevices"
+
 #include "qnemu/gb/apu/GbApu.h"
 
 namespace qnemu
 {
+
+GbApu::GbApu()
+{
+    constexpr qsizetype sampleRate = 40000;
+    constexpr qsizetype duration = 1;
+    float frequency = 1000;
+    constexpr qsizetype number = sampleRate * duration;
+    data.resize(sizeof(float) * number);
+
+    for (uint32_t i = 0; i < number; i++) {
+        float sinValue = sin(2 * std::numbers::pi_v<float> * frequency * i / duration);
+        char* ptr = reinterpret_cast<char*>(&sinValue);
+        data[4 * i] = *ptr;
+        data[4 * i + 1] = *(ptr + 1);
+        data[4 * i + 2] = *(ptr + 2);
+        data[4 * i + 3] = *(ptr + 3);
+    }
+    buffer.setBuffer(&data);
+
+    QAudioFormat audioFormat;
+    audioFormat.setSampleRate(static_cast<int>(sampleRate));
+    audioFormat.setChannelCount(1);
+    audioFormat.setSampleFormat(QAudioFormat::Float);
+
+    QAudioDevice audioDevice(QMediaDevices::defaultAudioOutput());
+    if (!audioDevice.isFormatSupported(audioFormat)) {
+        return;
+    }
+    audioSink = std::make_unique<QAudioSink>(audioFormat);
+    // connect(audioSink.get(), QAudioSink::stateChanged, this, &GbApu::handleAudioSinkStateChanged);
+    QObject::connect(audioSink.get(), &QAudioSink::stateChanged, [](QAudio::State newState){
+        switch (newState) {
+        case QAudio::IdleState:
+            // Finished playing (no more data)
+            // AudioOutputExample::stopAudioOutput();
+            std::cout << "here1";
+            break;
+
+        case QAudio::StoppedState:
+            // Stopped for other reasons
+            // if (audio->error() != QAudio::NoError) {
+            //     // Error handling
+            // }
+            std::cout << "here2";
+            break;
+
+        default:
+            // ... other cases as appropriate
+            break;
+    }
+    });
+    audioSink->start(&buffer);
+}
+
+GbApu::~GbApu()
+{
+}
 
 uint8_t GbApu::read(uint16_t address) const
 {
@@ -138,6 +208,11 @@ void GbApu::reset()
     registers.masterVolumeAndVinPanning = 0x77;
     registers.soundPanning = 0xF3;
     registers.audioMasterControl = 0xF1;
+}
+
+void GbApu::handleAudioSinkStateChanged(QAudio::State newState)
+{
+
 }
 
 }  // namespace qnemu
