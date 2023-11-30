@@ -37,6 +37,7 @@ GbApu::GbApu()
         data[4 * i + 3] = *(ptr + 3);
     }
     buffer.setBuffer(&data);
+    buffer.open(QIODevice::ReadOnly);
 
     QAudioFormat audioFormat;
     audioFormat.setSampleRate(static_cast<int>(sampleRate));
@@ -48,25 +49,17 @@ GbApu::GbApu()
         return;
     }
     audioSink = std::make_unique<QAudioSink>(audioFormat);
-    // connect(audioSink.get(), QAudioSink::stateChanged, this, &GbApu::handleAudioSinkStateChanged);
     QObject::connect(audioSink.get(), &QAudioSink::stateChanged, [](QAudio::State newState){
         switch (newState) {
         case QAudio::IdleState:
-            // Finished playing (no more data)
-            // AudioOutputExample::stopAudioOutput();
             std::cout << "here1";
             break;
 
         case QAudio::StoppedState:
-            // Stopped for other reasons
-            // if (audio->error() != QAudio::NoError) {
-            //     // Error handling
-            // }
             std::cout << "here2";
             break;
 
         default:
-            // ... other cases as appropriate
             break;
     }
     });
