@@ -175,12 +175,10 @@ private:
         };  // FF26
     } registers;
 
-    void handleAudioSinkStateChanged(QAudio::State newState);
-
     std::unique_ptr<QAudioSink> audioSink;
     QBuffer buffer;
     QByteArray data;
-    std::array<uint8_t, 0xF> wavePatternRam;
+    // std::array<uint8_t, 0xF> wavePatternRam;
 };
 
 }  // namespace qnemu

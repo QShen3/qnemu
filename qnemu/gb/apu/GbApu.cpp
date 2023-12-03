@@ -203,9 +203,4 @@ void GbApu::reset()
     registers.audioMasterControl = 0xF1;
 }
 
-void GbApu::handleAudioSinkStateChanged(QAudio::State newState)
-{
-
-}
-
 }  // namespace qnemu

@@ -9,6 +9,7 @@ add_executable(
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/display/RasterDisplay.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sound/DefaultSound.cpp
 )
 
 # Library
