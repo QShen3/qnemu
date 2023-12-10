@@ -22,13 +22,15 @@
 #include "qnemu/gb/memory/GbWorkRam.h"
 #include "qnemu/gb/mmu/GbMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
+#include "qnemu/sound/DefaultSound.h"
 
 namespace qnemu
 {
 
 Gb::Gb()
 {
-    auto apu = std::make_unique<GbApu>();
+    auto sound = std::make_unique<DefaultSound>(22050, "2.0", 8);
+    auto apu = std::make_unique<GbApu>(std::move(sound));
 
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();

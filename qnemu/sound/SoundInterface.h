@@ -15,7 +15,7 @@ public:
     virtual void enable() = 0;
     virtual void disable() = 0;
 
-
+    virtual void addData(char* data) = 0;
 };
 
 }  // namespace qnemu

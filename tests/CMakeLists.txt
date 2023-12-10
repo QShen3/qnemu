@@ -1,5 +1,6 @@
 # C++
 aux_source_directory(${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/display DISPLAY_SRCS)
+aux_source_directory(${CMAKE_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/sound SOUND_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge/mbc GB_CARTRIDGE_MBCTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge GB_CARTRIDGETEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/interrupt GB_INTERRUPTTEST_SRCS)
@@ -15,6 +16,7 @@ set(CMAKE_AUTOMOC ON)
 add_executable(
     qnemu_test
     ${DISPLAY_SRCS}
+    ${SOUND_SRCS}
     ${GB_CARTRIDGE_MBCTEST_SRCS}
     ${GB_CARTRIDGETEST_SRCS}
     ${GB_INTERRUPTTEST_SRCS}

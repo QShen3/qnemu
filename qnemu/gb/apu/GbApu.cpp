@@ -7,63 +7,14 @@
 #include <numbers>
 #include <iostream>
 
-#include "QtCore/QBuffer"
-#include "QtCore/QByteArray"
-#include "QtCore/QtGlobal"
-#include "QtMultimedia/QAudioDevice"
-#include "QtMultimedia/QAudioFormat"
-#include "QtMultimedia/QAudioSink"
-#include "QtMultimedia/QMediaDevices"
-
 #include "qnemu/gb/apu/GbApu.h"
 
 namespace qnemu
 {
 
-GbApu::GbApu()
+GbApu::GbApu(std::unique_ptr<SoundInterface> sound) : sound(std::move(sound))
 {
-    constexpr qsizetype sampleRate = 40000;
-    constexpr qsizetype duration = 1;
-    float frequency = 1000;
-    constexpr qsizetype number = sampleRate * duration;
-    data.resize(sizeof(float) * number);
 
-    for (uint32_t i = 0; i < number; i++) {
-        float sinValue = sin(2 * std::numbers::pi_v<float> * frequency * i / duration);
-        char* ptr = reinterpret_cast<char*>(&sinValue);
-        data[4 * i] = *ptr;
-        data[4 * i + 1] = *(ptr + 1);
-        data[4 * i + 2] = *(ptr + 2);
-        data[4 * i + 3] = *(ptr + 3);
-    }
-    buffer.setBuffer(&data);
-    buffer.open(QIODevice::ReadOnly);
-
-    QAudioFormat audioFormat;
-    audioFormat.setSampleRate(static_cast<int>(sampleRate));
-    audioFormat.setChannelCount(1);
-    audioFormat.setSampleFormat(QAudioFormat::Float);
-
-    QAudioDevice audioDevice(QMediaDevices::defaultAudioOutput());
-    if (!audioDevice.isFormatSupported(audioFormat)) {
-        return;
-    }
-    audioSink = std::make_unique<QAudioSink>(audioFormat);
-    QObject::connect(audioSink.get(), &QAudioSink::stateChanged, [](QAudio::State newState){
-        switch (newState) {
-        case QAudio::IdleState:
-            std::cout << "here1";
-            break;
-
-        case QAudio::StoppedState:
-            std::cout << "here2";
-            break;
-
-        default:
-            break;
-    }
-    });
-    audioSink->start(&buffer);
 }
 
 GbApu::~GbApu()
