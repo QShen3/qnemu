@@ -3,6 +3,7 @@
  */
 
 #include <cstdint>
+#include <cstring>
 #include <string>
 
 #include "QtCore/QObject"
@@ -20,23 +21,23 @@ DefaultSound::DefaultSound(int64_t sampleRate, const char* channelConfig, int bi
 {
     audioFormat.setSampleRate(sampleRate);
 
-    if ("1.0" == channelConfig) {
+    if (strcmp("1.0", channelConfig) == 0) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigMono);
-    } else if ("2.0" == channelConfig) {
+    } else if (strcmp("2.0", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigStereo);
-    } else if ("2.1" == channelConfig) {
+    } else if (strcmp("2.1", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfig2Dot1);
-    } else if ("3.0" == channelConfig) {
+    } else if (strcmp("3.0", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfig3Dot0);
-    } else if ("3.1" == channelConfig) {
+    } else if (strcmp("3.1", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfig3Dot1);
-    } else if ("5.0" == channelConfig) {
+    } else if (strcmp("5.0", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigSurround5Dot0);
-    } else if ("5.1" == channelConfig) {
+    } else if (strcmp("5.1", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigSurround5Dot1);
-    } else if ("7.0" == channelConfig) {
+    } else if (strcmp("7.0", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigSurround7Dot0);
-    } else if ("7.1" == channelConfig) {
+    } else if (strcmp("7.1", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigSurround7Dot1);
     } else {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigUnknown);
