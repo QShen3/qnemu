@@ -8,6 +8,11 @@
 #include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
 #include "qnemu/gb/apu/GbApu.h"
+#include "qnemu/gb/apu/GbChannelInterface.h"
+#include "qnemu/gb/apu/GbChannel1.h"
+#include "qnemu/gb/apu/GbChannel2.h"
+#include "qnemu/gb/apu/GbChannel3.h"
+#include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/GbGpu.h"
@@ -29,8 +34,14 @@ namespace qnemu
 
 Gb::Gb()
 {
+    std::array<std::unique_ptr<GbChannelInterface>, 4> channels {
+        std::make_unique<GbChannel1>(),
+        std::make_unique<GbChannel2>(),
+        std::make_unique<GbChannel3>(),
+        std::make_unique<GbChannel4>(),
+    };
     auto sound = std::make_unique<DefaultSound>(22050, "2.0", 8);
-    auto apu = std::make_unique<GbApu>(std::move(sound));
+    auto apu = std::make_unique<GbApu>(std::move(sound), std::move(channels));
 
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();

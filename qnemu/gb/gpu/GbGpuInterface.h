@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/GbDeviceInterface.h"
 

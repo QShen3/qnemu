@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "qnemu/gb/GbDeviceInterface.h"
+#include "qnemu/gb/apu/GbChannelInterface.h"
 #include "qnemu/sound/SoundInterface.h"
 
 namespace qnemu
@@ -17,7 +18,7 @@ namespace qnemu
 class GbApu : public GbDeviceInterface
 {
 public:
-    explicit GbApu(std::unique_ptr<SoundInterface> sound);
+    GbApu(std::unique_ptr<SoundInterface> sound, std::array<std::unique_ptr<GbChannelInterface>, 4> channels);
     ~GbApu();
 
     uint8_t read(uint16_t address) const override;
@@ -174,6 +175,7 @@ private:
 
     std::unique_ptr<SoundInterface> sound;
     // std::array<uint8_t, 0xF> wavePatternRam;
+    std::array<std::unique_ptr<GbChannelInterface>, 4> channels;
 };
 
 }  // namespace qnemu

@@ -12,7 +12,9 @@
 namespace qnemu
 {
 
-GbApu::GbApu(std::unique_ptr<SoundInterface> sound) : sound(std::move(sound))
+GbApu::GbApu(std::unique_ptr<SoundInterface> sound, std::array<std::unique_ptr<GbChannelInterface>, 4> channels) :
+    sound(std::move(sound)),
+    channels(std::move(channels))
 {
 
 }
