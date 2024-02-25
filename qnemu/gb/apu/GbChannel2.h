@@ -25,8 +25,35 @@ public:
     uint8_t getData() const override;
 
 private:
-    uint8_t data;
+    struct {
+        union {
+            struct {
+                uint8_t channel2InitialLengthTimer : 6;
+                uint8_t channel2WaveDuty : 2;
+            };
+            uint8_t channel2LengthTimerAndDutyCycle;
+        };  // FF16
+        union {
+            struct {
+                uint8_t channel2SweepPace : 3;
+                uint8_t channel2EnvelopeDirection : 1;
+                uint8_t channel2InitialVolume : 4;
+            };
+            uint8_t channel2VolumeAndEnvelope;
+        };  // FF17
+        uint8_t channel2PeriodLow; // FF18
+        union {
+            struct {
+                uint8_t channel2PeriodHigh : 3;
+                uint8_t : 3;
+                uint8_t channel2LengthEnable : 1;
+                uint8_t channel2Trigger : 1;
+            };
+            uint8_t channel2PeriodHighAndControl;
+        };  // FF19
+    } registers;
 
+    uint8_t data;
 };
 
 }  // namespace qnemu

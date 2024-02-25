@@ -25,8 +25,36 @@ public:
     uint8_t getData() const override;
 
 private:
-    uint8_t data;
+    struct {
+        union {
+            struct {
+                uint8_t : 7;
+                uint8_t channel3DacOn : 1;
+            };
+            uint8_t channel3DacEnable;
+        };  // FF1A
+        uint8_t channel3LengthTimer;  // FF1B
+        union {
+            struct {
+                uint8_t : 5;
+                uint8_t channel3OutputLevelSelection : 2;
+                uint8_t : 1;
+            };
+            uint8_t channel3OutputLevel;
+        };  // FF1C
+        uint8_t channel3PeriodLow; // FF1D
+        union {
+            struct {
+                uint8_t channel3PeriodHigh : 3;
+                uint8_t : 3;
+                uint8_t channel3LengthEnable : 1;
+                uint8_t channel3Trigger : 1;
+            };
+            uint8_t channel3PeriodHighAndControl;
+        };  // FF1E
+    } registers;
 
+    uint8_t data;
 };
 
 }  // namespace qnemu
