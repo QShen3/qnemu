@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "qnemu/gb/apu/GbChannelInterface.h"
+#include "qnemu/gb/apu/GbLengthTimer.h"
 
 namespace qnemu
 {
@@ -14,7 +15,7 @@ namespace qnemu
 class GbChannel2 : public GbChannelInterface
 {
 public:
-    GbChannel2() = default;
+    GbChannel2();
     ~GbChannel2() = default;
 
     uint8_t read(uint16_t address) const override;
@@ -54,6 +55,8 @@ private:
     } registers;
 
     uint8_t data;
+    bool enabled;
+    GbLengthTimer lengthTimer;
 };
 
 }  // namespace qnemu

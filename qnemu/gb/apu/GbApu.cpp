@@ -69,6 +69,8 @@ void GbApu::step()
     for (auto& channel : channels) {
         channel->step();
     }
+    char data[2] = {0};
+    sound->addData(data);
 }
 
 void GbApu::reset()

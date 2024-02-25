@@ -40,7 +40,7 @@ Gb::Gb()
         std::make_unique<GbChannel3>(),
         std::make_unique<GbChannel4>(),
     };
-    auto sound = std::make_unique<DefaultSound>(22050, "2.0", 8);
+    auto sound = std::make_unique<DefaultSound>(44100, "2.0", 8);
     auto apu = std::make_unique<GbApu>(std::move(sound), std::move(channels));
 
     cartridge = std::make_shared<GbCartridge>(mbcFactory);

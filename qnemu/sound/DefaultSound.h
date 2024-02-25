@@ -36,7 +36,7 @@ public:
 private:
     void handleAudioSinkStateChanged(QAudio::State newState);
 
-    const int bufferSize = 2048;
+    const int bufferSize = 4096;
     std::condition_variable cv;
     std::mutex mutex;
     int currentBufferSize = 0;

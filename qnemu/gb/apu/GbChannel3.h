@@ -14,7 +14,7 @@ namespace qnemu
 class GbChannel3 : public GbChannelInterface
 {
 public:
-    GbChannel3() = default;
+    GbChannel3();
     ~GbChannel3() = default;
 
     uint8_t read(uint16_t address) const override;

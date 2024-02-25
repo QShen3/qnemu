@@ -9,6 +9,10 @@
 namespace qnemu
 {
 
+GbChannel4::GbChannel4() : data(0)
+{
+}
+
 uint8_t GbChannel4::read(uint16_t address) const
 {
     if (address == 0xFF20) {

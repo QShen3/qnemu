@@ -10,6 +10,8 @@
 namespace qnemu
 {
 
+static constexpr uint32_t CpuFrequency = 4194304;
+
 static constexpr uint16_t MemoryRomBank00Start = 0;
 static constexpr uint16_t MemoryRomBank00End = 0x3FFF;
 
