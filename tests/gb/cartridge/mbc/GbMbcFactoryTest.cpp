@@ -28,13 +28,13 @@
 namespace qnemuTest
 {
 
-const std::tuple<uint8_t, std::type_index> typesOfMbc[] = {
-    {0x0, std::type_index(typeid(qnemu::GbCircuitMbc))},
-    {0x8, std::type_index(typeid(qnemu::GbCircuitMbc))},
-    {0x9, std::type_index(typeid(qnemu::GbCircuitMbc))},
-    {0x1, std::type_index(typeid(qnemu::GbMbc1))},
-    {0x2, std::type_index(typeid(qnemu::GbMbc1))},
-    {0x3, std::type_index(typeid(qnemu::GbMbc1))},
+const std::tuple<uint8_t, size_t> typesOfMbc[] = {
+    {0x0, typeid(qnemu::GbCircuitMbc).hash_code()},
+    {0x8, typeid(qnemu::GbCircuitMbc).hash_code()},
+    {0x9, typeid(qnemu::GbCircuitMbc).hash_code()},
+    {0x1, typeid(qnemu::GbMbc1).hash_code()},
+    {0x2, typeid(qnemu::GbMbc1).hash_code()},
+    {0x3, typeid(qnemu::GbMbc1).hash_code()},
     // {0x5, std::type_index(typeid(qnemu::GbMbc2))},
     // {0x6, std::type_index(typeid(qnemu::GbMbc2))},
     // {0xF, std::type_index(typeid(qnemu::GbMbc3))},
@@ -50,7 +50,7 @@ const std::tuple<uint8_t, std::type_index> typesOfMbc[] = {
     // {0x1E, std::type_index(typeid(qnemu::GbMbc5))},
 };
 
-class GbMbcFactoryTest : public testing::TestWithParam<std::tuple<uint8_t, std::type_index>>
+class GbMbcFactoryTest : public testing::TestWithParam<std::tuple<uint8_t, size_t>>
 {
 public:
     GbMbcFactoryTest() {}
@@ -61,10 +61,10 @@ TEST_P(GbMbcFactoryTest, CreateMbc)
     qnemu::GbMbcFactory gbMbcFactory;
     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks;
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks;
-    auto [ type, typeIndex ] = GetParam();
+    auto [ type, typeHash ] = GetParam();
     auto mbc = gbMbcFactory.create(std::move(romBanks), std::move(ramBanks), type);
     auto* mbc_pointer = mbc.get();
-    EXPECT_EQ(std::type_index(typeid(*mbc_pointer)), typeIndex);
+    EXPECT_EQ(typeid(*mbc_pointer).hash_code(), typeHash);
 }
 
 #if defined(__GNUC__) && !defined(__llvm__) && __GNUC__ < 9
