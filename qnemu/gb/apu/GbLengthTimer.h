@@ -26,7 +26,7 @@ public:
 
 private:
     uint8_t length;
-    uint8_t counter;
+    uint16_t counter;
     bool enabled;
 };
 
