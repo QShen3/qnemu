@@ -27,6 +27,8 @@ public:
     uint8_t getData() const override;
 
 private:
+    uint16_t getFrequency() const;
+    uint8_t getDuty() const;
     struct {
         union {
             struct {
@@ -57,6 +59,8 @@ private:
 
     uint8_t data;
     bool enabled;
+    uint16_t counter;
+    uint8_t currentBit;
     GbLengthTimer lengthTimer;
     GbVolumeEnvelope volumeEnvelope;
 };

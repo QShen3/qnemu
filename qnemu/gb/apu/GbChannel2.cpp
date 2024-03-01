@@ -54,6 +54,8 @@ void GbChannel2::write(uint16_t address, const uint8_t& value)
         }
         if (registers.channel2Trigger) {
             enabled = true;
+            counter = 1;
+            currentBit = 0;
             lengthTimer.trigger();
             volumeEnvelope.trigger();
         }
@@ -74,6 +76,13 @@ void GbChannel2::step()
         return;
     }
 
+    counter--;
+    if (counter == 0) {
+        counter = getFrequency();
+        data = (getDuty() & (1 << currentBit)) >> currentBit;
+        currentBit = (currentBit + 1) % 8;
+    }
+
     data = data * volumeEnvelope.getVolume();
 }
 
@@ -86,13 +95,35 @@ void GbChannel2::reset()
 
     data = 0;
     enabled = true;
+    counter = 0;
+    currentBit = 0;
 
     lengthTimer.reset();
+    volumeEnvelope.reset();
 }
 
 uint8_t GbChannel2::getData() const
 {
     return data;
+}
+
+uint16_t GbChannel2::getFrequency() const
+{
+    return (2048 - ((registers.channel2PeriodHigh << 8) | registers.channel2PeriodLow)) * 4;
+}
+
+uint8_t GbChannel2::getDuty() const
+{
+    if (registers.channel2WaveDuty == 0) {
+        return 0b11111110;
+    } else if (registers.channel2WaveDuty == 1) {
+        return 0b01111110;
+    } else if (registers.channel2WaveDuty == 2) {
+        return 0b01111000;
+    } else if (registers.channel2WaveDuty == 3) {
+        return 0b10000001;
+    }
+    return 0;
 }
 
 }  // namespace qnemu
