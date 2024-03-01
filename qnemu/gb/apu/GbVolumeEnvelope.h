@@ -16,7 +16,20 @@ public:
     ~GbVolumeEnvelope() = default;
 
     void step();
+    void setInitialVolume(uint8_t volume);
+    void setDirection(bool direction);
+    void setPace(uint8_t pace);
+    void reset();
+
     uint8_t getVolume() const;
+
+private:
+    uint8_t initialVolume;
+    bool direction;
+    uint8_t pace;
+    bool finished;
+    uint8_t volume;
+    uint16_t counter;
 };
 
 } // namespace qnemu

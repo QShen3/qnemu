@@ -35,6 +35,12 @@ void GbChannel2::write(uint16_t address, const uint8_t& value)
         lengthTimer.setLength(64 - registers.channel2InitialLengthTimer);
     } else if (address == 0xFF17) {
         registers.channel2VolumeAndEnvelope = value;
+        volumeEnvelope.setInitialVolume(registers.channel2InitialVolume);
+        volumeEnvelope.setDirection(registers.channel2EnvelopeDirection == 1 ? true : false);
+        volumeEnvelope.setPace(registers.channel2SweepPace);
+        if (registers.channel2InitialVolume != 0 || registers.channel2EnvelopeDirection != 0) {
+            enabled = true;
+        }
     } else if (address == 0xFF18) {
         registers.channel2PeriodLow = value;
     } else if (address == 0xFF19) {
@@ -56,13 +62,18 @@ void GbChannel2::write(uint16_t address, const uint8_t& value)
 void GbChannel2::step()
 {
     lengthTimer.step();
-    if (lengthTimer.isEnabled()) {
-        if (enabled && lengthTimer.getLength() == 0) {
-            enabled = false;
-            data = 0;
-            return;
-        }
+    volumeEnvelope.step();
+    if (!enabled) {
+        data = 0;
+        return;
     }
+    if (lengthTimer.isEnabled() && lengthTimer.getLength() == 0) {
+        enabled = false;
+        data = 0;
+        return;
+    }
+
+    data = data * volumeEnvelope.getVolume();
 }
 
 void GbChannel2::reset()

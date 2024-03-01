@@ -8,6 +8,7 @@
 
 #include "qnemu/gb/apu/GbChannelInterface.h"
 #include "qnemu/gb/apu/GbLengthTimer.h"
+#include "qnemu/gb/apu/GbVolumeEnvelope.h"
 
 namespace qnemu
 {
@@ -57,6 +58,7 @@ private:
     uint8_t data;
     bool enabled;
     GbLengthTimer lengthTimer;
+    GbVolumeEnvelope volumeEnvelope;
 };
 
 }  // namespace qnemu
