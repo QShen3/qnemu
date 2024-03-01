@@ -40,21 +40,22 @@ void GbChannel2::write(uint16_t address, const uint8_t& value)
         volumeEnvelope.setPace(registers.channel2SweepPace);
         if (registers.channel2InitialVolume != 0 || registers.channel2EnvelopeDirection != 0) {
             enabled = true;
+        } else {
+            enabled = false;
         }
     } else if (address == 0xFF18) {
         registers.channel2PeriodLow = value;
     } else if (address == 0xFF19) {
         registers.channel2PeriodHighAndControl = value;
-        if (registers.channel2Trigger) {
-            enabled = true;
-        }
         if (registers.channel2LengthEnable) {
             lengthTimer.enable();
-            if (registers.channel2Trigger && lengthTimer.getLength() == 0) {
-                lengthTimer.setLength(64);
-            }
         } else {
             lengthTimer.disable();
+        }
+        if (registers.channel2Trigger) {
+            enabled = true;
+            lengthTimer.trigger();
+            volumeEnvelope.trigger();
         }
     }
 }

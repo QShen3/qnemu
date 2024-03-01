@@ -38,6 +38,9 @@ void GbLengthTimer::setLength(uint8_t newLength)
 void GbLengthTimer::enable()
 {
     enabled = true;
+    if (length > 0 && counter < (CpuFrequency / 256) / 2) {
+        length--;
+    }
 }
 
 void GbLengthTimer::disable()
@@ -50,6 +53,20 @@ void GbLengthTimer::reset()
     length = 0;
     counter = 0;
     enabled = true;
+}
+
+void GbLengthTimer::trigger()
+{
+    if (enabled && length == 0) {
+        if (counter < (CpuFrequency / 256) / 2) {
+            length = 64 - 1;
+        } else {
+            length = 64;
+        }
+    }
+    if (!enabled && length ==0) {
+        length = 64;
+    }
 }
 
 uint8_t GbLengthTimer::getLength() const

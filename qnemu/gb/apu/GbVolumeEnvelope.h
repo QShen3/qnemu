@@ -12,7 +12,7 @@ namespace qnemu
 class GbVolumeEnvelope
 {
 public:
-    GbVolumeEnvelope() = default;
+    GbVolumeEnvelope();
     ~GbVolumeEnvelope() = default;
 
     void step();
@@ -20,6 +20,7 @@ public:
     void setDirection(bool direction);
     void setPace(uint8_t pace);
     void reset();
+    void trigger();
 
     uint8_t getVolume() const;
 

@@ -20,6 +20,7 @@ public:
     void enable();
     void disable();
     void reset();
+    void trigger();
 
     uint8_t getLength() const;
     bool isEnabled() const;

@@ -59,6 +59,13 @@ void GbVolumeEnvelope::reset()
     counter = 0;
 }
 
+void GbVolumeEnvelope::trigger()
+{
+    volume = initialVolume;
+    counter = 0;
+    finished = false;
+}
+
 uint8_t GbVolumeEnvelope::getVolume() const
 {
     if (pace == 0) {
