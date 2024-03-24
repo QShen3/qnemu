@@ -30,8 +30,13 @@ set_target_properties(gb PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD 20
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-    CXX_CPPCHECK "cppcheck;--enable=style;--std=c++20;--error-exitcode=1;--inline-suppr"
-    CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner;--extra-arg=/EHsc")
+    CXX_CPPCHECK "cppcheck;--enable=style;--std=c++20;--error-exitcode=1;--inline-suppr")
+
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    set_target_properties(gb PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner;--extra-arg=/EHsc")
+else()
+set_target_properties(gb PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner")
+endif()
 
 # Special compile options
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)

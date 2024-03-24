@@ -36,6 +36,7 @@ GbGpu::GbGpu(std::unique_ptr<GbPalette> palette,
     oam(std::move(oam)),
     videoRam(std::move(videoRam)),
     render(std::move(render)),
+    ticks(0),
     modes({
         Mode
         { "Mode0", 204, [this](){mode0();} },
