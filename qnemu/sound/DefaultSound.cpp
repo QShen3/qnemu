@@ -27,10 +27,6 @@ DefaultSound::DefaultSound(int64_t sampleRate, const char* channelConfig, int bi
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigStereo);
     } else if (strcmp("2.1", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfig2Dot1);
-    } else if (strcmp("3.0", channelConfig)) {
-        audioFormat.setChannelConfig(QAudioFormat::ChannelConfig3Dot0);
-    } else if (strcmp("3.1", channelConfig)) {
-        audioFormat.setChannelConfig(QAudioFormat::ChannelConfig3Dot1);
     } else if (strcmp("5.0", channelConfig)) {
         audioFormat.setChannelConfig(QAudioFormat::ChannelConfigSurround5Dot0);
     } else if (strcmp("5.1", channelConfig)) {

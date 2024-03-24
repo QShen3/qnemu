@@ -8,7 +8,7 @@ set_target_properties(qnemu PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD 20
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-    CXX_CPPCHECK "cppcheck;--enable=style;--std=c++20;--error-exitcode=1"
+    CXX_CPPCHECK "cppcheck;--enable=style;--std=c++20;--error-exitcode=1;--suppress=preprocessorErrorDirective"
     CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner")
 
 # Special compile options

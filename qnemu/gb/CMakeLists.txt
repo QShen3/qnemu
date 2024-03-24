@@ -35,7 +35,7 @@ set_target_properties(gb PROPERTIES
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     set_target_properties(gb PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner;--extra-arg=/EHsc")
 else()
-set_target_properties(gb PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner")
+    set_target_properties(gb PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner")
 endif()
 
 # Special compile options
