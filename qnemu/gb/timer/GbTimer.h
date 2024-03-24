@@ -17,7 +17,7 @@ class GbTimer : public GbDeviceInterface
 {
 public:
     GbTimer() = delete;
-    GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHander);
+    explicit GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHander);
     ~GbTimer() = default;
 
     uint8_t read(uint16_t address) const override;

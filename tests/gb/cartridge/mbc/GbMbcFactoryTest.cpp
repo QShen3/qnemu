@@ -58,12 +58,12 @@ public:
 
 TEST_P(GbMbcFactoryTest, CreateMbc)
 {
-    qnemu::GbMbcFactory gbMbcFactory;
+    const qnemu::GbMbcFactory gbMbcFactory;
     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks;
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks;
     auto [ type, typeHash ] = GetParam();
     auto mbc = gbMbcFactory.create(std::move(romBanks), std::move(ramBanks), type);
-    auto* mbc_pointer = mbc.get();
+    const auto* mbc_pointer = mbc.get();
     EXPECT_EQ(typeid(*mbc_pointer).hash_code(), typeHash);
 }
 
@@ -75,12 +75,10 @@ INSTANTIATE_TEST_SUITE_P(GbMbcFactoryCreate, GbMbcFactoryTest, testing::ValuesIn
 
 TEST_F(GbMbcFactoryTest, CreateMbcWithInvalidType)
 {
-    qnemu::GbMbcFactory gbMbcFactory;
-    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks;
-    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks;
+    const qnemu::GbMbcFactory gbMbcFactory;
     EXPECT_THROW({
         try {
-            gbMbcFactory.create(std::move(romBanks), std::move(ramBanks), 0xFF);
+            gbMbcFactory.create(std::vector<std::array<uint8_t, qnemu::RomBankSize>>(), std::vector<std::array<uint8_t, qnemu::RamBankSize>>(), 0xFF);
         }
         catch(const std::runtime_error& e) {
             EXPECT_STREQ(e.what(), "This game is not supported!");

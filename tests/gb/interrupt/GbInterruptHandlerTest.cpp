@@ -22,9 +22,11 @@
 namespace qnemuTest
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> distrib(0, 255);
+namespace {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 255);
+}
 
 TEST(GbInterruptTest, ReadAndWriteRegister)
 {
@@ -86,7 +88,7 @@ TEST(GbInterruptTest, Step)
             EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::timer));
         } else if (i == 3) {
             EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::serial));
-        } else if (i == 4) {
+        } else {
             EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::joypad));
         }
         gbInterruptHandler.step();

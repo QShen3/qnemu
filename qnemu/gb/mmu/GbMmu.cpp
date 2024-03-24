@@ -36,15 +36,15 @@ GbMmu::GbMmu(std::unique_ptr<GbApu> apu,
 
 uint8_t GbMmu::read(uint16_t address) const
 {
-    if (address >= MemoryRomBank00Start && address <= MemoryRomBank01End) {
+    if (address <= MemoryRomBank01End) {
         return cartridge->read(address);
-    } else if (address >= VideoRamStart && address <= VideoRamEnd) {
+    } else if (address <= VideoRamEnd) {
         return gpu->read(address);
-    } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
+    } else if (address <= ExternalRamEnd) {
         return cartridge->read(address);
-    } else if (address >= WorkRamBank00Start && address <= EchoRamEnd) {
+    } else if (address <= EchoRamEnd) {
         return workRam->read(address);
-    } else if (address >= OamStart && address <= OamEnd) {
+    } else if (address <= OamEnd) {
         return gpu->read(address);
     } else if (address == 0xFF00) {
         return joypad->read(address);
@@ -75,15 +75,15 @@ uint8_t GbMmu::read(uint16_t address) const
 
 void GbMmu::write(uint16_t address, const uint8_t& value)
 {
-    if (address >= MemoryRomBank00Start && address <= MemoryRomBank01End) {
+    if (address <= MemoryRomBank01End) {
         cartridge->write(address, value);
-    } else if (address >= VideoRamStart && address <= VideoRamEnd) {
+    } else if (address <= VideoRamEnd) {
         gpu->write(address, value);
-    } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
+    } else if (address <= ExternalRamEnd) {
         cartridge->write(address, value);
-    } else if (address >= WorkRamBank00Start && address <= EchoRamEnd) {
+    } else if (address <= EchoRamEnd) {
         workRam->write(address, value);
-    } else if (address >= OamStart && address <= OamEnd) {
+    } else if (address <= OamEnd) {
         gpu->write(address, value);
     } else if (address == 0xFF00) {
         joypad->write(address, value);

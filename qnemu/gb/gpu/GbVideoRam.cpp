@@ -17,7 +17,8 @@ namespace qnemu
 
 GbVideoRam::GbVideoRam(const GbCartridgeInterface& cartridge, const GbWorkRam& workRam) :
     cartridge(cartridge),
-    workRam(workRam)
+    workRam(workRam),
+    modeFlag(0)
 {
     GbVideoRam::reset();
 }
@@ -103,14 +104,14 @@ void GbVideoRam::step()
     }
 
     for (uint8_t i = 0; i < 0x10; i++) {
-        uint16_t address = source + i;
+        const uint16_t address = source + i;
         if (address <= MemoryRomBank01End) {
             write(destination, cartridge.read(address));
-        } else if (address >= VideoRamStart && address <= VideoRamEnd) {
+        } else if (address <= VideoRamEnd) {
             write(destination, read(address));
-        } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
+        } else if (address <= ExternalRamEnd) {
             write(destination, cartridge.read(address));
-        } else if (address >= WorkRamBank00Start && address <= WorkRamBank01End) {
+        } else if (address <= WorkRamBank01End) {
             write(destination, workRam.read(address));
         } else {
             assert(false && "Wrong dma address");

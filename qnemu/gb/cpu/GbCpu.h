@@ -640,7 +640,7 @@ private:
 
     void inc(uint8_t& reg);
     void dec(uint8_t& reg);
-    void add_hl(uint16_t& reg);
+    void add_hl(const uint16_t& reg);
     void add_a(uint8_t value);
     void adc(uint8_t value);
     void sub(uint8_t value);

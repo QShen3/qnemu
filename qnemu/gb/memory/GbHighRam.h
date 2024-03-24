@@ -24,7 +24,7 @@ public:
     void reset() override;
 
 private:
-    std::array<uint8_t, 0x7F> data;
+    std::array<uint8_t, 0x7F> data = {0};
 };
 
 }  // namespace qnemu

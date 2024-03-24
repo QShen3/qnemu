@@ -11,6 +11,10 @@ namespace qnemu
 
 GbChannel4::GbChannel4() : data(0)
 {
+    registers.channel4LengthTimer = 0xFF;
+    registers.channel4VolumeAndEnvelope = 0;
+    registers.channel4FrequencyAndRandomness = 0;
+    registers.channel4Control = 0xBF;
 }
 
 uint8_t GbChannel4::read(uint16_t address) const

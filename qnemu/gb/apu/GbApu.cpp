@@ -16,7 +16,9 @@ GbApu::GbApu(std::unique_ptr<SoundInterface> sound, std::array<std::unique_ptr<G
     sound(std::move(sound)),
     channels(std::move(channels))
 {
-
+    registers.masterVolumeAndVinPanning = 0x77;
+    registers.soundPanning = 0xF3;
+    registers.audioMasterControl = 0xF1;
 }
 
 uint8_t GbApu::read(uint16_t address) const

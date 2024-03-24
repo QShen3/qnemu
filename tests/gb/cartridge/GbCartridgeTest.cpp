@@ -20,10 +20,10 @@ namespace qnemuTest
 
 TEST(GbCartridgeTest, TEST1)
 {
-    testing::StrictMock<qnemuMock::MockGbMbc> mockGbMbc;
-    testing::StrictMock<qnemuMock::MockGbMbcFactory> mockGbMbcFactory;
+    const testing::StrictMock<qnemuMock::MockGbMbc> mockGbMbc;
+    const testing::StrictMock<qnemuMock::MockGbMbcFactory> mockGbMbcFactory;
 
-    qnemu::GbCartridge gbCartridge(mockGbMbcFactory);
+    const qnemu::GbCartridge gbCartridge(mockGbMbcFactory);
 }
 
 }  // namespace qnemuTest

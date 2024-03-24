@@ -26,17 +26,17 @@
 namespace qnemuTest
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> distrib(0, 255);
+namespace {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 255);
+}
 
 TEST(GbMbc1Test, ReadFrom1BankRom)
 {
     std::array<uint8_t, qnemu::RomBankSize> data;
 
-    for (auto& value : data) {
-        value = distrib(gen);
-    }
+    std::generate(data.begin(), data.end(), [&](){ return distrib(gen); });
 
     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(1);
     std::copy(data.begin(), data.end(), romBanks.at(0).begin());
@@ -58,9 +58,7 @@ TEST(GbMbc1Test, ReadFromRom)
 {
     auto romDataBanks = std::make_unique<std::array<std::array<uint8_t, qnemu::RomBankSize>, 128>>();
     for (auto& romData : *romDataBanks) {
-        for (auto& data : romData) {
-            data = distrib(gen);
-        }
+        std::generate(romData.begin(), romData.end(), [&](){ return distrib(gen); });
     }
 
     for (size_t size = 2; size <= 128; size = size * 2) {
@@ -134,9 +132,7 @@ TEST(GbMbc1Test, ReadFromRam)
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramDataBanks(4);
 
     for (auto& ramData : ramDataBanks) {
-        for (auto& data : ramData) {
-            data = distrib(gen);
-        }
+        std::generate(ramData.begin(), ramData.end(), [&](){ return distrib(gen); });
     }
 
     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
@@ -171,7 +167,7 @@ TEST(GbMbc1Test, WriteToRam)
 
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 0);
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
-        uint8_t value = distrib(gen);
+        const uint8_t value = distrib(gen);
         gbMbc1.write(i + qnemu::ExternalRamStart, value);
         EXPECT_EQ(gbMbc1.read(i + qnemu::ExternalRamStart), value);
     }
@@ -180,7 +176,7 @@ TEST(GbMbc1Test, WriteToRam)
     for (uint8_t i = 0; i < 4; i++) {
         gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, i);
         for (uint16_t j = 0; j < qnemu::RamBankSize; j++) {
-            uint8_t value = distrib(gen);
+            const uint8_t value = distrib(gen);
             gbMbc1.write(j + qnemu::ExternalRamStart, value);
             EXPECT_EQ(gbMbc1.read(j + qnemu::ExternalRamStart), value);
         }

@@ -11,6 +11,11 @@ namespace qnemu
 
 GbChannel1::GbChannel1() : data(0)
 {
+    registers.channel1Sweep = 0x80;
+    registers.channel1LengthTimerAndDutyCycle = 0xBF;
+    registers.channel1VolumeAndEnvelope = 0xF3;
+    registers.channel1PeriodLow = 0xFF;
+    registers.channel1PeriodHighAndControl = 0xBF;
 }
 
 uint8_t GbChannel1::read(uint16_t address) const

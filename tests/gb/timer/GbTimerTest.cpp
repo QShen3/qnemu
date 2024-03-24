@@ -18,9 +18,12 @@ public:
         mockInterruptHandler = std::make_shared<testing::StrictMock<qnemuMock::MockGbInterruptHanlder>>();
         gbTimer = std::make_unique<qnemu::GbTimer>(mockInterruptHandler);
     }
+
+// NOLINTBEGIN
 protected:
     std::shared_ptr<testing::StrictMock<qnemuMock::MockGbInterruptHanlder>> mockInterruptHandler;
     std::unique_ptr<qnemu::GbTimer> gbTimer;
+// NOLINTEND
 };
 
 TEST_F(GbTimerTest, Divider)

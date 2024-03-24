@@ -32,12 +32,14 @@ public:
         gbJoypad = std::make_unique<qnemu::GbJoypad>(mockDisplay, mockInterruptHandler);
     }
 
+// NOLINTBEGIN
 protected:
     std::shared_ptr<testing::StrictMock<qnemuMock::MockDisplay>> mockDisplay;
     std::shared_ptr<testing::StrictMock<qnemuMock::MockGbInterruptHanlder>> mockInterruptHandler;
     std::unique_ptr<qnemu::GbJoypad> gbJoypad;
     std::function<void(int)> keyPress;
     std::function<void(int)> keyRelease;
+// NOLINTEND
 };
 
 TEST_F(GbJoypadTest, ProcessKeyEvent)

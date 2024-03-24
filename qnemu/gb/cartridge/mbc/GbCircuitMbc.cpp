@@ -23,7 +23,7 @@ uint8_t GbCircuitMbc::read(uint16_t address) const
     if (address <= MemoryRomBank00End) {
         return romBanks.at(0).at(address);
     }
-    if (address >= MemoryRomBank01Start && address <= MemoryRomBank01End) {
+    if (address <= MemoryRomBank01End) {
         return romBanks.at(1).at(address - MemoryRomBank01Start);
     }
     if (address >= ExternalRamStart && address <= ExternalRamEnd) {

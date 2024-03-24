@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -89,7 +90,11 @@ const std::map<std::string, std::string> newLicenseCodeMap {
 GbCartridge::GbCartridge(const GbMbcFactoryInterface& gbMbcFactory) :
     gbMbcFactory(gbMbcFactory),
     gbcCartridge(false),
-    loaded(false)
+    japanCartridge(false),
+    loaded(false),
+    ramSize(0),
+    romSize(0),
+    type(0)
 {
 }
 
@@ -133,7 +138,7 @@ void GbCartridge::load(const char* filePath)
         throw std::runtime_error("Load cartridge file failed!");
     }
     romSize = file.tellg();
-    size_t romBankCounts = romSize / RomBankSize;
+    const size_t romBankCounts = romSize / RomBankSize;
     file.seekg(0, std::ios::beg);
 
     std::vector<uint8_t> buffer(romSize);
@@ -157,7 +162,7 @@ void GbCartridge::load(const char* filePath)
     publisher = getPublisherFromCartridge(buffer);
 
     ramSize = getRamSizeFromCartridge(buffer.at(0x149));
-    size_t ramBankCounts = ramSize == 0x800 ? 1 : ramSize / RamBankSize;
+    const size_t ramBankCounts = ramSize == 0x800 ? 1 : ramSize / RamBankSize;
 
     type = buffer.at(0x147);
     japanCartridge = buffer.at(0x14A) == 0 ? true : false;
@@ -182,26 +187,26 @@ bool GbCartridge::isGbcCartridge() const
 
 std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& buffer) const
 {
-    std::string publisher;
+    std::string cartridgePublisher;
     if (buffer.at(0x14B) == 0x33) {
         char newLicenseCode[3] = {static_cast<char>(buffer.at(0x144)), static_cast<char>(buffer.at(0x145)), 0};
         if (newLicenseCodeMap.contains(std::string(newLicenseCode))) {
-            publisher = newLicenseCodeMap.at(std::string(newLicenseCode));
+            cartridgePublisher = newLicenseCodeMap.at(std::string(newLicenseCode));
         }
         else {
-            publisher = "Unknown";
+            cartridgePublisher = "Unknown";
         }
     }
     else {
-        uint8_t licenseCode = buffer.at(0x14B);
+        const uint8_t licenseCode = buffer.at(0x14B);
         if (licenseCodeMap.contains(licenseCode)) {
-            publisher = licenseCodeMap.at(licenseCode);
+            cartridgePublisher = licenseCodeMap.at(licenseCode);
         }
         else {
-            publisher = "Unknown";
+            cartridgePublisher = "Unknown";
         }
     }
-    return publisher;
+    return cartridgePublisher;
 }
 
 size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag) const
@@ -209,7 +214,7 @@ size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag) const
     if (flag == 0) {
         return 0;
     }
-    if (flag >= 1 && flag <= 4) {
+    if (flag <= 4) {
         return 0x200 << (flag * 2);
     }
     if (flag == 5) {
@@ -250,10 +255,7 @@ bool GbCartridge::validate(const std::vector<uint8_t>& buffer) const
     }
 
     if (gbcCartridge) {
-        uint16_t checkSum = 0;
-        for (auto value : buffer) {
-            checkSum = checkSum + value;
-        }
+        uint16_t checkSum = std::accumulate(buffer.begin(), buffer.end(), 0);
         checkSum = checkSum - buffer.at(0x14E) - buffer.at(0x14F);
         if (checkSum != ((buffer.at(0x14E) << 8) | buffer.at(0x14F))) {
             return false;

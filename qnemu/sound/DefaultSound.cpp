@@ -87,7 +87,7 @@ void DefaultSound::disable()
 void DefaultSound::handleAudioSinkStateChanged(QAudio::State newState)
 {
     if (newState == QAudio::IdleState) {
-        std::lock_guard<std::mutex> lock(mutex);
+        const std::lock_guard<std::mutex> lock(mutex);
         buffer.reset();
         currentBufferSize = 0;
         cv.notify_one();

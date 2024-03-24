@@ -71,15 +71,15 @@ void GbcPalette::reset()
 
 QRgb GbcPalette::getBackgroundColor(uint16_t colorIndex) const
 {
-    uint16_t colorNumber = (static_cast<uint16_t>(backgroundOrWindowData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(backgroundOrWindowData.at(colorIndex));
-    GbcColor color = { .color = colorNumber };
+    const uint16_t colorNumber = (static_cast<uint16_t>(backgroundOrWindowData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(backgroundOrWindowData.at(colorIndex));
+    const GbcColor color = { .color = colorNumber };
     return qRgb((color.red << 3 | color.red >> 2), (color.green << 3 | color.green >> 2), (color.blue << 3 | color.blue >> 2));
 }
 
 QRgb GbcPalette::getSpriteColor(uint16_t colorIndex) const
 {
-    uint16_t colorNumber = (static_cast<uint16_t>(spriteData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(spriteData.at(colorIndex));
-    GbcColor color = { .color = colorNumber };
+    const uint16_t colorNumber = (static_cast<uint16_t>(spriteData.at(colorIndex + 1)) << 8) | static_cast<uint16_t>(spriteData.at(colorIndex));
+    const GbcColor color = { .color = colorNumber };
     return qRgb((color.red << 3 | color.red >> 2), (color.green << 3 | color.green >> 2), (color.blue << 3 | color.blue >> 2));
 }
 

@@ -16,6 +16,7 @@ namespace qnemu
 GbOam::GbOam(const GbCartridgeInterface& cartridge,
         const GbDeviceInterface& videoRam,
         const GbDeviceInterface& workRam) :
+    data({0}),
     cartridge(cartridge),
     videoRam(videoRam),
     workRam(workRam)
@@ -62,14 +63,14 @@ void GbOam::step()
     }
     isDmaInProgress = false;
     for (uint8_t i = 0; i < 0xA0; i++) {
-        uint16_t address = registers.dmaTransferAndStartAddress * 0x100 + i;
+        const uint16_t address = registers.dmaTransferAndStartAddress * 0x100 + i;
         if (address <= MemoryRomBank01End) {
             data.at(i) = cartridge.read(address);
-        } else if (address >= VideoRamStart && address <= VideoRamEnd) {
+        } else if (address <= VideoRamEnd) {
             data.at(i) = videoRam.read(address);
-        } else if (address >= ExternalRamStart && address <= ExternalRamEnd) {
+        } else if (address <= ExternalRamEnd) {
             data.at(i) = cartridge.read(address);
-        } else if (address >= WorkRamBank00Start && address <= WorkRamBank01End) {
+        } else if (address <= WorkRamBank01End) {
             data.at(i) = workRam.read(address);
         } else {
             assert(false && "Wrong oam address");

@@ -25,28 +25,26 @@
 namespace qnemuTest
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> distrib(0, 255);
+namespace {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 255);
+}
 
 TEST(GbCircuitMbcTest, ReadFromRom)
 {
     std::array<uint8_t, qnemu::RomBankSize> data0;
     std::array<uint8_t, qnemu::RomBankSize> data1;
 
-    for (auto& data : data0) {
-        data = distrib(gen);
-    }
-    for (auto& data : data1) {
-        data = distrib(gen);
-    }
+    std::generate(data0.begin(), data0.end(), [&](){ return distrib(gen); });
+    std::generate(data1.begin(), data1.end(), [&](){ return distrib(gen); });
 
     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
     std::copy(data0.begin(), data0.end(), romBanks.at(0).begin());
     std::copy(data1.begin(), data1.end(), romBanks.at(1).begin());
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
 
-    qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
+    const qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 0);
 
     for (uint16_t i = 0; i < qnemu::RomBankSize; i++) {
         EXPECT_EQ(gbCircuitMbc.read(i), data0.at(i));
@@ -85,15 +83,13 @@ TEST(GbCircuitMbcTest, ReadFromRam)
 {
     std::array<uint8_t, qnemu::RamBankSize> data0;
 
-    for (auto& data : data0) {
-        data = distrib(gen);
-    }
+    std::generate(data0.begin(), data0.end(), [&](){ return distrib(gen); });
 
     std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
     std::copy(data0.begin(), data0.end(), ramBanks.at(0).begin());
 
-    qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 1);
+    const qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 1);
 
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
         EXPECT_EQ(gbCircuitMbc.read(i + qnemu::ExternalRamStart), data0.at(i));
@@ -107,7 +103,7 @@ TEST(GbCircuitMbcTest, WriteToRam)
     qnemu::GbCircuitMbc gbCircuitMbc(std::move(romBanks), std::move(ramBanks), 1);
 
     for (uint16_t i = 0; i < qnemu::RamBankSize; i++) {
-        uint8_t value = distrib(gen);
+        const uint8_t value = distrib(gen);
         gbCircuitMbc.write(i + qnemu::ExternalRamStart, value);
         EXPECT_EQ(gbCircuitMbc.read(i + qnemu::ExternalRamStart), value);
     }

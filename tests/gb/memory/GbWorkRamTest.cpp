@@ -2,6 +2,7 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
 #include <array>
 #include <random>
 
@@ -20,18 +21,18 @@
 namespace qnemuTest
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> distrib(0, 255);
+namespace {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 255);
+}
 
 TEST(GbWorkRamTest, ReadAndWrite)
 {
     qnemu::GbWorkRam gbWorkRam;
     std::array<std::array<uint8_t, 0x1000>, 8> data;
     for (auto& bankData : data) {
-        for (auto& value : bankData) {
-            value = distrib(gen);
-        }
+        std::generate(bankData.begin(), bankData.end(), [&](){ return distrib(gen); });
     }
 
     for (uint16_t i = qnemu::WorkRamBank00Start; i < qnemu::WorkRamBank01Start; i++) {
@@ -59,9 +60,7 @@ TEST(GbWorkRamTest, ReadAndWrite)
     for (uint16_t i = qnemu::WorkRamBank01Start; i <= qnemu::WorkRamBank01End; i++) {
         EXPECT_EQ(gbWorkRam.read(i), data.at(1).at(i - qnemu::WorkRamBank01Start));
     }
-    for (auto& value : data.at(1)) {
-        value = distrib(gen);
-    }
+    std::generate(data.at(1).begin(), data.at(1).end(), [&](){ return distrib(gen); });
     for (uint16_t i = qnemu::WorkRamBank01Start; i <= qnemu::WorkRamBank01End; i++) {
         gbWorkRam.write(i, data.at(1).at(i - qnemu::WorkRamBank01Start));
     }
@@ -75,7 +74,7 @@ TEST(GbWorkRamTest, Reset)
     qnemu::GbWorkRam gbWorkRam;
     EXPECT_EQ(gbWorkRam.read(0xFF70), 1);
 
-    uint8_t value = distrib(gen);
+    const uint8_t value = distrib(gen);
     gbWorkRam.write(0xFF70, value);
     EXPECT_EQ(gbWorkRam.read(0xFF70), value & 0b111);
 

@@ -436,7 +436,6 @@ void GbCpu::ccf()
 
 void GbCpu::ld_b_b()
 {
-    registers.b = registers.b;
 }
 
 void GbCpu::ld_b_c()
@@ -481,7 +480,6 @@ void GbCpu::ld_c_b()
 
 void GbCpu::ld_c_c()
 {
-    registers.c = registers.c;
 }
 
 void GbCpu::ld_c_d()
@@ -526,7 +524,6 @@ void GbCpu::ld_d_c()
 
 void GbCpu::ld_d_d()
 {
-    registers.d = registers.d;
 }
 
 void GbCpu::ld_d_e()
@@ -571,7 +568,6 @@ void GbCpu::ld_e_d()
 
 void GbCpu::ld_e_e()
 {
-    registers.e = registers.e;
 }
 
 void GbCpu::ld_e_h()
@@ -616,7 +612,6 @@ void GbCpu::ld_h_e()
 
 void GbCpu::ld_h_h()
 {
-    registers.h = registers.h;
 }
 
 void GbCpu::ld_h_l()
@@ -661,7 +656,6 @@ void GbCpu::ld_l_h()
 
 void GbCpu::ld_l_l()
 {
-    registers.l = registers.l;
 }
 
 void GbCpu::ld_l_hlp()
@@ -751,7 +745,6 @@ void GbCpu::ld_a_hlp()
 
 void GbCpu::ld_a_a()
 {
-    registers.a = registers.a;
 }
 
 void GbCpu::add_a_b()
@@ -1425,7 +1418,7 @@ void GbCpu::dec(uint8_t &reg)
     registers.subtraction = 1;
 }
 
-void GbCpu::add_hl(uint16_t &reg)
+void GbCpu::add_hl(const uint16_t &reg)
 {
     setCarryFlag(registers.hl, reg, true);
     setHalfCarryFlag(((registers.hl >> 8) & 0x0F), ((reg >> 8) & 0x0F), true);

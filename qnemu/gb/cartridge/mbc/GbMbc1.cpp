@@ -23,7 +23,7 @@ GbMbc1::GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
 uint8_t GbMbc1::read(uint16_t address) const
 {
     if (address <= MemoryRomBank01End) {
-        uint8_t bankNumber = getRomBankNumberForAddress(address);
+        const uint8_t bankNumber = getRomBankNumberForAddress(address);
         if (address <= MemoryRomBank00End) {
             return romBanks.at(bankNumber).at(address);
         }
@@ -34,7 +34,7 @@ uint8_t GbMbc1::read(uint16_t address) const
             assert(false && "Ram is disabled");
             return 0xFF;
         }
-        uint8_t bankNumber = getRamBankNumber();
+        const uint8_t bankNumber = getRamBankNumber();
         return ramBanks.at(bankNumber).at(address - ExternalRamStart);
     }
     assert(false && "Wrong address");
@@ -47,15 +47,15 @@ void GbMbc1::write(uint16_t address, const uint8_t value)
         registers.ramEnable = value;
         return;
     }
-    if (address >= romBankNumberAddress && address < ramBankNumberAddress) {
+    if (address < ramBankNumberAddress) {
         registers.romBankNumber = value & 0b11111;
         return;
     }
-    if (address >= ramBankNumberAddress && address < bankingModeSelectAddress) {
+    if (address < bankingModeSelectAddress) {
         registers.ramBankNumber = value & 0b11;
         return;
     }
-    if (address >= bankingModeSelectAddress && address <= MemoryRomBank01End) {
+    if (address <= MemoryRomBank01End) {
         registers.bankingModeSelect = value & 0b1;
         return;
     }
@@ -64,7 +64,7 @@ void GbMbc1::write(uint16_t address, const uint8_t value)
             assert(false && "Ram is disabled");
             return;
         }
-        uint8_t bankNumber = getRamBankNumber();
+        const uint8_t bankNumber = getRamBankNumber();
         ramBanks.at(bankNumber).at(address - ExternalRamStart) = value;
         return;
     }

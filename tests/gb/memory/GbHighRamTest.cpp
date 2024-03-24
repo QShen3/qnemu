@@ -2,6 +2,7 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <random>
@@ -21,17 +22,17 @@
 namespace qnemuTest
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> distrib(0, 255);
+namespace {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 255);
+}
 
 TEST(GbHighRamTest, ReadAndWrite)
 {
     qnemu::GbHighRam gbHighRam;
     std::array<uint8_t, 0x7F> data;
-    for (auto& value : data) {
-        value = distrib(gen);
-    }
+    std::generate(data.begin(), data.end(), [&](){ return distrib(gen); });
 
     for (uint16_t i = qnemu::HighRamStart; i <= qnemu::HighRamEnd; i++) {
         gbHighRam.write(i, data.at(i - qnemu::HighRamStart));

@@ -64,7 +64,7 @@ QRgb GbPalette::getSpriteColor(uint16_t colorIndex, uint8_t paletteIndex) const
 {
     assert((paletteIndex == 0 || paletteIndex == 1) && "Wrong palette index!");
     uint8_t shade = 0;
-    uint8_t paletteData = paletteIndex == 0 ? registers.spritePalette0Data : registers.spritePalette1Data;
+    const uint8_t paletteData = paletteIndex == 0 ? registers.spritePalette0Data : registers.spritePalette1Data;
     shade = static_cast<uint8_t>(paletteData << (6 - colorIndex * 2)) >> 6;
 
     return shadeToQRgb(shade);

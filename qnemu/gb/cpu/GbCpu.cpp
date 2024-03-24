@@ -679,7 +679,7 @@ void GbCpu::step()
         const uint16_t pc = registers.pc;
         ticks = instruction.ticks;
         instruction.execute();
-        if (pc == registers.pc) {
+        if (pc == registers.pc) {  // cppcheck-suppress knownConditionTrueFalse
             registers.pc += instruction.length;
         }
     } else {

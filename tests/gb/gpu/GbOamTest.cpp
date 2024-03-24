@@ -16,9 +16,11 @@
 namespace qnemuTest
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> distrib(0, 255);
+namespace {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 255);
+}
 
 class GbOamTest : public testing::Test
 {
@@ -28,22 +30,24 @@ public:
         oam = std::make_unique<qnemu::GbOam>(mockCartridge, mockVideoRam, mockWorkRam);
     }
 
+// NOLINTBEGIN
 protected:
     testing::StrictMock<qnemuMock::MockGbCartridge> mockCartridge;
     testing::StrictMock<qnemuMock::MockGbDevice> mockVideoRam;
     testing::StrictMock<qnemuMock::MockGbDevice> mockWorkRam;
     std::unique_ptr<qnemu::GbOam> oam;
+// NOLINTEND
 };
 
 TEST_F(GbOamTest, ReadAndWriteData)
 {
     for (uint32_t i = qnemu::OamStart; i <= qnemu::OamEnd; i++) {
-        uint8_t value = distrib(gen);
+        const uint8_t value = distrib(gen);
         oam->write(i, value);
         EXPECT_EQ(value, oam->read(i));
     }
 
-    uint8_t value = distrib(gen);
+    const uint8_t value = distrib(gen);
     oam->write(0xFF46, value);
     EXPECT_EQ(value, oam->read(0xFF46));
 }

@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <mutex>
 #include <thread>
 
 #include <QtCore/QRect>
@@ -39,7 +40,7 @@ RasterDisplay::~RasterDisplay()
 
 void RasterDisplay::paintEvent(QPaintEvent*)
 {
-    QRect rect(0, 0, width(), height());
+    const QRect rect(0, 0, width(), height());
     QPainter painter(this);
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [this] { return refreshRequested.load(); });
@@ -60,7 +61,7 @@ void RasterDisplay::disable()
 
 void RasterDisplay::requestRefresh()
 {
-    std::unique_lock<std::mutex> lock(mutex);
+    const std::unique_lock<std::mutex> lock(mutex);
     refreshRequested.store(true);
     cv.notify_all();
 }

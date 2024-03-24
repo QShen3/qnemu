@@ -9,9 +9,15 @@
 namespace qnemu
 {
 
-GbChannel2::GbChannel2()
+GbChannel2::GbChannel2() : data(0), enabled(true), counter(0), currentBit(0)
 {
-    reset();
+    registers.channel2LengthTimerAndDutyCycle = 0x3F;
+    registers.channel2VolumeAndEnvelope = 0;
+    registers.channel2PeriodLow = 0xFF;
+    registers.channel2PeriodHighAndControl = 0xBF;
+
+    lengthTimer.reset();
+    volumeEnvelope.reset();
 }
 
 uint8_t GbChannel2::read(uint16_t address) const

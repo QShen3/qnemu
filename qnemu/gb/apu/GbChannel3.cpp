@@ -11,6 +11,11 @@ namespace qnemu
 
 GbChannel3::GbChannel3() : data(0)
 {
+    registers.channel3DacEnable = 0x7F;
+    registers.channel3LengthTimer = 0xFF;
+    registers.channel3OutputLevel = 0x9F;
+    registers.channel3PeriodLow = 0xFF;
+    registers.channel3PeriodHighAndControl = 0xBF;
 }
 
 

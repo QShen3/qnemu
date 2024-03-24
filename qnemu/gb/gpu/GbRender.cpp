@@ -313,8 +313,6 @@ void GbRender::renderLine()
             }
             if (cartridge.isGbcCartridge()) {
                 colorIndex = spriteAttribute.gbcPaletteNumber * 8 + colorIndex * 2;
-            }
-            if (cartridge.isGbcCartridge()) {
                 line[i] = gbcPalette.getSpriteColor(colorIndex);
             } else {
                 line[i] = gbPalette.getSpriteColor(colorIndex, spriteAttribute.paletteNumber);

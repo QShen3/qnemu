@@ -28,7 +28,7 @@ GbJoypad::GbJoypad(std::shared_ptr<DisplayInterface> display, std::shared_ptr<Gb
 uint8_t GbJoypad::read(uint16_t address) const
 {
     if (address == 0xFF00) {
-        std::lock_guard lock(mutex);
+        const std::lock_guard lock(mutex);
         if (registers.selectDirectionButtons == 0) {
             registers.joypadState = ((registers.joypadState & 0xF0) | directionButtionState.data);
         } else if (registers.selectActionButtons == 0) {
@@ -43,7 +43,7 @@ uint8_t GbJoypad::read(uint16_t address) const
 void GbJoypad::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF00) {
-        std::lock_guard lock(mutex);
+        const std::lock_guard lock(mutex);
         registers.joypadState = ((value & 0b11110000) | (registers.joypadState & 0b00001111));
         return;
     }
@@ -64,7 +64,7 @@ void GbJoypad::reset()
 
 void GbJoypad::processKeyPressEvent(int key)
 {
-    std::lock_guard lock(mutex);
+    const std::lock_guard lock(mutex);
     if (key == Qt::Key_S) {
         directionButtionState.down = 0;
         if (registers.selectDirectionButtons == 0) {
@@ -110,7 +110,7 @@ void GbJoypad::processKeyPressEvent(int key)
 
 void GbJoypad::processKeyReleaseEvent(int key)
 {
-    std::lock_guard lock(mutex);
+    const std::lock_guard lock(mutex);
     if (key == Qt::Key_S) {
         directionButtionState.down = 1;
     } else if (key == Qt::Key_W) {

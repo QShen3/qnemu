@@ -24,14 +24,14 @@ add_library(
     ${MMU_SRCS}
     ${APU_SRCS}
 )
-
-# Library
-find_package(Qt6 COMPONENTS Core Gui Multimedia)
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set_property(TARGET gb PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-endif()
 target_include_directories(gb PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(gb PRIVATE Qt6::Core Qt6::Gui Qt6::Multimedia)
+target_link_libraries(gb PRIVATE Qt6::Core Qt6::Gui)
+set_target_properties(gb PROPERTIES
+    CXX_STANDARD_REQUIRED ON
+    CXX_STANDARD 20
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+    CXX_CPPCHECK "cppcheck;--enable=style;--std=c++20;--error-exitcode=1;--inline-suppr"
+    CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner;--extra-arg=/EHsc")
 
 # Special compile options
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
