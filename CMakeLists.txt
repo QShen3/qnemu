@@ -15,7 +15,7 @@ if (QNEMU_ENABLE_COVERAGE)
         add_custom_target(coverage DEPENDS coverage.xml)
     elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
         add_custom_target(coverage
-            COMMAND OpenCppCoverage --sources ${CMAKE_PROJECT_NAME} --excluded_sources mock --export_type=html:${CMAKE_CURRENT_BINARY_DIR}\\CoverageReport -- ${CMAKE_CURRENT_BINARY_DIR}\\tests\\Debug\\qnemu_test.exe
+            COMMAND OpenCppCoverage --cover_children --sources ${CMAKE_PROJECT_NAME} --excluded_sources mock --export_type=html:${CMAKE_CURRENT_BINARY_DIR}\\CoverageReport -- $<TARGET_FILE:qnemu_test>
             BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}\\CoverageReport\\index.html)
         add_dependencies(coverage qnemu_test)
     endif()

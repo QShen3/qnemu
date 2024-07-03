@@ -26,6 +26,17 @@ protected:
 // NOLINTEND
 };
 
+TEST_F(GbTimerTest, ReadWriteError)
+{
+#ifdef NDEBUG
+    EXPECT_EQ(gbTimer->read(0xFF08), 0xFF);
+    EXPECT_NO_THROW(gbTimer->write(0xFF08, 0xFF));
+#else
+    EXPECT_DEATH(gbTimer->read(0xFF08), "");
+    EXPECT_DEATH(gbTimer->write(0xFF08, 0), "");
+#endif
+}
+
 TEST_F(GbTimerTest, Divider)
 {
     EXPECT_EQ(gbTimer->read(0xFF04), 0xAB);

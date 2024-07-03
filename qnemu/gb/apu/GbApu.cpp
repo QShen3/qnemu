@@ -68,11 +68,11 @@ void GbApu::write(uint16_t address, const uint8_t& value)
 
 void GbApu::step()
 {
-    for (auto& channel : channels) {
-        channel->step();
-    }
-    char data[2] = {0};
-    sound->addData(data);
+    // for (auto& channel : channels) {
+    //     channel->step();
+    // }
+    // char data[2] = {0};
+    // sound->addData(data);
 }
 
 void GbApu::reset()
