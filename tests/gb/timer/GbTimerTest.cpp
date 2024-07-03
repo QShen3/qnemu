@@ -83,6 +83,8 @@ TEST_F(GbTimerTest, TimerCounter1024)
     gbTimer->step();
     gbTimer->step();
     EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
+    gbTimer->step();
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
 }
 
 TEST_F(GbTimerTest, TimerCounter16)
@@ -106,6 +108,8 @@ TEST_F(GbTimerTest, TimerCounter16)
     gbTimer->step();
     EXPECT_CALL(*mockInterruptHandler, requestTimerInterrupt());
     gbTimer->step();
+    gbTimer->step();
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
     gbTimer->step();
     EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
 }
@@ -133,6 +137,8 @@ TEST_F(GbTimerTest, TimerCounter64)
     gbTimer->step();
     gbTimer->step();
     EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
+    gbTimer->step();
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
 }
 
 TEST_F(GbTimerTest, TimerCounter256)
@@ -156,6 +162,8 @@ TEST_F(GbTimerTest, TimerCounter256)
     gbTimer->step();
     EXPECT_CALL(*mockInterruptHandler, requestTimerInterrupt());
     gbTimer->step();
+    gbTimer->step();
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
     gbTimer->step();
     EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
 }

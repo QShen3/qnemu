@@ -84,6 +84,23 @@ TEST_F(GbJoypadTest, ProcessKeyEvent)
     keyRelease(Qt::Key_J);
 }
 
+TEST_F(GbJoypadTest, ReadWriteError)
+{
+#ifdef NDEBUG
+    EXPECT_EQ(gbJoypad->read(0xFF01), 0xFF);
+    EXPECT_NO_THROW(gbJoypad->write(0xFF01, 0xFF));
+#else
+    testing::Mock::AllowLeak(mockDisplay.get());
+    EXPECT_DEATH(gbJoypad->read(0xFF01), "");
+    EXPECT_DEATH(gbJoypad->write(0xFF01, 0), "");
+#endif
+}
+
+TEST_F(GbJoypadTest, Step)
+{
+    EXPECT_NO_THROW(gbJoypad->step());
+}
+
 TEST_F(GbJoypadTest, Reset)
 {
     gbJoypad->reset();
