@@ -25,7 +25,7 @@ public:
     GbMbc1() = delete;
     GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
         std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type);
-    ~GbMbc1() = default;
+    ~GbMbc1() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t value) override;

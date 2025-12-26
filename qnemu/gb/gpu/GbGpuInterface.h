@@ -15,7 +15,7 @@ namespace qnemu
 class GbGpuInterface : public GbDeviceInterface
 {
 public:
-    virtual ~GbGpuInterface() = default;
+    virtual ~GbGpuInterface() override = default;
 
     virtual uint8_t currentMode() const = 0;
     virtual bool isLcdEnable() const = 0;

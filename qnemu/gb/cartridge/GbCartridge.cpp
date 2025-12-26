@@ -185,7 +185,7 @@ bool GbCartridge::isGbcCartridge() const
     return gbcCartridge;
 }
 
-std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& buffer) const
+std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& buffer)
 {
     std::string cartridgePublisher;
     if (buffer.at(0x14B) == 0x33) {
@@ -209,7 +209,7 @@ std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& b
     return cartridgePublisher;
 }
 
-size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag) const
+size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag)
 {
     if (flag == 0) {
         return 0;
@@ -223,7 +223,7 @@ size_t GbCartridge::getRamSizeFromCartridge(uint8_t flag) const
     throw std::runtime_error("Cartridge file is not correct!");
 }
 
-size_t GbCartridge::getRomSizeFromCartridge(uint8_t flag) const
+size_t GbCartridge::getRomSizeFromCartridge(uint8_t flag)
 {
     if (flag <= 8) {
         return (RomBankSize * 2) << flag;

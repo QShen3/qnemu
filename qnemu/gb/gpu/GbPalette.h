@@ -17,7 +17,7 @@ class GbPalette : public GbDeviceInterface
 {
 public:
     GbPalette();
-    ~GbPalette() = default;
+    ~GbPalette() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
@@ -28,7 +28,7 @@ public:
     QRgb getSpriteColor(uint16_t colorIndex, uint8_t paletteIndex) const;
 
 private:
-    QRgb shadeToQRgb(uint8_t shade) const;
+    static QRgb shadeToQRgb(uint8_t shade);
     struct {
         union {
             struct {

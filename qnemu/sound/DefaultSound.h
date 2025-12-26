@@ -26,7 +26,7 @@ class DefaultSound : public SoundInterface
 public:
     DefaultSound() = delete;
     DefaultSound(int64_t sampleRate, const char* channelConfig, int bitDepth);
-    ~DefaultSound() = default;
+    ~DefaultSound() override = default;
 
     void enable() override;
     void disable() override;

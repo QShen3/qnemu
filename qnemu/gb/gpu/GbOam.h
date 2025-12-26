@@ -21,7 +21,7 @@ public:
     explicit GbOam(const GbCartridgeInterface& cartridge,
         const GbDeviceInterface& videoRam,
         const GbDeviceInterface& workRam);
-    ~GbOam() = default;
+    ~GbOam() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;

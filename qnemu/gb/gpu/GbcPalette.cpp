@@ -13,7 +13,7 @@
 namespace qnemu
 {
 
-GbcPalette::GbcPalette()
+GbcPalette::GbcPalette() : backgroundOrWindowData(), spriteData()
 {
     GbcPalette::reset();
 }

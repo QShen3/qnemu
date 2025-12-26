@@ -70,7 +70,7 @@ QRgb GbPalette::getSpriteColor(uint16_t colorIndex, uint8_t paletteIndex) const
     return shadeToQRgb(shade);
 }
 
-QRgb GbPalette::shadeToQRgb(uint8_t shade) const
+QRgb GbPalette::shadeToQRgb(uint8_t shade)
 {
     if (shade == 0) {
         return qRgb(255, 255, 255);

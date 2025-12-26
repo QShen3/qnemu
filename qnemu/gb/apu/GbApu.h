@@ -19,7 +19,7 @@ class GbApu : public GbDeviceInterface
 {
 public:
     GbApu(std::unique_ptr<SoundInterface> sound, std::array<std::unique_ptr<GbChannelInterface>, 4> channels);
-    ~GbApu() = default;
+    ~GbApu() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;

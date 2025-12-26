@@ -20,7 +20,7 @@ public:
     GbCircuitMbc() = delete;
     GbCircuitMbc(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
         std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type);
-    ~GbCircuitMbc() = default;
+    ~GbCircuitMbc() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t value) override;

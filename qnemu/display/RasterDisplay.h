@@ -23,7 +23,7 @@ class RasterDisplay : public QRasterWindow, public DisplayInterface
     Q_OBJECT
 public:
     explicit RasterDisplay(QWindow* parent = nullptr);
-    ~RasterDisplay();
+    ~RasterDisplay() override;
 
     void paintEvent(QPaintEvent* event) override;
 

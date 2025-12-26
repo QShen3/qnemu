@@ -20,7 +20,7 @@ class GbMbcFactory : public GbMbcFactoryInterface
 {
     public:
         GbMbcFactory() = default;
-        ~GbMbcFactory() = default;
+        ~GbMbcFactory() override = default;
 
         std::unique_ptr<GbMbcInterface> create(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
             std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) const override;

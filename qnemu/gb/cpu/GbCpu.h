@@ -29,7 +29,7 @@ public:
     explicit GbCpu(
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbMmuInterface> mmu);
-    ~GbCpu();
+    ~GbCpu() override;
 
     void start() override;
     void stop() override;
@@ -102,7 +102,7 @@ private:
     const std::array<Instruction, 256> prefixedInstructions;
 
     // Instructions
-    void nop();       // 0x00
+    static void nop();       // 0x00
     void ld_bc_nn();  // 0x01
     void ld_bcp_a();  // 0x02
     void inc_bc();    // 0x03
@@ -170,7 +170,7 @@ private:
     void ld_a_n();    // 0x3E
     void ccf();       // 0x3F
 
-    void ld_b_b();    // 0x40
+    static void ld_b_b();    // 0x40
     void ld_b_c();  // 0x41
     void ld_b_d();  // 0x42
     void ld_b_e();    // 0x43
@@ -179,7 +179,7 @@ private:
     void ld_b_hlp();    // 0x46
     void ld_b_a();       // 0x47
     void ld_c_b();      // 0x48
-    void ld_c_c();  // 0x49
+    static void ld_c_c();  // 0x49
     void ld_c_d();  // 0x4A
     void ld_c_e();    // 0x4B
     void ld_c_h();     // 0x4C
@@ -189,7 +189,7 @@ private:
 
     void ld_d_b();    // 0x50
     void ld_d_c();  // 0x51
-    void ld_d_d();  // 0x52
+    static void ld_d_d();  // 0x52
     void ld_d_e();    // 0x53
     void ld_d_h();     // 0x54
     void ld_d_l();     // 0x55
@@ -198,7 +198,7 @@ private:
     void ld_e_b();      // 0x58
     void ld_e_c();  // 0x59
     void ld_e_d();  // 0x5A
-    void ld_e_e();    // 0x5B
+    static void ld_e_e();    // 0x5B
     void ld_e_h();     // 0x5C
     void ld_e_l();     // 0x5D
     void ld_e_hlp();    // 0x5E
@@ -208,7 +208,7 @@ private:
     void ld_h_c();  // 0x61
     void ld_h_d();  // 0x62
     void ld_h_e();    // 0x63
-    void ld_h_h();     // 0x64
+    static void ld_h_h();     // 0x64
     void ld_h_l();     // 0x65
     void ld_h_hlp();    // 0x66
     void ld_h_a();       // 0x67
@@ -217,7 +217,7 @@ private:
     void ld_l_d();  // 0x6A
     void ld_l_e();    // 0x6B
     void ld_l_h();     // 0x6C
-    void ld_l_l();     // 0x6D
+    static void ld_l_l();     // 0x6D
     void ld_l_hlp();    // 0x6E
     void ld_l_a();       // 0x6F
 
@@ -236,7 +236,7 @@ private:
     void ld_a_h();     // 0x7C
     void ld_a_l();     // 0x7D
     void ld_a_hlp();    // 0x7E
-    void ld_a_a();       // 0x7F
+    static void ld_a_a();       // 0x7F
 
     void add_a_b();    // 0x80
     void add_a_c();  // 0x81
@@ -352,7 +352,7 @@ private:
     void ld_ff_ap_n();    // 0xF0
     void pop_af();  // 0xF1
     void ld_a_ff_c();  // 0xF2
-    void di_inst();    // 0xF3
+    static void di_inst();    // 0xF3
     void push_af();     // 0xF5
     void or_n();    // 0xF6
     void rst_30();       // 0xF7
@@ -636,7 +636,7 @@ private:
     void set_7_hlp();    // 0xFE
     void set_7_a();      // 0xFF
 
-    void undefined();
+    static void undefined();
 
     void inc(uint8_t& reg);
     void dec(uint8_t& reg);

@@ -31,7 +31,8 @@ GbRender::GbRender(const GbCartridgeInterface& cartridge,
     gbPalette(gbPalette),
     gbcPalette(gbcPalette),
     oam(oam),
-    videoRam(videoRam)
+    videoRam(videoRam),
+    windowLineCounter(0)
 {
     GbRender::reset();
 }

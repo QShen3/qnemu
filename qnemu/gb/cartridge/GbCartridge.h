@@ -19,7 +19,7 @@ class GbCartridge : public GbCartridgeInterface
 public:
     GbCartridge() = delete;
     explicit GbCartridge(const GbMbcFactoryInterface& gbMbcFactory);
-    ~GbCartridge();
+    ~GbCartridge() override;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
@@ -30,9 +30,9 @@ public:
     bool isGbcCartridge() const override;
 
 private:
-    std::string getPublisherFromCartridge(const std::vector<uint8_t>& buffer) const;
-    size_t getRamSizeFromCartridge(uint8_t flag) const;
-    size_t getRomSizeFromCartridge(uint8_t flag) const;
+    static std::string getPublisherFromCartridge(const std::vector<uint8_t>& buffer);
+    static size_t getRamSizeFromCartridge(uint8_t flag);
+    static size_t getRomSizeFromCartridge(uint8_t flag);
     bool validate(const std::vector<uint8_t>& buffer) const;
 
     std::ifstream file;

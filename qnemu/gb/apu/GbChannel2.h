@@ -17,7 +17,7 @@ class GbChannel2 : public GbChannelInterface
 {
 public:
     GbChannel2();
-    ~GbChannel2() = default;
+    ~GbChannel2() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;

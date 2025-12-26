@@ -32,7 +32,7 @@ public:
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<GbWorkRam> workRam,
         std::unique_ptr<GbTimer> timer);
-    ~GbMmu() = default;
+    ~GbMmu() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;

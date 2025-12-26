@@ -22,7 +22,7 @@ GbCpu::GbCpu(
     mmu(std::move(mmu)),
     instructions({
         Instruction
-        { "NOP",                     1, 4,  [this](){nop();}       },
+        { "NOP",                     1, 4,  [](){nop();}       },
         { "LD BC, 0x%04X",           3, 12, [this](){ld_bc_nn();}  },
         { "LD (BC), A",              1, 8,  [this](){ld_bcp_a();}  },
         { "INC BC",                  1, 8,  [this](){inc_bc();}    },                     // 0x03
@@ -86,7 +86,7 @@ GbCpu::GbCpu(
         { "DEC A",                   1, 4,  [this](){dec_a();}     },                       // 0x3d
         { "LD A, 0x%02X",            2, 8,  [this](){ld_a_n();}    },               // 0x3e
         { "CCF",                     1, 4,  [this](){ccf();}       },                           // 0x3f
-        { "LD B, B",                 1, 4,  [this](){ld_b_b();}    },                       // 0x40
+        { "LD B, B",                 1, 4,  [](){ld_b_b();}    },                       // 0x40
         { "LD B, C",                 1, 4,  [this](){ld_b_c();}    },                    // 0x41
         { "LD B, D",                 1, 4,  [this](){ld_b_d();}    },                    // 0x42
         { "LD B, E",                 1, 4,  [this](){ld_b_e();}    },                    // 0x43
@@ -95,7 +95,7 @@ GbCpu::GbCpu(
         { "LD B, (HL)",              1, 8,  [this](){ld_b_hlp();}  },               // 0x46
         { "LD B, A",                 1, 4,  [this](){ld_b_a();}    },                    // 0x47
         { "LD C, B",                 1, 4,  [this](){ld_c_b();}    },                    // 0x48
-        { "LD C, C",                 1, 4,  [this](){ld_c_c();}    },                       // 0x49
+        { "LD C, C",                 1, 4,  [](){ld_c_c();}    },                       // 0x49
         { "LD C, D",                 1, 4,  [this](){ld_c_d();}    },                    // 0x4a
         { "LD C, E",                 1, 4,  [this](){ld_c_e();}    },                    // 0x4b
         { "LD C, H",                 1, 4,  [this](){ld_c_h();}    },                    // 0x4c
@@ -104,7 +104,7 @@ GbCpu::GbCpu(
         { "LD C, A",                 1, 4,  [this](){ld_c_a();}    },                    // 0x4f
         { "LD D, B",                 1, 4,  [this](){ld_d_b();}    },                    // 0x50
         { "LD D, C",                 1, 4,  [this](){ld_d_c();}    },                    // 0x51
-        { "LD D, D",                 1, 4,  [this](){ld_d_d();}    },                       // 0x52
+        { "LD D, D",                 1, 4,  [](){ld_d_d();}    },                       // 0x52
         { "LD D, E",                 1, 4,  [this](){ld_d_e();}    },                    // 0x53
         { "LD D, H",                 1, 4,  [this](){ld_d_h();}    },                    // 0x54
         { "LD D, L",                 1, 4,  [this](){ld_d_l();}    },                    // 0x55
@@ -113,7 +113,7 @@ GbCpu::GbCpu(
         { "LD E, B",                 1, 4,  [this](){ld_e_b();}    },                    // 0x58
         { "LD E, C",                 1, 4,  [this](){ld_e_c();}    },                    // 0x59
         { "LD E, D",                 1, 4,  [this](){ld_e_d();}    },                    // 0x5a
-        { "LD E, E",                 1, 4,  [this](){ld_e_e();}    },                       // 0x5b
+        { "LD E, E",                 1, 4,  [](){ld_e_e();}    },                       // 0x5b
         { "LD E, H",                 1, 4,  [this](){ld_e_h();}    },                    // 0x5c
         { "LD E, L",                 1, 4,  [this](){ld_e_l();}    },                    // 0x5d
         { "LD E, (HL)",              1, 8,  [this](){ld_e_hlp();}  },               // 0x5e
@@ -122,7 +122,7 @@ GbCpu::GbCpu(
         { "LD H, C",                 1, 4,  [this](){ld_h_c();}    },                    // 0x61
         { "LD H, D",                 1, 4,  [this](){ld_h_d();}    },                    // 0x62
         { "LD H, E",                 1, 4,  [this](){ld_h_e();}    },                    // 0x63
-        { "LD H, H",                 1, 4,  [this](){ld_h_h();}    },                       // 0x64
+        { "LD H, H",                 1, 4,  [](){ld_h_h();}    },                       // 0x64
         { "LD H, L",                 1, 4,  [this](){ld_h_l();}    },                    // 0x65
         { "LD H, (HL)",              1, 8,  [this](){ld_h_hlp();}  },               // 0x66
         { "LD H, A",                 1, 4,  [this](){ld_h_a();}    },                    // 0x67
@@ -131,7 +131,7 @@ GbCpu::GbCpu(
         { "LD L, D",                 1, 4,  [this](){ld_l_d();}    },                    // 0x6a
         { "LD L, E",                 1, 4,  [this](){ld_l_e();}    },                    // 0x6b
         { "LD L, H",                 1, 4,  [this](){ld_l_h();}    },                    // 0x6c
-        { "LD L, L",                 1, 4,  [this](){ld_l_l();}    },                       // 0x6d
+        { "LD L, L",                 1, 4,  [](){ld_l_l();}    },                       // 0x6d
         { "LD L, (HL)",              1, 8,  [this](){ld_l_hlp();}  },               // 0x6e
         { "LD L, A",                 1, 4,  [this](){ld_l_a();}    },                    // 0x6f
         { "LD (HL), B",              1, 8,  [this](){ld_hlp_b();}  },               // 0x70
@@ -149,7 +149,7 @@ GbCpu::GbCpu(
         { "LD A, H",                 1, 4,  [this](){ld_a_h();}    },                    // 0x7c
         { "LD A, L",                 1, 4,  [this](){ld_a_l();}    },                    // 0x7d
         { "LD A, (HL)",              1, 8,  [this](){ld_a_hlp();}  },               // 0x7e
-        { "LD A, A",                 1, 4,  [this](){ld_a_a();}    },                       // 0x7f
+        { "LD A, A",                 1, 4,  [](){ld_a_a();}    },                       // 0x7f
         { "ADD A, B",                1, 4,  [this](){add_a_b();}   },                  // 0x80
         { "ADD A, C",                1, 4,  [this](){add_a_c();}   },                  // 0x81
         { "ADD A, D",                1, 4,  [this](){add_a_d();}   },                  // 0x82
@@ -233,7 +233,7 @@ GbCpu::GbCpu(
         { "RET NC",                  1, 8,  [this](){ret_nc();}    },                     // 0xd0
         { "POP DE",                  1, 12, [this](){pop_de();}    },                     // 0xd1
         { "JP NC, 0x%04X",           3, 12, [this](){jp_nc_nn();}  },            // 0xd2
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xd3
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xd3
         { "CALL NC, 0x%04X",         3, 12, [this](){call_nc_nn();}},        // 0xd4
         { "PUSH DE",                 1, 16, [this](){push_de();}   },                   // 0xd5
         { "SUB 0x%02X",              2, 8,  [this](){sub_n();}     },                  // 0xd6
@@ -241,32 +241,32 @@ GbCpu::GbCpu(
         { "RET C",                   1, 8,  [this](){ret_c();}     },                       // 0xd8
         { "RETI",                    1, 16, [this](){reti();}      },          // 0xd9
         { "JP C, 0x%04X",            3, 12, [this](){jp_c_nn();}   },              // 0xda
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xdb
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xdb
         { "CALL C, 0x%04X",          3, 12, [this](){call_c_nn();} },          // 0xdc
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xdd
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xdd
         { "SBC 0x%02X",              2, 8,  [this](){sbc_n();}     },                  // 0xde
         { "RST 0x18",                1, 16, [this](){rst_18();}    },                   // 0xdf
         { "LD (0xFF00 + 0x%02X), A", 2, 12, [this](){ld_ff_n_ap();}},  // 0xe0
         { "POP HL",                  1, 12, [this](){pop_hl();}    },                     // 0xe1
         { "LD (0xFF00 + C), A",      1, 8,  [this](){ld_ff_c_a();} },      // 0xe2
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xe3
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xe4
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xe3
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xe4
         { "PUSH HL",                 1, 16, [this](){push_hl();}   },                   // 0xe5
         { "AND 0x%02X",              2, 8,  [this](){and_n();}     },                  // 0xe6
         { "RST 0x20",                1, 16, [this](){rst_20();}    },                   // 0xe7
         { "ADD SP,0x%02X",           2, 16, [this](){add_sp_n();}  },            // 0xe8
         { "JP HL",                   1, 4,  [this](){jp_hl();}     },                       // 0xe9
         { "LD (0x%04X), A",          3, 16, [this](){ld_nnp_a();}  },           // 0xea
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xeb
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xec
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xed
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xeb
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xec
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xed
         { "XOR 0x%02X",              2, 8,  [this](){xor_n();}     },                  // 0xee
         { "RST 0x28",                1, 16, [this](){rst_28();}    },                   // 0xef
         { "LD A, (0xFF00 + 0x%02X)", 2, 12, [this](){ld_ff_ap_n();}},  // 0xf0
         { "POP AF",                  1, 12, [this](){pop_af();}    },                     // 0xf1
         { "LD A, (0xFF00 + C)",      1, 8,  [this](){ld_a_ff_c();} },      // 0xf2
-        { "DI",                      1, 4,  [this](){di_inst();}   },                        // 0xf3
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xf4
+        { "DI",                      1, 4,  [](){di_inst();}   },                        // 0xf3
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xf4
         { "PUSH AF",                 1, 16, [this](){push_af();}   },                   // 0xf5
         { "OR 0x%02X",               2, 8,  [this](){or_n();}      },                    // 0xf6
         { "RST 0x30",                1, 16, [this](){rst_30();}    },                   // 0xf7
@@ -274,8 +274,8 @@ GbCpu::GbCpu(
         { "LD SP, HL",               1, 8,  [this](){ld_sp_hl();}  },                // 0xf9
         { "LD A, (0x%04X)",          3, 16, [this](){ld_a_nnp();}  },           // 0xfa
         { "EI",                      1, 4,  [this](){ei();}        },                             // 0xfb
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xfc
-        { "UNKNOWN",                 0, 0,  [this](){undefined();} },                 // 0xfd
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xfc
+        { "UNKNOWN",                 0, 0,  [](){undefined();} },                 // 0xfd
         { "CP 0x%02X",               2, 8,  [this](){cp_n();}      },                    // 0xfe
         { "RST 0x38",                1, 16, [this](){rst_38();}    },                   // 0xff
     }),

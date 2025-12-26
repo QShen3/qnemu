@@ -34,7 +34,7 @@ public:
         const GbcPalette& gbcPalette,
         const GbOam& oam,
         const GbVideoRam& videoRam);
-    ~GbRender() = default;
+    ~GbRender() override= default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;

@@ -16,7 +16,7 @@ class GbWorkRam : public GbDeviceInterface
 {
 public:
     GbWorkRam();
-    ~GbWorkRam() = default;
+    ~GbWorkRam() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
