@@ -16,12 +16,7 @@
 #include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
-#include "qnemu/gb/gpu/GbGpu.h"
-#include "qnemu/gb/gpu/GbPalette.h"
-#include "qnemu/gb/gpu/GbVideoRam.h"
-#include "qnemu/gb/gpu/GbcPalette.h"
-#include "qnemu/gb/gpu/GbOam.h"
-#include "qnemu/gb/gpu/GbRender.h"
+#include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
@@ -54,17 +49,14 @@ Gb::Gb()
     auto timer = std::make_unique<GbTimer>(interruptHandler);
     auto joypad = std::make_unique<GbJoypad>(rasterDisplay, interruptHandler);
 
-    auto palette = std::make_unique<GbPalette>();
-    auto coloredPalette = std::make_unique<GbcPalette>();
-    auto videoRam = std::make_unique<GbVideoRam>(*cartridge, *workRam);
-    auto oam = std::make_unique<GbOam>(*cartridge, *videoRam, *workRam);
-    auto render = std::make_unique<GbRender>(
-        *cartridge, rasterDisplay, interruptHandler, *palette, *coloredPalette, *oam, *videoRam);
-    auto gpu = std::make_unique<GbGpu>(
-        std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
+    auto ppu = std::make_unique<GbPpu>(cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
+    GbPpu* ppuPointer = ppu.get();
 
-    mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(gpu), std::move(highRam),
+    mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppu), std::move(highRam),
         interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
+    ppuPointer->setExternalRead([mmuPointer = mmu.get()](uint16_t address) {
+        return mmuPointer->read(address);
+    });
     bus = std::make_unique<GbCpuBus>(*mmu);
     cpu = std::make_unique<GbCpu>(*bus);
 

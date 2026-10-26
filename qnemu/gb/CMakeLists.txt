@@ -6,6 +6,17 @@ set_target_properties(gb_cpu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(gb_cpu PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(gb_cpu PRIVATE qnemu_warnings)
 
+# The PPU and interrupt controller are also Qt-free.  The headless test tools
+# and the PPU unit tests link this library directly.
+add_library(gb_ppu STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)
+set_target_properties(gb_ppu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+target_include_directories(gb_ppu PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(gb_ppu PRIVATE qnemu_warnings)
+
 # C++
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge CARTRIDGE_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge/mbc CARTRIDGE_MBC_SRCS)
@@ -16,6 +27,13 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/joypad JOYPAD_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/timer TIMER_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/mmu MMU_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/apu APU_SRCS)
+
+list(REMOVE_ITEM GPU_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp)
+list(REMOVE_ITEM INTERRUPT_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)
 
 add_library(
     gb OBJECT
@@ -31,4 +49,4 @@ add_library(
     ${APU_SRCS}
 )
 target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu Qt6::Core Qt6::Gui)
+target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu Qt6::Core Qt6::Gui)

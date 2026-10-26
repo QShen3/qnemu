@@ -1,19 +1,19 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
 #pragma once
 
 #include <atomic>
-#include <condition_variable>
+#include <functional>
 #include <mutex>
-#include <thread>
 
 #include <QtGui/QImage>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QRasterWindow>
 
 #include "qnemu/display/DisplayInterface.h"
+#include "qnemu/display/FrameBuffer.h"
 
 namespace qnemu
 {
@@ -23,17 +23,13 @@ class RasterDisplay : public QRasterWindow, public DisplayInterface
     Q_OBJECT
 public:
     explicit RasterDisplay(QWindow* parent = nullptr);
-    ~RasterDisplay() override;
+    ~RasterDisplay() override = default;
 
     void paintEvent(QPaintEvent* event) override;
 
+    void presentFrame(const FrameBuffer& frame) override;
     void enable() override;
     void disable() override;
-
-    void requestRefresh() override;
-    void waitFroRefresh() override;
-
-    QImage& getBuffer() override;
 
     void setKeyPressCallback(std::function<void(int)> callback) override;
     void setKeyReleaseCallback(std::function<void(int)> callback) override;
@@ -45,16 +41,12 @@ signals:
     void startRefresh();
 
 private:
-    void run();
-
     QImage buffer;
-    std::condition_variable cv;
+    std::mutex mutex;
     std::function<void(int)> keyPressCallback;
     std::function<void(int)> keyReleaseCallback;
-    std::mutex mutex;
-    std::atomic_bool refreshRequested;
-    std::atomic_bool started;
-    std::thread work;
+    std::atomic_bool enabled{true};
+    bool hasFrame = false;
 };
 
 }  // namespace qnemu

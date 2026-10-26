@@ -27,7 +27,7 @@ TEST(GbInterruptTest, ReadAndWriteRegisters)
     handler.write(0xFF0F, 0x1F);
     handler.write(0xFFFF, 0x1F);
 
-    EXPECT_EQ(handler.read(0xFF0F), 0x1F);
+    EXPECT_EQ(handler.read(0xFF0F), 0xFF);
     EXPECT_EQ(handler.read(0xFFFF), 0x1F);
 }
 
@@ -49,23 +49,23 @@ TEST(GbInterruptTest, RequestSetsIndividualBits)
     handler.write(0xFF0F, 0x00);
 
     handler.requestVBlankInterrupt();
-    EXPECT_EQ(handler.read(0xFF0F), 0x01);
+    EXPECT_EQ(handler.read(0xFF0F), 0xE1);
 
     handler.write(0xFF0F, 0x00);
     handler.requestLcdInterrupt();
-    EXPECT_EQ(handler.read(0xFF0F), 0x02);
+    EXPECT_EQ(handler.read(0xFF0F), 0xE2);
 
     handler.write(0xFF0F, 0x00);
     handler.requestTimerInterrupt();
-    EXPECT_EQ(handler.read(0xFF0F), 0x04);
+    EXPECT_EQ(handler.read(0xFF0F), 0xE4);
 
     handler.write(0xFF0F, 0x00);
     handler.requestSerialInterrupt();
-    EXPECT_EQ(handler.read(0xFF0F), 0x08);
+    EXPECT_EQ(handler.read(0xFF0F), 0xE8);
 
     handler.write(0xFF0F, 0x00);
     handler.requestJoypadInterrupt();
-    EXPECT_EQ(handler.read(0xFF0F), 0x10);
+    EXPECT_EQ(handler.read(0xFF0F), 0xF0);
 }
 
 TEST(GbInterruptTest, PendingRequiresEnableMask)
@@ -88,7 +88,7 @@ TEST(GbInterruptTest, AcknowledgeClearsRequestBits)
 
     handler.acknowledge(0x05);
 
-    EXPECT_EQ(handler.read(0xFF0F), 0x1A);
+    EXPECT_EQ(handler.read(0xFF0F), 0xFA);
     EXPECT_EQ(handler.pending(), 0x1A);
 }
 

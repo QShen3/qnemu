@@ -12,13 +12,14 @@ namespace qnemu
 
 GbInterruptHandler::GbInterruptHandler()
 {
-    reset();
+    GbInterruptHandler::reset();
 }
 
 uint8_t GbInterruptHandler::read(uint16_t address) const
 {
     if (address == 0xFF0F) {
-        return interruptFlag;
+        // IF bits 5-7 are unused and read as 1.
+        return static_cast<uint8_t>(interruptFlag | 0xE0);
     }
     if (address == 0xFFFF) {
         return interruptEnabled;

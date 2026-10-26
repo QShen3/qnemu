@@ -1,12 +1,11 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
-#include <atomic>
-#include <chrono>
+#include <cstring>
 #include <functional>
 #include <mutex>
-#include <thread>
+#include <utility>
 
 #include <QtCore/QRect>
 #include <QtGui/QKeyEvent>
@@ -20,72 +19,59 @@ namespace qnemu
 
 RasterDisplay::RasterDisplay(QWindow* parent) :
     QRasterWindow(parent),
-    buffer(160, 144, QImage::Format_RGB32),
-    refreshRequested(false),
-    started(true)
+    buffer(FrameBuffer::width, FrameBuffer::height, QImage::Format_RGB32)
 {
     connect(this, SIGNAL(startRefresh()), this, SLOT(update()));
-    work = std::thread(&RasterDisplay::run, this);
-}
-
-RasterDisplay::~RasterDisplay()
-{
-    started.store(false);
-    refreshRequested.store(true);
-    cv.notify_all();
-    if (work.joinable()) {
-        work.join();
-    }
 }
 
 void RasterDisplay::paintEvent(QPaintEvent*)
 {
     const QRect rect(0, 0, width(), height());
     QPainter painter(this);
-    std::unique_lock<std::mutex> lock(mutex);
-    cv.wait(lock, [this] { return refreshRequested.load(); });
+    const std::lock_guard lock(mutex);
+    if (!hasFrame) {
+        return;
+    }
     painter.drawImage(rect, buffer);
-    refreshRequested.store(false);
-    cv.notify_all();
+}
+
+void RasterDisplay::presentFrame(const FrameBuffer& frame)
+{
+    if (!enabled.load()) {
+        return;
+    }
+
+    {
+        const std::lock_guard lock(mutex);
+        for (int y = 0; y < FrameBuffer::height; ++y) {
+            std::memcpy(buffer.scanLine(y),
+                frame.pixels.data() + static_cast<std::size_t>(y) * FrameBuffer::width,
+                FrameBuffer::width * sizeof(uint32_t));
+        }
+        hasFrame = true;
+    }
+
+    emit startRefresh();
 }
 
 void RasterDisplay::enable()
 {
-    started.store(true);
+    enabled.store(true);
 }
 
 void RasterDisplay::disable()
 {
-    started.store(false);
-}
-
-void RasterDisplay::requestRefresh()
-{
-    const std::unique_lock<std::mutex> lock(mutex);
-    refreshRequested.store(true);
-    cv.notify_all();
-}
-
-void RasterDisplay::waitFroRefresh()
-{
-    std::unique_lock<std::mutex> lock(mutex);
-    cv.wait_for(lock, std::chrono::milliseconds(10), [this] { return !refreshRequested.load(); });
-    refreshRequested.store(false);
-}
-
-QImage& RasterDisplay::getBuffer()
-{
-    return buffer;
+    enabled.store(false);
 }
 
 void RasterDisplay::setKeyPressCallback(std::function<void(int)> callback)
 {
-    keyPressCallback = callback;
+    keyPressCallback = std::move(callback);
 }
 
 void RasterDisplay::setKeyReleaseCallback(std::function<void(int)> callback)
 {
-    keyReleaseCallback = callback;
+    keyReleaseCallback = std::move(callback);
 }
 
 void RasterDisplay::keyPressEvent(QKeyEvent* event)
@@ -102,15 +88,4 @@ void RasterDisplay::keyReleaseEvent(QKeyEvent* event)
     }
 }
 
-void RasterDisplay::run()
-{
-    while (true) {
-        if (!started.load()) {
-            return;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        emit startRefresh();
-    }
-}
-
-} // namespace qnemu
+}  // namespace qnemu

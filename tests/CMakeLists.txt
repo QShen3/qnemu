@@ -27,6 +27,7 @@ target_link_libraries(
     qnemu_warnings
     gb
     gb_cpu
+    gb_ppu
     sound
     display
     GTest::gmock_main
