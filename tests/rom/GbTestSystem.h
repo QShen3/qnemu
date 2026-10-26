@@ -6,27 +6,31 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "qnemu/display/FrameBuffer.h"
 #include "qnemu/gb/cpu/CpuBus.h"
+#include "qnemu/gb/gpu/GbPpu.h"
+#include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "tests/support/MemoryDisplay.h"
 
 namespace qnemuTest
 {
 
 /**
- * Minimal headless Game Boy system used to run CPU test ROMs.
+ * Minimal headless Game Boy system used to run test ROMs.
  *
- * It intentionally implements only what the CPU/timer/interrupt/serial tests
- * need: ROM (with basic MBC1 banking), RAM, DIV/TIMA/TMA/TAC, IF/IE, a line
- * counter for VBlank interrupts, and the link-port serial output convention.
- * PPU mode timing, OAM DMA, APU and the real MMU are out of scope here; those
- * are exercised by the main emulator instead.
+ * The CPU/timer/serial path is always available.  A real GbPpu can optionally
+ * be attached for rendering tests such as dmg-acid2/cgb-acid2; when it is not
+ * attached the system keeps a tiny LY/VBlank stub so CPU-only tests stay fast
+ * and independent of PPU timing.
  */
 class GbTestSystem : public qnemu::CpuBus
 {
 public:
-    bool loadRom(const std::string& path, bool cgb);
+    bool loadRom(const std::string& path, bool cgb, bool enablePpu = false);
 
     uint8_t read(uint16_t address) override;
     void write(uint16_t address, uint8_t value) override;
@@ -38,6 +42,16 @@ public:
     /// Decode the BG tilemap for the simple ASCII console used by some
     /// blargg ROMs.  This is only a diagnostic aid; it is not a renderer.
     std::string screenText() const;
+
+    const qnemu::FrameBuffer* frameBuffer() const
+    {
+        return ppu ? &ppu->frameBuffer() : nullptr;
+    }
+
+    uint64_t frameCount() const
+    {
+        return ppu ? ppu->frameCount() : 0;
+    }
 
     uint64_t cycles() const { return cycles_; }
 
@@ -67,14 +81,17 @@ private:
     bool timaOverflow_ = false;
     uint8_t overflowCycles_ = 0;
 
-    uint8_t interruptFlag_ = 0xE1;
-    uint8_t interruptEnabled_ = 0x00;
+    std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
+        std::make_shared<qnemu::GbInterruptHandler>();
 
     uint8_t lcdc_ = 0x91;
     uint8_t stat_ = 0x80;
     uint8_t ly_ = 0;
     uint8_t lyc_ = 0;
     uint16_t ppuDivider_ = 0;
+
+    std::shared_ptr<MemoryDisplay> display;
+    std::unique_ptr<qnemu::GbPpu> ppu;
 
     uint8_t serialData_ = 0;
     uint8_t serialControl_ = 0x00;

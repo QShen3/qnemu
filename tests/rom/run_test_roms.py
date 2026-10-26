@@ -13,6 +13,7 @@ def run_rom(
     runner: pathlib.Path,
     rom: pathlib.Path,
     model: str,
+    ppu: bool,
     max_cycles: int,
     max_seconds: int,
 ):
@@ -26,6 +27,8 @@ def run_rom(
         "--max-seconds",
         str(max_seconds),
     ]
+    if ppu:
+        command.append("--ppu")
     try:
         completed = subprocess.run(
             command,
@@ -52,6 +55,7 @@ def main() -> int:
         help="path to gb_test_runner",
     )
     parser.add_argument("--model", choices=["dmg", "cgb"], default="cgb")
+    parser.add_argument("--ppu", action="store_true", help="attach the full PPU")
     parser.add_argument("--max-cycles", type=int, default=300_000_000)
     parser.add_argument("--max-seconds", type=int, default=20)
     parser.add_argument("--jobs", type=int, default=8)
@@ -86,7 +90,15 @@ def main() -> int:
     failures = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as executor:
         futures = [
-            executor.submit(run_rom, args.runner, rom, args.model, args.max_cycles, args.max_seconds)
+            executor.submit(
+                run_rom,
+                args.runner,
+                rom,
+                args.model,
+                args.ppu,
+                args.max_cycles,
+                args.max_seconds,
+            )
             for rom in roms
         ]
         for future in concurrent.futures.as_completed(futures):

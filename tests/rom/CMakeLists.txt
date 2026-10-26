@@ -3,7 +3,7 @@ add_executable(
     main.cpp
     GbTestSystem.cpp)
 target_include_directories(gb_test_runner PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu)
+target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu Qt6::Gui)
 
 set(QNEMU_TEST_ROM_ROOT "${PROJECT_SOURCE_DIR}/third_party" CACHE PATH
     "Directory containing the gb-test-roms and mooneye-test-roms submodules")
@@ -18,7 +18,7 @@ function(qnemu_add_rom_test test_name rom_path label)
     string(MAKE_C_IDENTIFIER "rom_${test_name}" identifier)
     add_test(
         NAME "${identifier}"
-        COMMAND gb_test_runner "${rom_path}" --max-cycles 300000000)
+        COMMAND gb_test_runner "${rom_path}" --max-cycles 300000000 ${ARGN})
     set_tests_properties("${identifier}" PROPERTIES
         TIMEOUT 120
         LABELS "rom;${label}")
@@ -81,12 +81,65 @@ if(QNEMU_ENABLE_ROM_TESTS)
         foreach(RELATIVE IN LISTS MOONEYE_CPU_TESTS)
             qnemu_add_rom_test("mooneye_${RELATIVE}" "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye")
         endforeach()
+
+        # These need the real PPU (OAM visibility and OAM DMA), so attach it
+        # instead of using the CPU-only LY/VBlank stub.
+        set(MOONEYE_PPU_TESTS
+            "acceptance/bits/mem_oam.gb"
+            "acceptance/oam_dma/basic.gb"
+            "acceptance/oam_dma/reg_read.gb"
+            "acceptance/ppu/intr_1_2_timing-GS.gb"
+            "acceptance/ppu/intr_2_0_timing.gb"
+            "acceptance/ppu/intr_2_mode0_timing.gb"
+            "acceptance/ppu/intr_2_mode3_timing.gb"
+            "acceptance/ppu/intr_2_oam_ok_timing.gb"
+        )
+        foreach(RELATIVE IN LISTS MOONEYE_PPU_TESTS)
+            qnemu_add_rom_test("mooneye_ppu_${RELATIVE}"
+                "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --ppu)
+        endforeach()
     endif()
 
     if(NOT EXISTS "${BLARGG_ROM_ROOT}" AND NOT EXISTS "${MOONEYE_ROM_ROOT}")
         message(STATUS
             "Test ROM submodules not initialized; run "
             "'git submodule update --init --recursive' to enable ROM tests")
+    endif()
+
+    set(QNEMU_ACID2_ROM_DIR "${CMAKE_BINARY_DIR}/test-roms/acid2" CACHE PATH
+        "Directory containing dmg-acid2.gb and cgb-acid2.gbc")
+    set(ACID2_DMG_ROM "${QNEMU_ACID2_ROM_DIR}/dmg-acid2.gb")
+    set(ACID2_CGB_ROM "${QNEMU_ACID2_ROM_DIR}/cgb-acid2.gbc")
+    set(ACID2_DMG_REFERENCE "${QNEMU_TEST_ROM_ROOT}/dmg-acid2/img/reference-dmg.png")
+    set(ACID2_CGB_REFERENCE "${QNEMU_TEST_ROM_ROOT}/cgb-acid2/img/reference.png")
+
+    if(EXISTS "${ACID2_DMG_ROM}" AND EXISTS "${ACID2_DMG_REFERENCE}")
+        add_test(
+            NAME rom_acid2_dmg
+            COMMAND gb_test_runner "${ACID2_DMG_ROM}"
+                --model dmg --frames 10
+                --compare-image "${ACID2_DMG_REFERENCE}")
+        set_tests_properties(rom_acid2_dmg PROPERTIES
+            TIMEOUT 120
+            LABELS "rom;acid2;ppu")
+    endif()
+
+    if(EXISTS "${ACID2_CGB_ROM}" AND EXISTS "${ACID2_CGB_REFERENCE}")
+        add_test(
+            NAME rom_acid2_cgb
+            COMMAND gb_test_runner "${ACID2_CGB_ROM}"
+                --model cgb --frames 10
+                --compare-image "${ACID2_CGB_REFERENCE}")
+        set_tests_properties(rom_acid2_cgb PROPERTIES
+            TIMEOUT 120
+            LABELS "rom;acid2;ppu")
+    endif()
+
+    if(EXISTS "${QNEMU_TEST_ROM_ROOT}/dmg-acid2"
+        AND NOT EXISTS "${ACID2_DMG_ROM}")
+        message(STATUS
+            "Acid2 ROMs not found; run "
+            "'python3 tests/rom/fetch_acid2_roms.py' to enable PPU image tests")
     endif()
 endif()
 

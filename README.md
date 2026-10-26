@@ -82,6 +82,31 @@ Unit tests for the core are in `tests/gb/cpu/GbCpuTest.cpp` and use a flat
 jumps, the SP-relative instructions, interrupt dispatch, the EI delay, HALT,
 the HALT bug and STOP.
 
+## PPU core
+
+The PPU is split into three Qt-free pieces under `qnemu/gb/gpu`:
+
+- `GbPpu` owns the dot/line clock, LCDC/STAT/LY/LYC state, OAM DMA, HDMA,
+  palette RAM and the frame boundary.
+- `PpuMemory` owns the two VRAM banks, OAM and the CGB palette RAM.
+- `PpuRenderer` is a stateless scanline renderer: it reads registers and
+  memory, writes one row, and returns whether the window was visible. This is
+  the part to drive from unit tests with synthetic VRAM/OAM.
+
+The PPU never touches Qt or `GbCartridgeInterface`. External memory needed by
+OAM DMA/HDMA is supplied through a callback, and finished frames are pushed to
+`DisplayInterface` as a plain 160x144 `FrameBuffer`. `RasterDisplay` converts
+that buffer to a QImage on the GUI side, without blocking the CPU thread.
+
+PPU tests live in `tests/gb/gpu/` and cover:
+
+- background/window tile addressing, signed tile indexes and DMG palettes
+- sprite flips, 8x16 tile selection, the 10-object limit, DMG/CGB priority and
+  the CGB object-priority mode (FF6C)
+- OAM DMA byte timing, HDMA block copies, mode transitions, LYC interrupts and
+  VBlank frame delivery
+- full-frame image comparison against dmg-acid2 and cgb-acid2
+
 ## Test ROMs
 
 `gb_test_runner` runs a ROM headlessly with a small test bus (ROM/MBC1, RAM,
@@ -96,22 +121,42 @@ Usage:
     ./build/tests/rom/gb_test_runner path/to/test.gb
     ./build/tests/rom/gb_test_runner path/to/test.gb --model dmg --max-cycles 300000000
 
+    # attach the real PPU (OAM DMA / LY / STAT / VRAM)
+    ./build/tests/rom/gb_test_runner path/to/test.gb --ppu
+
+    # render frames and compare against a reference PNG
+    ./build/tests/rom/gb_test_runner path/to/acid2.gb --frames 10 \
+        --compare-image path/to/reference.png
+
 The ROMs are included as git submodules:
 
     third_party/gb-test-roms/       # blargg, prebuilt ROMs
     third_party/mooneye-test-roms/  # Mooneye, prebuilt ROMs
+    third_party/dmg-acid2/          # source + reference image
+    third_party/cgb-acid2/          # source + reference image
 
 Initialize them after cloning:
 
     git submodule update --init --recursive
 
-CMake registers a curated CPU/timing subset automatically when the submodules
-are present, so plain `ctest` covers them as well:
+The acid2 reference images are in the submodules, but the release ROMs are not
+stored in git. Fetch them once (SHA-256 verified):
+
+    python3 tests/rom/fetch_acid2_roms.py
+
+The default destination is `build/test-roms/acid2`; use
+`-DQNEMU_ACID2_ROM_DIR=...` if the ROMs live elsewhere.
+
+CMake registers a curated CPU/timing/PPU subset automatically when the
+submodules are present, so plain `ctest` covers them as well:
 
     ctest --preset debug -L rom
     ctest --preset debug -L blargg
     ctest --preset debug -L mooneye
+    ctest --preset debug -L ppu
+    ctest --preset debug -L acid2
 
+The acid2 tests render 10 frames and require an exact 160x144 image match.
 Use `-DQNEMU_ENABLE_ROM_TESTS=OFF` to disable the curated tests, or
 `-DQNEMU_TEST_ROM_ROOT=...` if the submodules live elsewhere. For an additional
 directory tree, `-DQNEMU_TEST_ROMS_DIR=...` registers every `.gb` below it.
@@ -121,15 +166,16 @@ To run a whole directory tree manually and get a summary:
     python3 tests/rom/run_test_roms.py third_party/gb-test-roms \
         --include 'cpu_instrs|instr_timing|mem_timing'
 
-The headless bus intentionally does not emulate OAM DMA, PPU mode timing, the
-APU or the full MMU. Mooneye tests that depend on those (many `ppu/`,
-`oam_dma`, `boot_*` and timing tests that self-modify code through OAM DMA)
-will therefore fail or time out; they need the full system rather than the CPU
-test bus. The current CPU/timing subset that passes includes blargg
-`cpu_instrs`, `instr_timing`, `mem_timing`, `mem_timing-2`, and the Mooneye
-CPU/interrupt/timer smoke tests such as `instr/daa`, `bits/reg_f`,
-`intr_timing`, `ei_sequence`, `halt_ime0_ei`, `halt_ime1_timing` and
-`rapid_di_ei`.
+    python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
+        --include 'ppu/' --ppu
+
+The CPU-only bus still has a tiny LY/VBlank stub; `--ppu` attaches the real
+PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering. Mooneye tests that
+need exact PPU mode-3 dot timing, boot ROM state, the APU or rare interrupt
+cancellation cases can still fail. The current passing subset includes blargg
+`cpu_instrs`, `instr_timing`, `mem_timing`, `mem_timing-2`, Mooneye
+CPU/interrupt/timer tests, selected OAM DMA/PPU timing tests, and both acid2
+image tests.
 
 ## Play
 
@@ -153,7 +199,7 @@ Just click the executable and load Rom file.
 | Function  | Implement | Test   |
 | --------- | --------- | ------ |
 | CPU       | ✅       | unit + ROM tests |
-| PPU       | ✅       | manual |
+| PPU       | ✅       | unit + acid2 |
 | Sound     | ❌       | ❌    |
 | Interrupt | ✅       | ✅    |
 | Joypad    | ✅       | ✅    |
@@ -166,7 +212,7 @@ Just click the executable and load Rom file.
 | MBC6      | ❌       | ❌    |
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |
-| HDMA      | ✅       | ❌    |
+| HDMA      | ✅       | unit  |
 
 | Feature         | Implement | Test |
 | --------------- | --------- | ---- |
@@ -186,6 +232,8 @@ Just click the executable and load Rom file.
 - [Blargg's test ROMs](https://github.com/crzysdrs/blarggs-test-roms)
 - [Mooneye Test Suite](https://github.com/Gekkio/mooneye-test-suite)
 - [Prebuilt Mooneye ROMs](https://github.com/asoderman/Mooneye-Test-Suite-ROMS)
+- [dmg-acid2](https://github.com/mattcurrie/dmg-acid2)
+- [cgb-acid2](https://github.com/mattcurrie/cgb-acid2)
 - [Visual Boy Advance - M](https://github.com/visualboyadvance-m/visualboyadvance-m)
 - [mGBA](https://github.com/mgba-emu/mgba)
 - [Coffee GB](https://github.com/trekawek/coffee-gb)

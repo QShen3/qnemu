@@ -4,3 +4,9 @@
 [submodule "third_party/mooneye-test-roms"]
 	path = third_party/mooneye-test-roms
 	url = https://github.com/asoderman/Mooneye-Test-Suite-ROMS.git
+[submodule "third_party/dmg-acid2"]
+	path = third_party/dmg-acid2
+	url = https://github.com/mattcurrie/dmg-acid2.git
+[submodule "third_party/cgb-acid2"]
+	path = third_party/cgb-acid2
+	url = https://github.com/mattcurrie/cgb-acid2.git

@@ -30,7 +30,7 @@ constexpr uint16_t key0Address = 0xFF4C;
 constexpr uint16_t interruptEnableAddress = 0xFFFF;
 }  // namespace
 
-bool GbTestSystem::loadRom(const std::string& path, bool cgb)
+bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu)
 {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) {
@@ -52,7 +52,17 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb)
     const uint8_t cartridgeType = rom_[0x147];
     mbc1_ = cartridgeType >= 0x01 && cartridgeType <= 0x03;
 
+    ppu.reset();
+    display.reset();
     reset();
+
+    if (enablePpu) {
+        display = std::make_shared<MemoryDisplay>();
+        ppu = std::make_unique<qnemu::GbPpu>(cgb, display, interruptHandler);
+        ppu->setExternalRead([this](uint16_t address) {
+            return read(address);
+        });
+    }
     return true;
 }
 
@@ -72,14 +82,17 @@ void GbTestSystem::reset()
     timaOverflow_ = false;
     overflowCycles_ = 0;
 
-    interruptFlag_ = 0xE1;
-    interruptEnabled_ = 0x00;
+    interruptHandler->reset();
 
     lcdc_ = 0x91;
     stat_ = 0x80;
     ly_ = 0;
     lyc_ = 0;
     ppuDivider_ = 0;
+
+    if (ppu) {
+        ppu->reset();
+    }
 
     serialData_ = 0;
     serialControl_ = 0x00;
@@ -104,6 +117,16 @@ uint8_t GbTestSystem::read(uint16_t address)
         address = static_cast<uint16_t>(address - 0x2000);
     }
 
+    if (ppu
+        && ((address >= 0x8000 && address <= 0x9FFF)
+            || (address >= 0xFE00 && address <= 0xFE9F)
+            || (address >= 0xFF40 && address <= 0xFF4B)
+            || address == 0xFF4F
+            || (address >= 0xFF51 && address <= 0xFF55)
+            || (address >= 0xFF68 && address <= 0xFF6C))) {
+        return ppu->read(address);
+    }
+
     if (address == 0xFF00) {
         return 0xFF;
     }
@@ -126,7 +149,7 @@ uint8_t GbTestSystem::read(uint16_t address)
         return static_cast<uint8_t>(tac_ | 0xF8);
     }
     if (address == interruptFlagAddress) {
-        return static_cast<uint8_t>(interruptFlag_ | 0xE0);
+        return interruptHandler->read(address);
     }
     if (address == lcdcAddress) {
         return lcdc_;
@@ -155,7 +178,7 @@ uint8_t GbTestSystem::read(uint16_t address)
         return memory_[address];
     }
     if (address == interruptEnableAddress) {
-        return interruptEnabled_;
+        return interruptHandler->read(address);
     }
 
     if (address >= 0xFF00 && address < 0xFF80) {
@@ -187,6 +210,17 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
 
     if (address >= 0xE000 && address <= 0xFDFF) {
         address = static_cast<uint16_t>(address - 0x2000);
+    }
+
+    if (ppu
+        && ((address >= 0x8000 && address <= 0x9FFF)
+            || (address >= 0xFE00 && address <= 0xFE9F)
+            || (address >= 0xFF40 && address <= 0xFF4B)
+            || address == 0xFF4F
+            || (address >= 0xFF51 && address <= 0xFF55)
+            || (address >= 0xFF68 && address <= 0xFF6C))) {
+        ppu->write(address, value);
+        return;
     }
 
     if (address == serialDataAddress) {
@@ -221,7 +255,7 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
     if (address == interruptFlagAddress) {
-        interruptFlag_ = value;
+        interruptHandler->write(address, value);
         return;
     }
     if (address == lcdcAddress) {
@@ -259,7 +293,7 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
     if (address == interruptEnableAddress) {
-        interruptEnabled_ = value;
+        interruptHandler->write(address, value);
         return;
     }
 
@@ -290,7 +324,11 @@ void GbTestSystem::tick(uint8_t cycles)
     for (uint8_t cycle = 0; cycle < peripheralCycles; ++cycle) {
         ++divider_;
         timerTick();
-        ppuTick();
+        if (ppu) {
+            ppu->step();
+        } else {
+            ppuTick();
+        }
         ++cycles_;
     }
 }
@@ -311,7 +349,7 @@ void GbTestSystem::timerTick()
     if (timaOverflow_) {
         ++overflowCycles_;
         if (overflowCycles_ == 4) {
-            interruptFlag_ = static_cast<uint8_t>(interruptFlag_ | 0x04);
+            interruptHandler->requestTimerInterrupt();
         } else if (overflowCycles_ == 5) {
             tima_ = tma_;
         } else if (overflowCycles_ == 6) {
@@ -352,7 +390,7 @@ void GbTestSystem::ppuTick()
         ppuDivider_ = static_cast<uint16_t>(ppuDivider_ - 456);
         ++ly_;
         if (ly_ == 144) {
-            interruptFlag_ = static_cast<uint8_t>(interruptFlag_ | 0x01);
+            interruptHandler->requestVBlankInterrupt();
         }
         if (ly_ >= 154) {
             ly_ = 0;

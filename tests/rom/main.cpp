@@ -6,11 +6,15 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <string>
 
+#include <QtGui/QImage>
+
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/cpu/Registers.h"
+#include "qnemu/display/FrameBuffer.h"
 #include "tests/rom/GbTestSystem.h"
 
 namespace
@@ -62,7 +66,65 @@ void printUsage(const char* program)
               << "  --model dmg|cgb     initial CPU model (default: cgb)\n"
               << "  --max-cycles N      emulated cycle budget (default: 300000000)\n"
               << "  --max-seconds N     wall-clock budget (default: 60)\n"
+              << "  --ppu               attach the full PPU (OAM DMA, LY/STAT, VRAM)\n"
+              << "  --frames N          run N PPU frames instead of result protocols\n"
+              << "  --compare-image P   compare the final frame with a PNG\n"
+              << "  --dump-frame P      write the final frame as a binary PPM\n"
               << "  --verbose           stream serial output as it is produced\n";
+}
+
+bool writePpm(const std::string& path, const qnemu::FrameBuffer& frame)
+{
+    std::ofstream output(path, std::ios::binary);
+    if (!output) {
+        return false;
+    }
+    output << "P6\n" << qnemu::FrameBuffer::width << ' ' << qnemu::FrameBuffer::height << "\n255\n";
+    for (int y = 0; y < qnemu::FrameBuffer::height; ++y) {
+        for (int x = 0; x < qnemu::FrameBuffer::width; ++x) {
+            const uint32_t pixel = frame.at(x, y);
+            const char rgbData[3] = {
+                static_cast<char>((pixel >> 16) & 0xFF),
+                static_cast<char>((pixel >> 8) & 0xFF),
+                static_cast<char>(pixel & 0xFF),
+            };
+            output.write(rgbData, sizeof(rgbData));
+        }
+    }
+    return static_cast<bool>(output);
+}
+
+int compareWithImage(const std::string& path, const qnemu::FrameBuffer& frame)
+{
+    QImage reference(QString::fromStdString(path));
+    if (reference.isNull()) {
+        std::cerr << "Failed to load reference image: " << path << '\n';
+        return 2;
+    }
+    reference = reference.convertToFormat(QImage::Format_RGB32);
+    if (reference.width() != qnemu::FrameBuffer::width
+        || reference.height() != qnemu::FrameBuffer::height) {
+        std::cerr << "Unexpected reference image size: "
+                  << reference.width() << 'x' << reference.height() << '\n';
+        return 2;
+    }
+
+    int differences = 0;
+    for (int y = 0; y < qnemu::FrameBuffer::height; ++y) {
+        for (int x = 0; x < qnemu::FrameBuffer::width; ++x) {
+            const QRgb expected = reference.pixel(x, y);
+            const uint32_t actual = frame.at(x, y) & 0x00FFFFFFU;
+            const uint32_t wanted = static_cast<uint32_t>(qRed(expected)) << 16
+                | static_cast<uint32_t>(qGreen(expected)) << 8
+                | static_cast<uint32_t>(qBlue(expected));
+            if (actual != wanted) {
+                ++differences;
+            }
+        }
+    }
+
+    std::cout << "Frame differences: " << differences << '\n';
+    return differences == 0 ? 0 : 1;
 }
 
 }  // namespace
@@ -73,6 +135,10 @@ int main(int argc, char** argv)
     std::string model = "cgb";
     uint64_t maxCycles = 300000000;
     uint64_t maxSeconds = 60;
+    uint64_t frames = 0;
+    std::string compareImage;
+    std::string dumpFrame;
+    bool enablePpu = false;
     bool verbose = false;
 
     for (int index = 1; index < argc; ++index) {
@@ -83,6 +149,14 @@ int main(int argc, char** argv)
             maxCycles = std::strtoull(argv[++index], nullptr, 10);
         } else if (argument == "--max-seconds" && index + 1 < argc) {
             maxSeconds = std::strtoull(argv[++index], nullptr, 10);
+        } else if (argument == "--frames" && index + 1 < argc) {
+            frames = std::strtoull(argv[++index], nullptr, 10);
+        } else if (argument == "--compare-image" && index + 1 < argc) {
+            compareImage = argv[++index];
+        } else if (argument == "--dump-frame" && index + 1 < argc) {
+            dumpFrame = argv[++index];
+        } else if (argument == "--ppu") {
+            enablePpu = true;
         } else if (argument == "--verbose") {
             verbose = true;
         } else if (argument == "--help" || argument == "-h") {
@@ -105,8 +179,14 @@ int main(int argc, char** argv)
         return 2;
     }
 
+    const bool frameMode = frames > 0 || !compareImage.empty() || !dumpFrame.empty();
+    const bool attachPpu = frameMode || enablePpu;
+    if (frameMode && frames == 0) {
+        frames = 10;
+    }
+
     qnemuTest::GbTestSystem system;
-    if (!system.loadRom(romPath, model == "cgb")) {
+    if (!system.loadRom(romPath, model == "cgb", attachPpu)) {
         std::cerr << "Failed to load ROM: " << romPath << '\n';
         return 2;
     }
@@ -130,9 +210,59 @@ int main(int argc, char** argv)
     std::cout << "Model: " << model << '\n';
 
     const auto start = std::chrono::steady_clock::now();
+    uint64_t steps = 0;
+
+    if (frameMode) {
+        while (system.frameCount() < frames && cpu.cycles() < maxCycles) {
+            cpu.step();
+            ++steps;
+            if ((steps & 0xFFFFF) == 0) {
+                const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::steady_clock::now() - start).count();
+                if (static_cast<uint64_t>(elapsed) >= maxSeconds) {
+                    break;
+                }
+            }
+        }
+
+        if (system.frameCount() < frames) {
+            std::cout << "Rendered frames: " << system.frameCount() << '\n';
+            std::cout << "Cycles: " << cpu.cycles() << '\n';
+            std::cout << "TIMEOUT / UNKNOWN\n";
+            return 2;
+        }
+
+        const qnemu::FrameBuffer* frame = system.frameBuffer();
+        if (frame == nullptr) {
+            std::cerr << "PPU did not produce a framebuffer\n";
+            return 2;
+        }
+
+        if (!dumpFrame.empty() && !writePpm(dumpFrame, *frame)) {
+            std::cerr << "Failed to write frame: " << dumpFrame << '\n';
+            return 2;
+        }
+
+        int comparison = 0;
+        if (!compareImage.empty()) {
+            comparison = compareWithImage(compareImage, *frame);
+        }
+
+        std::cout << "Rendered frames: " << system.frameCount() << '\n';
+        std::cout << "Cycles: " << cpu.cycles() << '\n';
+        if (comparison == 2) {
+            return 2;
+        }
+        if (comparison == 0) {
+            std::cout << "PASS\n";
+            return 0;
+        }
+        std::cout << "FAIL\n";
+        return 1;
+    }
+
     std::size_t printedSerial = 0;
     Result result = Result::none;
-    uint64_t steps = 0;
     std::array<uint16_t, 32> recentPc{};
     std::array<uint8_t, 32> recentOpcode{};
     std::size_t recentIndex = 0;
