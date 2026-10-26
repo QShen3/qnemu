@@ -58,10 +58,10 @@ DefaultSound::DefaultSound(int64_t sampleRate, const char* channelConfig, int bi
     QObject::connect(audioSink.get(), &QAudioSink::stateChanged, [this](QAudio::State newState){ handleAudioSinkStateChanged(newState); });
 }
 
-void DefaultSound::addData(char* data)
+void DefaultSound::addData(char* audioData)
 {
     std::unique_lock lock(mutex);
-    buffer.write(data, audioFormat.bytesPerSample());
+    buffer.write(audioData, audioFormat.bytesPerSample());
     currentBufferSize++;
     if (currentBufferSize >= bufferSize) {
         buffer.reset();

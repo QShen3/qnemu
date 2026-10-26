@@ -14,8 +14,8 @@ namespace qnemu
 struct Mode
 {
     std::string name;
-    uint16_t ticks;
-    std::function<void()> execute;
+    uint16_t ticks = 0;
+    std::function<void()> execute = {};
 };
 
 }  // namespace qnemu

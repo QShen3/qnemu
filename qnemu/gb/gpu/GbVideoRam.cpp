@@ -152,9 +152,9 @@ const std::array<uint8_t, VideoRamBankSize>& GbVideoRam::getBank(uint8_t index) 
     return videoRamBanks.at(index);
 }
 
-void GbVideoRam::setModeFlag(uint8_t modeFlag)
+void GbVideoRam::setModeFlag(uint8_t mode)
 {
-    this->modeFlag = modeFlag;
+    modeFlag = mode;
 }
 
 }  // namespace qnemu

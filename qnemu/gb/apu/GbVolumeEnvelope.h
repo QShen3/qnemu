@@ -16,7 +16,7 @@ public:
     ~GbVolumeEnvelope() = default;
 
     void step();
-    void setInitialVolume(uint8_t volume);
+    void setInitialVolume(uint8_t initialVolumeValue);
     void setDirection(bool direction);
     void setPace(uint8_t pace);
     void reset();

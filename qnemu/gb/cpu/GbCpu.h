@@ -657,7 +657,7 @@ private:
     void sra(uint8_t& reg);
     void swap(uint8_t& reg);
     void srl(uint8_t& reg);
-    void bit(uint8_t bit, uint8_t value);
+    void bit(uint8_t bitIndex, uint8_t value);
 
     uint16_t pop();
     void push(uint16_t value);

@@ -52,7 +52,7 @@ private:
             };
             uint8_t channel3PeriodHighAndControl;
         };  // FF1E
-    } registers;
+    } registers{};
 
     uint8_t data;
 };

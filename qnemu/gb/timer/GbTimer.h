@@ -38,7 +38,7 @@ private:
             };
             uint8_t timerControl;
         };
-    } registers;
+    } registers{};
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
     bool overflow;
     uint8_t previousBit;

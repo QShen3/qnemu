@@ -13,10 +13,10 @@ namespace qnemu
 
 struct Instruction
 {
-    const char* disassembly;
-    uint8_t length;
-    uint8_t ticks;
-    std::function<void()> execute;
+    const char* disassembly = nullptr;
+    uint8_t length = 0;
+    uint8_t ticks = 0;
+    std::function<void()> execute = {};
 };
 
 }  // namespace qnemu

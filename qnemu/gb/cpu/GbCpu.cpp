@@ -647,9 +647,9 @@ void GbCpu::cancelInterrupt()
     registers.pc = 0;
 }
 
-void GbCpu::setDisplay(std::shared_ptr<DisplayInterface> display)
+void GbCpu::setDisplay(std::shared_ptr<DisplayInterface> newDisplay)
 {
-    this->display = display;
+    display = newDisplay;
 }
 
 void GbCpu::exec()

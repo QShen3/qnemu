@@ -55,7 +55,7 @@ private:
             };
             uint8_t channel2PeriodHighAndControl;
         };  // FF19
-    } registers;
+    } registers{};
 
     uint8_t data;
     bool enabled;

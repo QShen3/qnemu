@@ -18,30 +18,56 @@ add_executable(
     ${GB_TIMERTEST_SRCS}
     ${GB_GPUTEST_SRCS}
 )
+target_include_directories(qnemu_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(
+    qnemu_test
+    PRIVATE
+    qnemu_warnings
+    gb
+    sound
+    display
+    GTest::gmock_main
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Multimedia)
+
 include(GoogleTest)
-gtest_discover_tests(qnemu_test)
-target_include_directories(qnemu_test PRIVATE ${CMAKE_SOURCE_DIR})
-if(WIN32)
-    target_link_libraries(qnemu_test GTest::gmock_main Qt6::Widgets)
-else()
-    target_link_libraries(qnemu_test GTest::gtest GTest::gmock GTest::gtest_main Qt6::Widgets)
-endif()
-target_link_libraries(qnemu_test gb sound display)
-set_target_properties(qnemu_test PROPERTIES
-    CXX_STANDARD_REQUIRED ON
-    CXX_STANDARD 20
-    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-    CXX_CPPCHECK "cppcheck;--enable=style;--std=c++20;--error-exitcode=1;--library=googletest")
+gtest_discover_tests(qnemu_test DISCOVERY_TIMEOUT 30)
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set_target_properties(qnemu_test PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner;--extra-arg=/EHsc")
-else()
-    set_target_properties(qnemu_test PROPERTIES CXX_CLANG_TIDY "clang-tidy;-checks=-*,clang-analyzer-*,concurrency-*,misc-*,-misc-include-cleaner")
-endif()
-
-# Special compile options
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    target_compile_options(qnemu_test PRIVATE /W3 /WX /EHsc)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU OR ${CMAKE_CXX_COMPILER_ID} STREQUAL Clang OR ${CMAKE_CXX_COMPILER_ID} STREQUAL AppleClang)
-    target_compile_options(qnemu_test PRIVATE -Wall -Wextra -Werror)
+if(QNEMU_ENABLE_COVERAGE)
+    if(MSVC)
+        find_program(OPENCPPCOVERAGE_EXECUTABLE NAMES OpenCppCoverage)
+        if(NOT OPENCPPCOVERAGE_EXECUTABLE)
+            message(FATAL_ERROR "QNEMU_ENABLE_COVERAGE is ON, but OpenCppCoverage was not found")
+        endif()
+        add_custom_target(
+            coverage
+            COMMAND ${OPENCPPCOVERAGE_EXECUTABLE}
+                --cover_children
+                --sources ${PROJECT_SOURCE_DIR}/qnemu
+                --excluded_sources ${PROJECT_SOURCE_DIR}/tests
+                --export_type=html:${CMAKE_BINARY_DIR}/coverage
+                -- $<TARGET_FILE:qnemu_test>
+            BYPRODUCTS ${CMAKE_BINARY_DIR}/coverage/index.html
+            DEPENDS qnemu_test
+            COMMENT "Running tests and generating coverage report")
+    else()
+        find_program(GCOVR_EXECUTABLE NAMES gcovr)
+        if(NOT GCOVR_EXECUTABLE)
+            message(FATAL_ERROR "QNEMU_ENABLE_COVERAGE is ON, but gcovr was not found")
+        endif()
+        add_custom_target(
+            coverage
+            COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+            COMMAND ${GCOVR_EXECUTABLE}
+                --config ${PROJECT_SOURCE_DIR}/gcovr.cfg
+                --root ${PROJECT_SOURCE_DIR}
+                --filter ${PROJECT_SOURCE_DIR}/qnemu/
+                --filter ${PROJECT_SOURCE_DIR}/tests/
+                --xml ${CMAKE_BINARY_DIR}/coverage.xml
+                --html-details ${CMAKE_BINARY_DIR}/coverage.html
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            DEPENDS qnemu_test
+            COMMENT "Running tests and generating coverage report")
+    endif()
 endif()

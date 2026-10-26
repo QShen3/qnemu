@@ -60,7 +60,7 @@ private:
             };
             uint8_t channel1PeriodHighAndControl;
         };  // FF14
-    } registers;
+    } registers{};
 
     uint8_t data;
 

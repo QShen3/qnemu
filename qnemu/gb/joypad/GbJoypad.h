@@ -42,7 +42,7 @@ private:
             };
             uint8_t joypadState;
         };
-    } registers;
+    } registers{};
     mutable std::mutex mutex;
     union {
         struct {
@@ -53,7 +53,7 @@ private:
             uint8_t : 4;
         };
         uint8_t data;
-    } actionButtonsState;
+    } actionButtonsState{};
     union {
         struct {
             uint8_t right : 1;
@@ -63,7 +63,7 @@ private:
             uint8_t : 4;
         };
         uint8_t data;
-    } directionButtionState;
+    } directionButtionState{};
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
 };

@@ -1446,9 +1446,9 @@ void GbCpu::srl(uint8_t& reg)
     setZeroFlag(reg);
 }
 
-void GbCpu::bit(uint8_t bit, uint8_t value)
+void GbCpu::bit(uint8_t bitIndex, uint8_t value)
 {
-    if (bit & value) {
+    if (bitIndex & value) {
         registers.zero = 0;
     }
     else {

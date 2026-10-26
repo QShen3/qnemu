@@ -1,6 +1,16 @@
 # Build
-build*/*
+build*/
+
+# CMake user overrides
+CMakeUserPresets.json
+
+# Coverage reports
+coverage.xml
+coverage.html
+coverage.*.html
 
 # VS Code
 .vscode/*
+
+# macOS
 .DS_Store

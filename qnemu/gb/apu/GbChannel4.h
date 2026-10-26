@@ -51,7 +51,7 @@ private:
             };
             uint8_t channel4Control;
         };  // FF23
-    } registers;
+    } registers{};
 
     uint8_t data;
 };

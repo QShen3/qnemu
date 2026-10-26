@@ -29,7 +29,7 @@ public:
     void reset() override;
 
     const std::array<uint8_t, VideoRamBankSize>& getBank(uint8_t index) const;
-    void setModeFlag(uint8_t modeFlag);
+    void setModeFlag(uint8_t mode);
 
 private:
     struct {

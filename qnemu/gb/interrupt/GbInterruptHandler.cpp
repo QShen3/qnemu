@@ -117,9 +117,9 @@ void GbInterruptHandler::reset()
     registers.interruptEnabled = 0;
 }
 
-void GbInterruptHandler::registerCpuCallback(std::function<void(GbInterrupt)> cpuCallback)
+void GbInterruptHandler::registerCpuCallback(std::function<void(GbInterrupt)> callback)
 {
-    this->cpuCallback = cpuCallback;
+    cpuCallback = callback;
 }
 
 void GbInterruptHandler::requestVBlankInterrupt()

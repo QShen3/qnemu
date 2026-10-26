@@ -61,7 +61,7 @@ private:
             };
             uint8_t audioMasterControl;
         };  // FF26
-    } registers;
+    } registers{};
 
     std::unique_ptr<SoundInterface> sound;
     // std::array<uint8_t, 0xF> wavePatternRam;

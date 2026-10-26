@@ -57,7 +57,7 @@ private:
             uint8_t gbcSpritePaletteSpecification;
         };  // FF6A
         uint8_t gbcSpritePaletteData;  // FF6B
-    } registers;
+    } registers{};
     std::array<uint8_t, 0x40> backgroundOrWindowData;
     std::array<uint8_t, 0x40> spriteData;
 };

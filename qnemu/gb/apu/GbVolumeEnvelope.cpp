@@ -33,9 +33,9 @@ void GbVolumeEnvelope::step()
     }
 }
 
-void GbVolumeEnvelope::setInitialVolume(uint8_t volume)
+void GbVolumeEnvelope::setInitialVolume(uint8_t initialVolumeValue)
 {
-    initialVolume = volume;
+    initialVolume = initialVolumeValue;
 }
 
 void GbVolumeEnvelope::setDirection(bool newDirection)
