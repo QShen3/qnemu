@@ -37,6 +37,9 @@ jobs:
             libgtest-dev \
             libgmock-dev
 
+      - name: Fetch Acid2 ROMs
+        run: python3 tests/rom/fetch_acid2_roms.py
+
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
@@ -57,6 +60,9 @@ jobs:
 
       - name: Install dependencies
         run: brew install cmake ninja qt googletest
+
+      - name: Fetch Acid2 ROMs
+        run: python3 tests/rom/fetch_acid2_roms.py
 
       - name: Configure
         run: |
