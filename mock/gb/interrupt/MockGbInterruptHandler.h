@@ -1,11 +1,10 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
 #pragma once
 
 #include <cstdint>
-#include <functional>
 
 #include <gmock/gmock.h>
 
@@ -22,7 +21,10 @@ public:
     MOCK_METHOD(void, reset, (), (override));
     MOCK_METHOD(void, step, (), (override));
 
-    MOCK_METHOD(void, registerCpuCallback, (std::function<void(qnemu::GbInterrupt)>), (override));
+    MOCK_METHOD(void, request, (qnemu::GbInterrupt), (override));
+    MOCK_METHOD(uint8_t, pending, (), (const, override));
+    MOCK_METHOD(void, acknowledge, (uint8_t), (override));
+
     MOCK_METHOD(void, requestVBlankInterrupt, (), (override));
     MOCK_METHOD(void, requestLcdInterrupt, (), (override));
     MOCK_METHOD(void, requestTimerInterrupt, (), (override));

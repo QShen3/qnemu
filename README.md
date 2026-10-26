@@ -61,6 +61,66 @@ On Debian/Ubuntu, install the Qt and Google Test development packages:
 
     sudo apt install cmake ninja-build qt6-base-dev qt6-multimedia-dev libgtest-dev libgmock-dev
 
+## CPU core
+
+The SM83 core lives in `qnemu/gb/cpu` and is deliberately independent of Qt,
+the MMU and the GUI thread:
+
+- `GbCpu` executes one instruction per `step()` and talks to the rest of the
+  machine only through `CpuBus` (`read` / `write` / `tick`).
+- Every memory access is one machine cycle, so instruction timing is expressed
+  directly in the instruction implementation instead of in a separate table.
+- `Registers` is a portable plain struct; flags are the usual `Z N H C` byte,
+  with no anonymous-union or endianness assumptions.
+- Interrupts are handled at instruction boundaries: IME, the EI one-instruction
+  delay, IF/IE priority, HALT, the HALT bug and STOP are all part of the core.
+- `GbCpuBus` adapts `GbMmu`'s 1 T-cycle `step()` to the CPU's 4 T-cycle bus
+  accesses. The GUI thread lives in `Gb`, not in the CPU.
+
+Unit tests for the core are in `tests/gb/cpu/GbCpuTest.cpp` and use a flat
+`TestBus`. They cover reset state, flags and arithmetic edge cases, signed
+jumps, the SP-relative instructions, interrupt dispatch, the EI delay, HALT,
+the HALT bug and STOP.
+
+## Test ROMs
+
+`gb_test_runner` runs a ROM headlessly with a small test bus (ROM/MBC1, RAM,
+timer, IF/IE, serial and a line counter for VBlank). It understands both common
+result protocols:
+
+- blargg serial output and the blargg screen console (`Passed` / `Failed`)
+- the Mooneye `LD B, B` breakpoint with the Fibonacci register signature
+
+Usage:
+
+    ./build/tests/rom/gb_test_runner path/to/test.gb
+    ./build/tests/rom/gb_test_runner path/to/test.gb --model dmg --max-cycles 300000000
+
+To run a whole directory tree and get a summary:
+
+    python3 tests/rom/run_test_roms.py build/test-roms/gb-test-roms \
+        --include 'cpu_instrs|instr_timing|mem_timing'
+
+The test ROMs themselves are not vendored. A convenient layout is:
+
+    build/test-roms/gb-test-roms/     # blargg (retrio/gb-test-roms)
+    build/test-roms/mts-.../          # Mooneye prebuilt suite
+
+`QNEMU_TEST_ROMS_DIR` can also be passed to CMake to register every `.gb` file
+below that directory as a CTest test:
+
+    cmake -S . -B build -DQNEMU_TEST_ROMS_DIR=$PWD/build/test-roms
+
+The headless bus intentionally does not emulate OAM DMA, PPU mode timing, the
+APU or the full MMU. Mooneye tests that depend on those (many `ppu/`,
+`oam_dma`, `boot_*` and timing tests that self-modify code through OAM DMA)
+will therefore fail or time out; they need the full system rather than the CPU
+test bus. The current CPU/timing subset that passes includes blargg
+`cpu_instrs`, `instr_timing`, `mem_timing`, `mem_timing-2`, and the Mooneye
+CPU/interrupt/timer smoke tests such as `instr/daa`, `bits/reg_f`,
+`intr_timing`, `ei_sequence`, `halt_ime0_ei`, `halt_ime1_timing` and
+`rapid_di_ei`.
+
 ## Play
 
 Just click the executable and load Rom file.
@@ -82,7 +142,7 @@ Just click the executable and load Rom file.
 
 | Function  | Implement | Test   |
 | --------- | --------- | ------ |
-| CPU       | ✅       | manual |
+| CPU       | ✅       | unit + ROM tests |
 | PPU       | ✅       | manual |
 | Sound     | ❌       | ❌    |
 | Interrupt | ✅       | ✅    |
@@ -110,6 +170,11 @@ Just click the executable and load Rom file.
 ## Thanks
 
 - [Pan Doc](https://gbdev.io/pandocs/)
+- [The Cycle-Accurate Game Boy Docs](https://github.com/AntonioND/giibiiadvance/blob/master/docs/TCAGBD.pdf)
+- [gb-opcodes](https://gbdev.github.io/gb-opcodes/optables/)
+- [SingleStepTests/sm83](https://github.com/SingleStepTests/sm83)
+- [Blargg's test ROMs](https://github.com/crzysdrs/blarggs-test-roms)
+- [Mooneye Test Suite](https://github.com/Gekkio/mooneye-test-suite)
 - [Visual Boy Advance - M](https://github.com/visualboyadvance-m/visualboyadvance-m)
 - [mGBA](https://github.com/mgba-emu/mgba)
 - [Coffee GB](https://github.com/trekawek/coffee-gb)

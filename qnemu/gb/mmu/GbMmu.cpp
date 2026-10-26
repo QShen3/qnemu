@@ -66,7 +66,7 @@ uint8_t GbMmu::read(uint16_t address) const
         return workRam->read(address);
     } else if (address >= HighRamStart && address <= HighRamEnd) {
         return highRam->read(address);
-    } else if (address == 0xFFFF) {
+    } else if (address == 0xFF0F || address == 0xFFFF) {
         return interruptHandler->read(address);
     } else {
         return 0xFF;
@@ -105,7 +105,7 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         workRam->write(address, value);
     } else if (address >= HighRamStart && address <= HighRamEnd) {
         highRam->write(address, value);
-    } else if (address == 0xFFFF) {
+    } else if (address == 0xFF0F || address == 0xFFFF) {
         interruptHandler->write(address, value);
     } else {
         return;

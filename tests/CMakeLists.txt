@@ -1,6 +1,7 @@
 # C++
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge/mbc GB_CARTRIDGE_MBCTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cartridge GB_CARTRIDGETEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/cpu GB_CPUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/interrupt GB_INTERRUPTTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/memory GB_MEMORYTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/joypad GB_JOYPADTEST_SRCS)
@@ -12,6 +13,7 @@ add_executable(
     qnemu_test
     ${GB_CARTRIDGE_MBCTEST_SRCS}
     ${GB_CARTRIDGETEST_SRCS}
+    ${GB_CPUTEST_SRCS}
     ${GB_INTERRUPTTEST_SRCS}
     ${GB_MEMORYTEST_SRCS}
     ${GB_JOYPADTEST_SRCS}
@@ -24,6 +26,7 @@ target_link_libraries(
     PRIVATE
     qnemu_warnings
     gb
+    gb_cpu
     sound
     display
     GTest::gmock_main
@@ -33,6 +36,8 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(qnemu_test DISCOVERY_TIMEOUT 30)
+
+add_subdirectory(rom)
 
 if(QNEMU_ENABLE_COVERAGE)
     if(MSVC)

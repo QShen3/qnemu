@@ -1,129 +1,108 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
 #include <cstdint>
-#include <functional>
-#include <random>
 
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable:4275 )
-#endif
 #include <gtest/gtest.h>
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
 
-#include "mock/gb/cpu/MockGbCpu.h"
-#include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 
 namespace qnemuTest
 {
 
-namespace {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(0, 255);
+TEST(GbInterruptTest, ResetValues)
+{
+    qnemu::GbInterruptHandler handler;
+
+    EXPECT_EQ(handler.read(0xFF0F), 0xE1);
+    EXPECT_EQ(handler.read(0xFFFF), 0x00);
+    EXPECT_EQ(handler.pending(), 0x00);
 }
 
-TEST(GbInterruptTest, ReadAndWriteRegister)
+TEST(GbInterruptTest, ReadAndWriteRegisters)
 {
-    auto mockGbCpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbCpu>>();
-    qnemu::GbInterruptHandler gbInterruptHandler;
-    gbInterruptHandler.registerCpuCallback(std::bind(&testing::StrictMock<qnemuMock::MockGbCpu>::interruptCallback, mockGbCpu.get(), std::placeholders::_1));
+    qnemu::GbInterruptHandler handler;
 
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0xE1);
-    EXPECT_EQ(gbInterruptHandler.read(0xFFFF), 0);
+    handler.write(0xFF0F, 0x1F);
+    handler.write(0xFFFF, 0x1F);
 
-    const uint8_t value = distrib(gen);
-    gbInterruptHandler.write(0xFF0F, value);
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), value);
-    gbInterruptHandler.write(0xFFFF, value);
-    EXPECT_EQ(gbInterruptHandler.read(0xFFFF), value);
+    EXPECT_EQ(handler.read(0xFF0F), 0x1F);
+    EXPECT_EQ(handler.read(0xFFFF), 0x1F);
 }
 
-TEST(GbInterruptTest, Reset)
+TEST(GbInterruptTest, ResetClearsRequestsAndEnableMask)
 {
-    auto mockGbCpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbCpu>>();
-    qnemu::GbInterruptHandler gbInterruptHandler;
-    gbInterruptHandler.registerCpuCallback(std::bind(&testing::StrictMock<qnemuMock::MockGbCpu>::interruptCallback, mockGbCpu.get(), std::placeholders::_1));
+    qnemu::GbInterruptHandler handler;
+    handler.write(0xFF0F, 0xFF);
+    handler.write(0xFFFF, 0xFF);
 
-    uint8_t value = distrib(gen);
-    gbInterruptHandler.write(0xFF0F, value);
-    value = distrib(gen);
-    gbInterruptHandler.write(0xFFFF, value);
+    handler.reset();
 
-    gbInterruptHandler.reset();
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0xE1);
-    EXPECT_EQ(gbInterruptHandler.read(0xFFFF), 0);
+    EXPECT_EQ(handler.read(0xFF0F), 0xE1);
+    EXPECT_EQ(handler.read(0xFFFF), 0x00);
 }
 
-TEST(GbInterruptTest, Step)
+TEST(GbInterruptTest, RequestSetsIndividualBits)
 {
-    auto mockGbCpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbCpu>>();
-    qnemu::GbInterruptHandler gbInterruptHandler;
-    gbInterruptHandler.registerCpuCallback(std::bind(&testing::StrictMock<qnemuMock::MockGbCpu>::interruptCallback, mockGbCpu.get(), std::placeholders::_1));
+    qnemu::GbInterruptHandler handler;
+    handler.write(0xFF0F, 0x00);
 
-    qnemu::GbDeviceInterface::interruptMasterEnabled = false;
-    gbInterruptHandler.step();
+    handler.requestVBlankInterrupt();
+    EXPECT_EQ(handler.read(0xFF0F), 0x01);
 
-    qnemu::GbDeviceInterface::interruptMasterEnabled = true;
-    gbInterruptHandler.write(0xFFFF, 0);
-    gbInterruptHandler.step();
-    gbInterruptHandler.write(0xFFFF, 0xFF);
-    gbInterruptHandler.write(0xFF0F, 0);
-    gbInterruptHandler.step();
+    handler.write(0xFF0F, 0x00);
+    handler.requestLcdInterrupt();
+    EXPECT_EQ(handler.read(0xFF0F), 0x02);
 
-    for (uint8_t i = 0; i < 5; i++) {
-        qnemu::GbDeviceInterface::interruptMasterEnabled = true;
-        gbInterruptHandler.write(0xFFFF, 1 << i);
-        gbInterruptHandler.write(0xFF0F, 1 << i);
-        if (i == 0) {
-            EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::vBlank));
-        } else if (i == 1) {
-            EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::lcd));
-        } else if (i == 2) {
-            EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::timer));
-        } else if (i == 3) {
-            EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::serial));
-        } else {
-            EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::joypad));
-        }
-        gbInterruptHandler.step();
-        EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0);
-        EXPECT_EQ(qnemu::GbDeviceInterface::interruptMasterEnabled, false);
-    }
+    handler.write(0xFF0F, 0x00);
+    handler.requestTimerInterrupt();
+    EXPECT_EQ(handler.read(0xFF0F), 0x04);
+
+    handler.write(0xFF0F, 0x00);
+    handler.requestSerialInterrupt();
+    EXPECT_EQ(handler.read(0xFF0F), 0x08);
+
+    handler.write(0xFF0F, 0x00);
+    handler.requestJoypadInterrupt();
+    EXPECT_EQ(handler.read(0xFF0F), 0x10);
 }
 
-TEST(GbInterruptTest, RequesetInterrupt)
+TEST(GbInterruptTest, PendingRequiresEnableMask)
 {
-    auto mockGbCpu = std::make_shared<testing::StrictMock<qnemuMock::MockGbCpu>>();
-    qnemu::GbInterruptHandler gbInterruptHandler;
-    gbInterruptHandler.registerCpuCallback(std::bind(&testing::StrictMock<qnemuMock::MockGbCpu>::interruptCallback, mockGbCpu.get(), std::placeholders::_1));
+    qnemu::GbInterruptHandler handler;
+    handler.write(0xFF0F, 0x1F);
+    handler.write(0xFFFF, 0x04);
 
-    EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::exitHalt)).Times(5);
-    EXPECT_CALL(*mockGbCpu, interruptCallback(qnemu::GbInterrupt::exitStop)).Times(3);
-    gbInterruptHandler.write(0xFF0F, 0);
-    gbInterruptHandler.requestVBlankInterrupt();
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b1);
+    EXPECT_EQ(handler.pending(), 0x04);
 
-    gbInterruptHandler.write(0xFF0F, 0);
-    gbInterruptHandler.requestLcdInterrupt();
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b10);
+    handler.write(0xFFFF, 0x00);
+    EXPECT_EQ(handler.pending(), 0x00);
+}
 
-    gbInterruptHandler.write(0xFF0F, 0);
-    gbInterruptHandler.requestTimerInterrupt();
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b100);
+TEST(GbInterruptTest, AcknowledgeClearsRequestBits)
+{
+    qnemu::GbInterruptHandler handler;
+    handler.write(0xFF0F, 0x1F);
+    handler.write(0xFFFF, 0x1F);
 
-    gbInterruptHandler.write(0xFF0F, 0);
-    gbInterruptHandler.requestSerialInterrupt();
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b1000);
+    handler.acknowledge(0x05);
 
-    gbInterruptHandler.write(0xFF0F, 0);
-    gbInterruptHandler.requestJoypadInterrupt();
-    EXPECT_EQ(gbInterruptHandler.read(0xFF0F), 0b10000);
+    EXPECT_EQ(handler.read(0xFF0F), 0x1A);
+    EXPECT_EQ(handler.pending(), 0x1A);
+}
+
+TEST(GbInterruptTest, WrongAddress)
+{
+    qnemu::GbInterruptHandler handler;
+
+#ifdef NDEBUG
+    EXPECT_EQ(handler.read(0xFF00), 0xFF);
+    EXPECT_NO_THROW(handler.write(0xFF00, 0));
+#else
+    EXPECT_DEATH(handler.read(0xFF00), "");
+    EXPECT_DEATH(handler.write(0xFF00, 0), "");
+#endif
 }
 
 }  // namespace qnemuTest

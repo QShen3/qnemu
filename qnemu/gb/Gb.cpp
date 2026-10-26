@@ -1,7 +1,8 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <array>
 #include <memory>
 #include <utility>
 
@@ -25,6 +26,7 @@
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/memory/GbWorkRam.h"
+#include "qnemu/gb/mmu/GbCpuBus.h"
 #include "qnemu/gb/mmu/GbMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "qnemu/sound/DefaultSound.h"
@@ -56,31 +58,62 @@ Gb::Gb()
     auto coloredPalette = std::make_unique<GbcPalette>();
     auto videoRam = std::make_unique<GbVideoRam>(*cartridge, *workRam);
     auto oam = std::make_unique<GbOam>(*cartridge, *videoRam, *workRam);
-    auto render = std::make_unique<GbRender>(*cartridge, rasterDisplay, interruptHandler, *palette, *coloredPalette, *oam, *videoRam);
-    auto gpu = std::make_unique<GbGpu>(std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
+    auto render = std::make_unique<GbRender>(
+        *cartridge, rasterDisplay, interruptHandler, *palette, *coloredPalette, *oam, *videoRam);
+    auto gpu = std::make_unique<GbGpu>(
+        std::move(palette), std::move(coloredPalette), std::move(oam), std::move(videoRam), std::move(render));
 
-    auto mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(gpu), std::move(highRam), interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
-
-    cpu = std::make_shared<GbCpu>(interruptHandler, std::move(mmu));
-    cpu->setDisplay(rasterDisplay);
+    mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(gpu), std::move(highRam),
+        interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
+    bus = std::make_unique<GbCpuBus>(*mmu);
+    cpu = std::make_unique<GbCpu>(*bus);
 
     display = rasterDisplay;
 }
 
+Gb::~Gb()
+{
+    stop();
+}
+
 void Gb::loadCartridge(const char* filePath)
 {
-    if (cpu) {
-        cpu->stop();
-        cpu->reset();
-        cartridge->load(filePath);
-        cpu->start();
+    stop();
+    mmu->reset();
+    cpu->reset();
+    cartridge->load(filePath);
+    start();
+}
+
+void Gb::start()
+{
+    if (!running.exchange(true)) {
+        work = std::thread(&Gb::run, this);
     }
 }
 
 void Gb::stop()
 {
-    if (cpu) {
-        cpu->stop();
+    running.store(false);
+    if (work.joinable()) {
+        work.join();
+    }
+}
+
+void Gb::run()
+{
+    bool displayEnabled = true;
+    while (running.load()) {
+        cpu->step();
+
+        const bool stopped = cpu->isStopped();
+        if (stopped && displayEnabled) {
+            display->disable();
+            displayEnabled = false;
+        } else if (!stopped && !displayEnabled) {
+            display->enable();
+            displayEnabled = true;
+        }
     }
 }
 

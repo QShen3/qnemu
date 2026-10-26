@@ -13,8 +13,6 @@ namespace qnemu
 
 class GbDeviceInterface : public DeviceInterface<uint8_t, uint16_t>
 {
-public:
-    static inline bool interruptMasterEnabled = false;
 };
 
 }  // namespace qnemu

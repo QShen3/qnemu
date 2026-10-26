@@ -17,7 +17,6 @@
 
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/const.h"
-#include "qnemu/gb/cpu/GbCpuInterface.h"
 #include "qnemu/gb/gpu/GbPalette.h"
 #include "qnemu/gb/gpu/GbcPalette.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
