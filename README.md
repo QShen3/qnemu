@@ -96,20 +96,30 @@ Usage:
     ./build/tests/rom/gb_test_runner path/to/test.gb
     ./build/tests/rom/gb_test_runner path/to/test.gb --model dmg --max-cycles 300000000
 
-To run a whole directory tree and get a summary:
+The ROMs are included as git submodules:
 
-    python3 tests/rom/run_test_roms.py build/test-roms/gb-test-roms \
+    third_party/gb-test-roms/       # blargg, prebuilt ROMs
+    third_party/mooneye-test-roms/  # Mooneye, prebuilt ROMs
+
+Initialize them after cloning:
+
+    git submodule update --init --recursive
+
+CMake registers a curated CPU/timing subset automatically when the submodules
+are present, so plain `ctest` covers them as well:
+
+    ctest --preset debug -L rom
+    ctest --preset debug -L blargg
+    ctest --preset debug -L mooneye
+
+Use `-DQNEMU_ENABLE_ROM_TESTS=OFF` to disable the curated tests, or
+`-DQNEMU_TEST_ROM_ROOT=...` if the submodules live elsewhere. For an additional
+directory tree, `-DQNEMU_TEST_ROMS_DIR=...` registers every `.gb` below it.
+
+To run a whole directory tree manually and get a summary:
+
+    python3 tests/rom/run_test_roms.py third_party/gb-test-roms \
         --include 'cpu_instrs|instr_timing|mem_timing'
-
-The test ROMs themselves are not vendored. A convenient layout is:
-
-    build/test-roms/gb-test-roms/     # blargg (retrio/gb-test-roms)
-    build/test-roms/mts-.../          # Mooneye prebuilt suite
-
-`QNEMU_TEST_ROMS_DIR` can also be passed to CMake to register every `.gb` file
-below that directory as a CTest test:
-
-    cmake -S . -B build -DQNEMU_TEST_ROMS_DIR=$PWD/build/test-roms
 
 The headless bus intentionally does not emulate OAM DMA, PPU mode timing, the
 APU or the full MMU. Mooneye tests that depend on those (many `ppu/`,
@@ -175,6 +185,7 @@ Just click the executable and load Rom file.
 - [SingleStepTests/sm83](https://github.com/SingleStepTests/sm83)
 - [Blargg's test ROMs](https://github.com/crzysdrs/blarggs-test-roms)
 - [Mooneye Test Suite](https://github.com/Gekkio/mooneye-test-suite)
+- [Prebuilt Mooneye ROMs](https://github.com/asoderman/Mooneye-Test-Suite-ROMS)
 - [Visual Boy Advance - M](https://github.com/visualboyadvance-m/visualboyadvance-m)
 - [mGBA](https://github.com/mgba-emu/mgba)
 - [Coffee GB](https://github.com/trekawek/coffee-gb)

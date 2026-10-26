@@ -1,0 +1,6 @@
+[submodule "third_party/gb-test-roms"]
+	path = third_party/gb-test-roms
+	url = https://github.com/retrio/gb-test-roms.git
+[submodule "third_party/mooneye-test-roms"]
+	path = third_party/mooneye-test-roms
+	url = https://github.com/asoderman/Mooneye-Test-Suite-ROMS.git
