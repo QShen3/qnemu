@@ -30,7 +30,8 @@ jobs:
             g++ \
             qt6-base-dev \
             qt6-multimedia-dev \
-            libgtest-dev
+            libgtest-dev \
+            libgmock-dev
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -110,7 +111,8 @@ jobs:
             gcovr \
             qt6-base-dev \
             qt6-multimedia-dev \
-            libgtest-dev
+            libgtest-dev \
+            libgmock-dev
 
       - name: Configure
         run: |

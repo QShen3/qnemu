@@ -57,6 +57,10 @@ On macOS with Homebrew, the dependencies can be installed with:
 
     brew install cmake ninja qt googletest
 
+On Debian/Ubuntu, install the Qt and Google Test development packages:
+
+    sudo apt install cmake ninja-build qt6-base-dev qt6-multimedia-dev libgtest-dev libgmock-dev
+
 ## Play
 
 Just click the executable and load Rom file.
