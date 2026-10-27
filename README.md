@@ -258,6 +258,22 @@ Known failures at the moment are concentrated in:
 
 Just click the executable and load Rom file.
 
+### Hardware model
+
+QNEmu starts as **CGB** by default. The model can be selected from the command
+line:
+
+    ./build/qnemu/qnemu
+    ./build/qnemu/qnemu --model cgb   # explicit default
+    ./build/qnemu/qnemu --model dmg
+    ./build/qnemu/qnemu --model sgb
+
+`-m` is accepted as a shorthand. With `cgb`, a CGB cartridge runs in CGB mode
+and a DMG cartridge runs in DMG compatibility mode. `dmg` and `sgb` force the
+DMG-compatible CPU/PPU path. SGB-specific features (border, SGB command
+protocol, SGB palettes) are not implemented yet, so `sgb` currently behaves as
+the DMG hardware baseline.
+
 ### Key binding
 
 | Joypad | Key |
@@ -293,6 +309,7 @@ Just click the executable and load Rom file.
 
 | Feature         | Implement | Test |
 | --------------- | --------- | ---- |
+| model selection | ✅       | CLI  |
 | key remap       | ❌       | ❌   |
 | Save & Load     | ❌       | ❌   |
 | Filtering       | ❌       | ❌   |

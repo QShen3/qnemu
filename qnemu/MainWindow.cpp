@@ -19,8 +19,9 @@
 namespace qnemu
 {
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+MainWindow::MainWindow(GbModel model, QWidget *parent)
+    : QMainWindow(parent),
+      model(model)
 {
     const QRect rect = settings.value("window/geometry", QRect(0, 0, 320, 288)).toRect();
     setGeometry(rect);
@@ -57,7 +58,7 @@ void MainWindow::openFile()
     resize(320, 288 + menuBar()->height());
 
     if (!gb) {
-        gb = std::make_unique<Gb>();
+        gb = std::make_unique<Gb>(model);
         QWidget* displayWidgets = QWidget::createWindowContainer(gb->getDisplay().get(), this);
         setCentralWidget(displayWidgets);
     }

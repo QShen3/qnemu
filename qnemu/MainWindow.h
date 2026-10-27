@@ -18,7 +18,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(GbModel model, QWidget *parent = nullptr);
     ~MainWindow() override;
 
     void openFile();
@@ -26,6 +26,7 @@ public:
 
 private:
     QSettings settings;
+    GbModel model;
     std::unique_ptr<Gb> gb;
 };
 

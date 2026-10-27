@@ -16,6 +16,13 @@
 namespace qnemu
 {
 
+enum class GbModel
+{
+    cgb,
+    dmg,
+    sgb,
+};
+
 class GbCpu;
 class GbCpuBus;
 class GbMmu;
@@ -25,7 +32,7 @@ class RasterDisplay;
 class Gb
 {
 public:
-    Gb();
+    explicit Gb(GbModel model = GbModel::cgb);
     ~Gb();
 
     Gb(const Gb&) = delete;
@@ -39,6 +46,7 @@ private:
     void start();
     void run();
 
+    GbModel model;
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GbMmu> mmu;
     std::unique_ptr<GbCpuBus> bus;

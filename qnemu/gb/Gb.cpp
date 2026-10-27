@@ -29,7 +29,7 @@
 namespace qnemu
 {
 
-Gb::Gb()
+Gb::Gb(GbModel model) : model(model)
 {
     std::array<std::unique_ptr<GbChannelInterface>, 4> channels {
         std::make_unique<GbChannel1>(),
@@ -50,7 +50,7 @@ Gb::Gb()
     auto joypad = std::make_unique<GbJoypad>(rasterDisplay, interruptHandler);
 
     auto ppuInstance = std::make_unique<GbPpu>(
-        cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
+        model == GbModel::cgb && cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
     ppu = ppuInstance.get();
 
     mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppuInstance), std::move(highRam),
@@ -58,7 +58,8 @@ Gb::Gb()
     ppu->setExternalRead([mmuPointer = mmu.get()](uint16_t address) {
         return mmuPointer->read(address);
     });
-    bus = std::make_unique<GbCpuBus>(*mmu, cartridge->isGbcCartridge());
+    bus = std::make_unique<GbCpuBus>(
+        *mmu, model == GbModel::cgb && cartridge->isGbcCartridge());
     cpu = std::make_unique<GbCpu>(*bus);
 
     display = rasterDisplay;
@@ -73,7 +74,9 @@ void Gb::loadCartridge(const char* filePath)
 {
     stop();
     cartridge->load(filePath);
-    const bool cgb = cartridge->isGbcCartridge();
+    // CGB hardware only enters CGB mode for a CGB cartridge. DMG/SGB models
+    // always use the DMG-compatible PPU/CPU state.
+    const bool cgb = model == GbModel::cgb && cartridge->isGbcCartridge();
     bus->setCgb(cgb);
     ppu->setCgb(cgb);
     mmu->reset();
