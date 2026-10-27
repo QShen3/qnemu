@@ -39,25 +39,15 @@ constexpr uint16_t interruptEnableAddress = 0xFFFF;
 bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
     bool enableApu)
 {
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if (!file) {
-        return false;
-    }
-
-    const std::streamsize size = file.tellg();
-    if (size < 0x150) {
-        return false;
-    }
-
-    file.seekg(0, std::ios::beg);
-    rom_.resize(static_cast<size_t>(size));
-    if (!file.read(reinterpret_cast<char*>(rom_.data()), size)) {
+    try {
+        cartridge = std::make_unique<qnemu::GbCartridge>(mbcFactory);
+        cartridge->load(path.c_str());
+    } catch (const std::exception&) {
+        cartridge.reset();
         return false;
     }
 
     cgb_ = cgb;
-    const uint8_t cartridgeType = rom_[0x147];
-    mbc1_ = cartridgeType >= 0x01 && cartridgeType <= 0x03;
 
     ppu.reset();
     display.reset();
@@ -89,10 +79,6 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
 void GbTestSystem::reset()
 {
     memory_.fill(0);
-    ramEnabled_ = false;
-    romBankLow_ = 1;
-    ramBank_ = 0;
-    bankingMode_ = 0;
 
     if (timer) {
         timer->setDoubleSpeed(false);
@@ -129,13 +115,12 @@ void GbTestSystem::reset()
 
 uint8_t GbTestSystem::read(uint16_t address)
 {
-    if (address < 0x8000) {
-        const uint32_t offset = romOffset(address);
-        return offset < rom_.size() ? rom_[offset] : 0xFF;
-    }
-
     if (address >= 0xE000 && address <= 0xFDFF) {
         address = static_cast<uint16_t>(address - 0x2000);
+    }
+
+    if (address < 0x8000 || (address >= 0xA000 && address <= 0xBFFF)) {
+        return cartridge->read(address);
     }
 
     if (ppu
@@ -205,27 +190,13 @@ uint8_t GbTestSystem::read(uint16_t address)
 
 void GbTestSystem::write(uint16_t address, uint8_t value)
 {
-    if (address < 0x8000) {
-        if (!mbc1_) {
-            return;
-        }
-        if (address < 0x2000) {
-            ramEnabled_ = (value & 0x0F) == 0x0A;
-        } else if (address < 0x4000) {
-            romBankLow_ = static_cast<uint8_t>(value & 0x1F);
-            if (romBankLow_ == 0) {
-                romBankLow_ = 1;
-            }
-        } else if (address < 0x6000) {
-            ramBank_ = static_cast<uint8_t>(value & 0x03);
-        } else {
-            bankingMode_ = static_cast<uint8_t>(value & 0x01);
-        }
-        return;
-    }
-
     if (address >= 0xE000 && address <= 0xFDFF) {
         address = static_cast<uint16_t>(address - 0x2000);
+    }
+
+    if (address < 0x8000 || (address >= 0xA000 && address <= 0xBFFF)) {
+        cartridge->write(address, value);
+        return;
     }
 
     if (ppu
@@ -348,6 +319,9 @@ void GbTestSystem::tick(uint8_t cycles)
         if (apu && timer->takeDivApuTick()) {
             apu->divApuTick();
         }
+        if (cartridge) {
+            cartridge->step();
+        }
         if (ppu) {
             ppu->step();
         } else {
@@ -409,25 +383,6 @@ std::string GbTestSystem::screenText()
         }
     }
     return text;
-}
-
-uint32_t GbTestSystem::romOffset(uint16_t address) const
-{
-    uint16_t bank = 0;
-    if (address < 0x4000) {
-        if (mbc1_ && bankingMode_ == 1) {
-            bank = static_cast<uint16_t>((ramBank_ & 0x03) << 5);
-        }
-    } else {
-        bank = mbc1_
-            ? static_cast<uint16_t>((romBankLow_ | ((ramBank_ & 0x03) << 5)) & 0x7F)
-            : 1;
-        if (bank == 0) {
-            bank = 1;
-        }
-    }
-
-    return static_cast<uint32_t>(bank) * 0x4000 + (address & 0x3FFF);
 }
 
 }  // namespace qnemuTest

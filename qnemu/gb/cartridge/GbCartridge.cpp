@@ -117,6 +117,9 @@ void GbCartridge::write(uint16_t address, const uint8_t& value)
 
 void GbCartridge::step()
 {
+    if (mbc) {
+        mbc->step();
+    }
 }
 
 void GbCartridge::reset()

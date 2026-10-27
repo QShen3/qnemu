@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <utility>
 
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
 #include "qnemu/gb/const.h"
@@ -13,8 +14,8 @@ namespace qnemu
 
 GbMbc1::GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
         std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) :
-    romBanks(romBanks),
-    ramBanks(ramBanks),
+    romBanks(std::move(romBanks)),
+    ramBanks(std::move(ramBanks)),
     type(type)
 {
     GbMbc1::reset();
@@ -30,8 +31,7 @@ uint8_t GbMbc1::read(uint16_t address) const
         return romBanks.at(bankNumber).at(address - MemoryRomBank01Start);
     }
     if (address >= ExternalRamStart && address <= ExternalRamEnd) {
-        if ((registers.ramEnable & 0b1111) != ramEnableFlag) {
-            assert(false && "Ram is disabled");
+        if ((registers.ramEnable & 0b1111) != ramEnableFlag || ramBanks.empty()) {
             return 0xFF;
         }
         const uint8_t bankNumber = getRamBankNumber();
@@ -60,8 +60,7 @@ void GbMbc1::write(uint16_t address, const uint8_t value)
         return;
     }
     if (address >= ExternalRamStart && address <= ExternalRamEnd) {
-        if ((registers.ramEnable & 0b1111) != ramEnableFlag) {
-            assert(false && "Ram is disabled");
+        if ((registers.ramEnable & 0b1111) != ramEnableFlag || ramBanks.empty()) {
             return;
         }
         const uint8_t bankNumber = getRamBankNumber();
@@ -83,13 +82,22 @@ uint8_t GbMbc1::getRomBankNumberForAddress(uint16_t address) const
 
     if (address < 0x4000) {
         if (registers.bankingModeSelect != 0) {
-            bankNumber = ((registers.ramBankNumber & 0b11) << 5);
+            // The secondary register supplies bits 5-6.  Smaller carts ignore
+            // the bits they do not have, so mask the final bank number.
+            bankNumber = static_cast<uint8_t>(((registers.ramBankNumber & 0b11) << 5)
+                & (romBanks.size() - 1));
         }
     } else {
-        bankNumber = registers.romBankNumber & (romBanks.size() - 1);
-        bankNumber = bankNumber == 0 ? 1 : bankNumber;
+        // The 00 -> 01 translation uses the full 5-bit register, before the
+        // bank number is masked to the ROM size.
+        uint8_t rawBank = static_cast<uint8_t>(registers.romBankNumber & 0b11111);
+        if (rawBank == 0) {
+            rawBank = 1;
+        }
+        bankNumber = static_cast<uint8_t>(rawBank & (romBanks.size() - 1));
         if (romBanks.size() > 32) {
-            bankNumber |= (registers.ramBankNumber & ((romBanks.size() >> 5) - 1)) << 5;
+            bankNumber |= static_cast<uint8_t>(
+                (registers.ramBankNumber & ((romBanks.size() >> 5) - 1)) << 5);
         }
     }
 
@@ -100,11 +108,8 @@ uint8_t GbMbc1::getRamBankNumber() const
 {
     uint8_t bankNumber = 0;
 
-    if (registers.bankingModeSelect != 0) {
-        if (ramBanks.size() == 0) {
-            assert(false && "No Ram available");
-        }
-        bankNumber = registers.ramBankNumber & (ramBanks.size() - 1);
+    if (registers.bankingModeSelect != 0 && !ramBanks.empty()) {
+        bankNumber = static_cast<uint8_t>(registers.ramBankNumber & (ramBanks.size() - 1));
     }
 
     return bankNumber;

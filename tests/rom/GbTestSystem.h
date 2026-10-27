@@ -12,6 +12,8 @@
 
 #include "qnemu/display/FrameBuffer.h"
 #include "qnemu/gb/apu/GbApu.h"
+#include "qnemu/gb/cartridge/GbCartridge.h"
+#include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cpu/CpuBus.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
@@ -61,17 +63,12 @@ public:
 private:
     void reset();
     void ppuTick();
-    uint32_t romOffset(uint16_t address) const;
 
-    std::vector<uint8_t> rom_;
     std::array<uint8_t, 0x10000> memory_{};
 
     bool cgb_ = true;
-    bool mbc1_ = false;
-    bool ramEnabled_ = false;
-    uint8_t romBankLow_ = 1;
-    uint8_t ramBank_ = 0;
-    uint8_t bankingMode_ = 0;
+    const qnemu::GbMbcFactory mbcFactory;
+    std::unique_ptr<qnemu::GbCartridge> cartridge;
 
     std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
         std::make_shared<qnemu::GbInterruptHandler>();

@@ -3,6 +3,7 @@
  */
 
 #include <cassert>
+#include <utility>
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
 #include "qnemu/gb/const.h"
@@ -12,8 +13,8 @@ namespace qnemu
 
 GbCircuitMbc::GbCircuitMbc(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
         std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) :
-    romBanks(romBanks),
-    ramBanks(ramBanks),
+    romBanks(std::move(romBanks)),
+    ramBanks(std::move(ramBanks)),
     type(type)
 {
 }

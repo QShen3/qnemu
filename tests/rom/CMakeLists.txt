@@ -3,7 +3,7 @@ add_executable(
     main.cpp
     GbTestSystem.cpp)
 target_include_directories(gb_test_runner PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer Qt6::Gui)
+target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer gb_cartridge Qt6::Gui)
 
 set(QNEMU_TEST_ROM_ROOT "${PROJECT_SOURCE_DIR}/third_party" CACHE PATH
     "Directory containing the gb-test-roms and mooneye-test-roms submodules")
@@ -166,6 +166,43 @@ if(QNEMU_ENABLE_ROM_TESTS)
         foreach(RELATIVE IN LISTS MOONEYE_PPU_TESTS)
             qnemu_add_rom_test("mooneye_ppu_${RELATIVE}"
                 "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --ppu)
+        endforeach()
+
+        # The runner now uses the same GbCartridge/MBC code as the emulator.
+        # MBC1M multi-cart wiring is not implemented yet, so that one is left
+        # out of the curated set.
+        set(MOONEYE_MBC_TESTS
+            "emulator-only/mbc1/bits_bank1.gb"
+            "emulator-only/mbc1/bits_bank2.gb"
+            "emulator-only/mbc1/bits_mode.gb"
+            "emulator-only/mbc1/bits_ramg.gb"
+            "emulator-only/mbc1/ram_256kb.gb"
+            "emulator-only/mbc1/ram_64kb.gb"
+            "emulator-only/mbc1/rom_16Mb.gb"
+            "emulator-only/mbc1/rom_1Mb.gb"
+            "emulator-only/mbc1/rom_2Mb.gb"
+            "emulator-only/mbc1/rom_4Mb.gb"
+            "emulator-only/mbc1/rom_512kb.gb"
+            "emulator-only/mbc1/rom_8Mb.gb"
+            "emulator-only/mbc2/bits_ramg.gb"
+            "emulator-only/mbc2/bits_romb.gb"
+            "emulator-only/mbc2/bits_unused.gb"
+            "emulator-only/mbc2/ram.gb"
+            "emulator-only/mbc2/rom_1Mb.gb"
+            "emulator-only/mbc2/rom_2Mb.gb"
+            "emulator-only/mbc2/rom_512kb.gb"
+            "emulator-only/mbc5/rom_16Mb.gb"
+            "emulator-only/mbc5/rom_1Mb.gb"
+            "emulator-only/mbc5/rom_2Mb.gb"
+            "emulator-only/mbc5/rom_32Mb.gb"
+            "emulator-only/mbc5/rom_4Mb.gb"
+            "emulator-only/mbc5/rom_512kb.gb"
+            "emulator-only/mbc5/rom_64Mb.gb"
+            "emulator-only/mbc5/rom_8Mb.gb"
+        )
+        foreach(RELATIVE IN LISTS MOONEYE_MBC_TESTS)
+            qnemu_add_rom_test("mooneye_mbc_${RELATIVE}"
+                "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;mbc")
         endforeach()
     endif()
 

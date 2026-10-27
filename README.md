@@ -166,6 +166,7 @@ submodules are present, so plain `ctest` covers them as well:
     ctest --preset debug -L mooneye
     ctest --preset debug -L ppu
     ctest --preset debug -L sound
+    ctest --preset debug -L mbc
     ctest --preset debug -L acid2
 
 The acid2 tests render 10 frames and require an exact 160x144 image match.
@@ -186,7 +187,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 262/262, including 100 ROM tests
+The curated CTest set is currently 308/308, including 127 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -208,6 +209,17 @@ Blargg sound (`-L sound`, requires `--apu`):
   `03-trigger`, `04-sweep`, `05-sweep details`, `06-overflow on trigger`,
   `07-len sweep period sync`, `08-len ctr during power`,
   `10-wave trigger while on`, `11-regs after power`, `12-wave`
+
+Mooneye MBC1/MBC2/MBC5 (`-L mbc`, uses the real `GbCartridge`/MBC code):
+
+- `emulator-only/mbc1/bits_bank1`, `bits_bank2`, `bits_mode`, `bits_ramg`
+- `emulator-only/mbc1/ram_64kb`, `ram_256kb`
+- `emulator-only/mbc1/rom_1Mb`, `rom_2Mb`, `rom_4Mb`, `rom_8Mb`,
+  `rom_16Mb`, `rom_512kb`
+- `emulator-only/mbc2/bits_ramg`, `bits_romb`, `bits_unused`, `ram`
+- `emulator-only/mbc2/rom_512kb`, `rom_1Mb`, `rom_2Mb`
+- `emulator-only/mbc5/rom_512kb`, `rom_1Mb`, `rom_2Mb`, `rom_4Mb`,
+  `rom_8Mb`, `rom_16Mb`, `rom_32Mb`, `rom_64Mb`
 
 Mooneye CPU/interrupt/timer (`-L mooneye`, CPU-only bus):
 
@@ -267,8 +279,9 @@ Known failures at the moment are concentrated in:
   `12-wave write while on` and `cgb_sound/rom_singles/09-wave read while on`
   (wave-RAM accesses while CH3 is active need cycle-exact CPU/APU bus
   alignment; the other sound tests pass)
-- `boot_*` (no boot ROM) and `emulator-only` MBC2/MBC3/MBC5 suites
-  (those mappers are not implemented)
+- `emulator-only/mbc1/multicart_rom_8Mb` (the MBC1M multi-cart wiring is not
+  implemented)
+- `boot_*` (no boot ROM)
 
 ## Play
 
@@ -360,9 +373,13 @@ without touching the renderer.
 | Timer     | ✅       | ✅    |
 | no MBC    | ✅       | ✅    |
 | MBC1      | ✅       | ✅    |
-| MBC2      | ❌       | ❌    |
-| MBC3      | ❌       | ❌    |
-| MBC5      | ❌       | ❌    |
+| MBC2      | ✅       | unit + Mooneye MBC |
+| MBC3      | ✅       | unit |
+| MBC5      | ✅       | unit + Mooneye MBC |
+
+MBC3's RTC register/latch protocol and 1 Hz ticking are implemented; RTC time
+is not persisted across emulator restarts yet.  The MBC1M multi-cart wiring is
+also still missing.
 | MBC6      | ❌       | ❌    |
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |

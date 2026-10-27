@@ -21,6 +21,9 @@
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc2.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc3.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc5.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
 #include "qnemu/gb/const.h"
@@ -35,19 +38,19 @@ const std::tuple<uint8_t, size_t> typesOfMbc[] = {
     {0x1, typeid(qnemu::GbMbc1).hash_code()},
     {0x2, typeid(qnemu::GbMbc1).hash_code()},
     {0x3, typeid(qnemu::GbMbc1).hash_code()},
-    // {0x5, std::type_index(typeid(qnemu::GbMbc2))},
-    // {0x6, std::type_index(typeid(qnemu::GbMbc2))},
-    // {0xF, std::type_index(typeid(qnemu::GbMbc3))},
-    // {0x10, std::type_index(typeid(qnemu::GbMbc3))},
-    // {0x11, std::type_index(typeid(qnemu::GbMbc3))},
-    // {0x12, std::type_index(typeid(qnemu::GbMbc3))},
-    // {0x13, std::type_index(typeid(qnemu::GbMbc3))},
-    // {0x19, std::type_index(typeid(qnemu::GbMbc5))},
-    // {0x1A, std::type_index(typeid(qnemu::GbMbc5))},
-    // {0x1B, std::type_index(typeid(qnemu::GbMbc5))},
-    // {0x1C, std::type_index(typeid(qnemu::GbMbc5))},
-    // {0x1D, std::type_index(typeid(qnemu::GbMbc5))},
-    // {0x1E, std::type_index(typeid(qnemu::GbMbc5))},
+    {0x5, typeid(qnemu::GbMbc2).hash_code()},
+    {0x6, typeid(qnemu::GbMbc2).hash_code()},
+    {0xF, typeid(qnemu::GbMbc3).hash_code()},
+    {0x10, typeid(qnemu::GbMbc3).hash_code()},
+    {0x11, typeid(qnemu::GbMbc3).hash_code()},
+    {0x12, typeid(qnemu::GbMbc3).hash_code()},
+    {0x13, typeid(qnemu::GbMbc3).hash_code()},
+    {0x19, typeid(qnemu::GbMbc5).hash_code()},
+    {0x1A, typeid(qnemu::GbMbc5).hash_code()},
+    {0x1B, typeid(qnemu::GbMbc5).hash_code()},
+    {0x1C, typeid(qnemu::GbMbc5).hash_code()},
+    {0x1D, typeid(qnemu::GbMbc5).hash_code()},
+    {0x1E, typeid(qnemu::GbMbc5).hash_code()},
 };
 
 class GbMbcFactoryTest : public testing::TestWithParam<std::tuple<uint8_t, size_t>>

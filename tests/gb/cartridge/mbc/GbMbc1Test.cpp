@@ -51,7 +51,32 @@ TEST(GbMbc1Test, ReadFrom1BankRom)
 
     gbMbc1.write(qnemu::GbMbc1::bankingModeSelectAddress, 1);
     gbMbc1.write(qnemu::GbMbc1::ramBankNumberAddress, 1);
-    EXPECT_THROW(gbMbc1.read(qnemu::MemoryRomBank00End + 1), std::out_of_range);
+    // The upper bank bits are masked away when the cart has only one bank.
+    EXPECT_EQ(gbMbc1.read(qnemu::MemoryRomBank00End + 1), data.at(0));
+}
+
+TEST(GbMbc1Test, BankZeroTranslationUsesFullRegister)
+{
+    constexpr std::size_t bankCount = 16;
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(bankCount);
+    for (std::size_t bank = 0; bank < bankCount; ++bank) {
+        romBanks.at(bank).fill(static_cast<uint8_t>(bank));
+    }
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbMbc1 gbMbc1(std::move(romBanks), std::move(ramBanks), 1);
+
+    // A zero in the lower five bits selects bank 1.
+    gbMbc1.write(qnemu::GbMbc1::romBankNumberAddress, 0x00);
+    EXPECT_EQ(gbMbc1.read(qnemu::MemoryRomBank01Start), 1);
+
+    // 0x10 is non-zero for the translation, but the 4-bit cart mask makes
+    // the effective bank 0.
+    gbMbc1.write(qnemu::GbMbc1::romBankNumberAddress, 0x10);
+    EXPECT_EQ(gbMbc1.read(qnemu::MemoryRomBank01Start), 0);
+
+    gbMbc1.write(qnemu::GbMbc1::romBankNumberAddress, 0x11);
+    EXPECT_EQ(gbMbc1.read(qnemu::MemoryRomBank01Start), 1);
 }
 
 TEST(GbMbc1Test, ReadFromRom)

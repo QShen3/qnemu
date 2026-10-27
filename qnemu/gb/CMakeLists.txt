@@ -38,9 +38,17 @@ set_target_properties(gb_apu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(gb_apu PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(gb_apu PRIVATE qnemu_warnings)
 
-# C++
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge CARTRIDGE_SRCS)
+# Cartridge header parsing and the MBC implementations are Qt-free; the
+# headless runner uses the same cartridge/MBC code as the GUI.
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge/mbc CARTRIDGE_MBC_SRCS)
+add_library(gb_cartridge STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/cartridge/GbCartridge.cpp
+    ${CARTRIDGE_MBC_SRCS})
+set_target_properties(gb_cartridge PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+target_include_directories(gb_cartridge PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(gb_cartridge PRIVATE qnemu_warnings)
+
+# C++
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/interrupt INTERRUPT_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/memory MEMORY_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gpu GPU_SRCS)
@@ -60,8 +68,6 @@ list(REMOVE_ITEM TIMER_SRCS
 add_library(
     gb OBJECT
     Gb.cpp
-    ${CARTRIDGE_SRCS}
-    ${CARTRIDGE_MBC_SRCS}
     ${INTERRUPT_SRCS}
     ${MEMORY_SRCS}
     ${GPU_SRCS}
@@ -70,4 +76,4 @@ add_library(
     ${MMU_SRCS}
 )
 target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer Qt6::Core Qt6::Gui)
+target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer gb_cartridge Qt6::Core Qt6::Gui)

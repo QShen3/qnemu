@@ -34,6 +34,7 @@ target_link_libraries(
     gb_ppu
     gb_apu
     gb_timer
+    gb_cartridge
     sound
     display
     GTest::gmock_main
