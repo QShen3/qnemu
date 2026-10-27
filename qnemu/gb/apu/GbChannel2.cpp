@@ -1,4 +1,4 @@
-/* 
+/*
  *  Copyright [2023] <qazxdrcssc2006@163.com>
  */
 
@@ -9,127 +9,130 @@
 namespace qnemu
 {
 
-GbChannel2::GbChannel2() : data(0), enabled(true), counter(0), currentBit(0)
+namespace
 {
-    registers.channel2LengthTimerAndDutyCycle = 0x3F;
-    registers.channel2VolumeAndEnvelope = 0;
-    registers.channel2PeriodLow = 0xFF;
-    registers.channel2PeriodHighAndControl = 0xBF;
 
-    lengthTimer.reset();
-    volumeEnvelope.reset();
+// Same duty patterns as channel 1, most significant bit played first.
+constexpr uint8_t DutyPatterns[4] = {0x01, 0x81, 0x87, 0x7E};
+
+uint8_t dutyBit(uint8_t duty, uint8_t position)
+{
+    return static_cast<uint8_t>((DutyPatterns[duty & 0x03] >> (7 - (position & 0x07))) & 0x01);
+}
+
+}  // namespace
+
+GbChannel2::GbChannel2()
+{
+    reset();
 }
 
 uint8_t GbChannel2::read(uint16_t address) const
 {
-    if (address == 0xFF16) {
-        return registers.channel2LengthTimerAndDutyCycle;
-    } else if (address == 0xFF17) {
-        return registers.channel2VolumeAndEnvelope;
-    } else if (address == 0xFF18) {
-        return registers.channel2PeriodLow;
-    } else if (address == 0xFF19) {
-        return registers.channel2PeriodHighAndControl;
+    switch (address) {
+    case 0xFF16:
+        return static_cast<uint8_t>(0x3F | (nr21 & 0xC0));
+    case 0xFF17:
+        return nr22;
+    case 0xFF18:
+        return 0xFF;
+    case 0xFF19:
+        return static_cast<uint8_t>(0xBF | (nr24 & 0x40));
+    default:
+        return 0xFF;
     }
-    return 0xFF;
 }
 
 void GbChannel2::write(uint16_t address, const uint8_t& value)
 {
-    if (address == 0xFF16) {
-        registers.channel2LengthTimerAndDutyCycle = value;
-        lengthTimer.setLength(64 - registers.channel2InitialLengthTimer);
-    } else if (address == 0xFF17) {
-        registers.channel2VolumeAndEnvelope = value;
-        volumeEnvelope.setInitialVolume(registers.channel2InitialVolume);
-        volumeEnvelope.setDirection(registers.channel2EnvelopeDirection == 1 ? true : false);
-        volumeEnvelope.setPace(registers.channel2SweepPace);
-        if (registers.channel2InitialVolume != 0 || registers.channel2EnvelopeDirection != 0) {
-            enabled = true;
-        } else {
+    switch (address) {
+    case 0xFF16:
+        nr21 = static_cast<uint8_t>(value & 0xC0);
+        lengthTimer.setLength(static_cast<uint8_t>(value & 0x3F));
+        break;
+    case 0xFF17:
+        nr22 = value;
+        envelope.configure(value);
+        if (!envelope.isDacEnabled()) {
             enabled = false;
+            data = 0;
         }
-    } else if (address == 0xFF18) {
-        registers.channel2PeriodLow = value;
-    } else if (address == 0xFF19) {
-        registers.channel2PeriodHighAndControl = value;
-        if (registers.channel2LengthEnable) {
-            lengthTimer.enable();
-        } else {
-            lengthTimer.disable();
+        break;
+    case 0xFF18:
+        nr23 = value;
+        break;
+    case 0xFF19:
+        nr24 = static_cast<uint8_t>(value & 0xC7);
+        lengthTimer.setEnabled((nr24 & 0x40) != 0);
+        if ((nr24 & 0x80) != 0) {
+            trigger();
         }
-        if (registers.channel2Trigger) {
-            enabled = true;
-            counter = 1;
-            currentBit = 0;
-            lengthTimer.trigger();
-            volumeEnvelope.trigger();
-        }
+        break;
+    default:
+        break;
     }
+}
+
+void GbChannel2::trigger()
+{
+    if (!envelope.isDacEnabled()) {
+        return;
+    }
+
+    enabled = true;
+    lengthTimer.trigger();
+    frequencyTimer = static_cast<uint16_t>((2048 - period()) * 4);
+    envelope.trigger();
 }
 
 void GbChannel2::step()
 {
-    lengthTimer.step();
-    volumeEnvelope.step();
     if (!enabled) {
         data = 0;
         return;
     }
-    if (lengthTimer.isEnabled() && lengthTimer.getLength() == 0) {
+
+    if (frequencyTimer > 0) {
+        --frequencyTimer;
+    }
+    if (frequencyTimer == 0) {
+        frequencyTimer = static_cast<uint16_t>((2048 - period()) * 4);
+        dutyPosition = static_cast<uint8_t>((dutyPosition + 1) & 0x07);
+    }
+
+    data = dutyBit(static_cast<uint8_t>(nr21 >> 6), dutyPosition) != 0
+        ? envelope.getVolume()
+        : 0;
+}
+
+void GbChannel2::clockLength()
+{
+    lengthTimer.clock();
+    if (lengthTimer.isEnabled() && lengthTimer.expired()) {
         enabled = false;
         data = 0;
-        return;
     }
+}
 
-    counter--;
-    if (counter == 0) {
-        counter = getFrequency();
-        data = (getDuty() & (1 << currentBit)) >> currentBit;
-        currentBit = (currentBit + 1) % 8;
-    }
-
-    data = data * volumeEnvelope.getVolume();
+void GbChannel2::clockEnvelope()
+{
+    envelope.clock();
 }
 
 void GbChannel2::reset()
 {
-    registers.channel2LengthTimerAndDutyCycle = 0x3F;
-    registers.channel2VolumeAndEnvelope = 0;
-    registers.channel2PeriodLow = 0xFF;
-    registers.channel2PeriodHighAndControl = 0xBF;
+    nr21 = 0;
+    nr22 = 0;
+    nr23 = 0;
+    nr24 = 0;
 
+    enabled = false;
+    frequencyTimer = 0;
+    dutyPosition = 0;
     data = 0;
-    enabled = true;
-    counter = 0;
-    currentBit = 0;
 
     lengthTimer.reset();
-    volumeEnvelope.reset();
-}
-
-uint8_t GbChannel2::getData() const
-{
-    return data;
-}
-
-uint16_t GbChannel2::getFrequency() const
-{
-    return (2048 - ((registers.channel2PeriodHigh << 8) | registers.channel2PeriodLow)) * 4;
-}
-
-uint8_t GbChannel2::getDuty() const
-{
-    if (registers.channel2WaveDuty == 0) {
-        return 0b11111110;
-    } else if (registers.channel2WaveDuty == 1) {
-        return 0b01111110;
-    } else if (registers.channel2WaveDuty == 2) {
-        return 0b01111000;
-    } else if (registers.channel2WaveDuty == 3) {
-        return 0b10000001;
-    }
-    return 0;
+    envelope.reset();
 }
 
 }  // namespace qnemu

@@ -1,4 +1,4 @@
-/* 
+/*
  *  Copyright [2024] <qazxdrcssc2006@163.com>
  */
 
@@ -9,28 +9,34 @@
 namespace qnemu
 {
 
+/**
+ * Volume envelope shared by CH1, CH2 and CH4 (CH3 has a fixed volume instead).
+ *
+ * The envelope is clocked at 64 Hz by the frame sequencer.  With a pace of N
+ * the volume changes once every N clocks.
+ */
 class GbVolumeEnvelope
 {
 public:
-    GbVolumeEnvelope();
+    GbVolumeEnvelope() = default;
     ~GbVolumeEnvelope() = default;
 
-    void step();
-    void setInitialVolume(uint8_t initialVolumeValue);
-    void setDirection(bool direction);
-    void setPace(uint8_t pace);
     void reset();
+    void configure(uint8_t registerValue);
     void trigger();
+    void clock();
 
-    uint8_t getVolume() const;
+    uint8_t getVolume() const { return volume; }
+    bool isDacEnabled() const { return dacEnabled; }
 
 private:
-    uint8_t initialVolume;
-    bool direction;
-    uint8_t pace;
-    bool finished;
-    uint8_t volume;
-    uint16_t counter;
+    uint8_t initialVolume = 0;
+    uint8_t volume = 0;
+    uint8_t pace = 0;
+    uint8_t timer = 0;
+    bool direction = false;
+    bool active = false;
+    bool dacEnabled = false;
 };
 
-} // namespace qnemu
+}  // namespace qnemu

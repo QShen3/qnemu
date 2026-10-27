@@ -1,50 +1,57 @@
-/* 
+/*
  *  Copyright [2023] <qazxdrcssc2006@163.com>
  */
 
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <vector>
 
-#include "QtCore/QBuffer"
-#include "QtCore/QByteArray"
-#include "QtMultimedia/QAudio"
-#include "QtMultimedia/QAudioFormat"
-#include "QtMultimedia/QAudioSink"
+#include <QtCore/QIODevice>
+#include <QtMultimedia/QAudioFormat>
+#include <QtMultimedia/QAudioSink>
 
 #include "qnemu/sound/SoundInterface.h"
 
 namespace qnemu
 {
 
+/**
+ * Qt Multimedia audio output.
+ *
+ * A small thread-safe ring buffer sits between the emulation thread and
+ * QAudioSink.  The sink pulls frames in real time; when the ring is full the
+ * emulation thread blocks, which doubles as the emulator's speed limiter.
+ * Underruns are filled with silence instead of stopping the sink.
+ */
 class DefaultSound : public SoundInterface
 {
-
 public:
-    DefaultSound() = delete;
-    DefaultSound(int64_t sampleRate, const char* channelConfig, int bitDepth);
-    ~DefaultSound() override = default;
+    explicit DefaultSound(int sampleRate = 44100, int channels = 2);
+    ~DefaultSound() override;
+
+    DefaultSound(const DefaultSound&) = delete;
+    DefaultSound& operator=(const DefaultSound&) = delete;
 
     void enable() override;
     void disable() override;
-
-    void addData(char* data) override;
+    void addSamples(const int16_t* samples, std::size_t frameCount) override;
 
 private:
-    void handleAudioSinkStateChanged(QAudio::State newState);
+    class Stream;
 
-    const int bufferSize = 4096;
-    std::condition_variable cv;
-    std::mutex mutex;
-    int currentBufferSize = 0;
-    bool isEnabled;
+    static constexpr std::size_t BufferFrames = 2048;
+
     QAudioFormat audioFormat;
-    QBuffer buffer;
-    QByteArray data;
+    std::unique_ptr<Stream> stream;
     std::unique_ptr<QAudioSink> audioSink;
+    std::atomic_bool enabled{true};
+    std::atomic_bool sinkActive{false};
 };
 
 }  // namespace qnemu

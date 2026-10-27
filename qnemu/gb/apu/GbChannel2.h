@@ -1,4 +1,4 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
@@ -13,6 +13,10 @@
 namespace qnemu
 {
 
+/**
+ * Channel 2: pulse/square wave.  Identical to channel 1 without the sweep
+ * unit.  Registers: NR21..NR24 (FF16..FF19).
+ */
 class GbChannel2 : public GbChannelInterface
 {
 public:
@@ -24,45 +28,35 @@ public:
     void step() override;
     void reset() override;
 
-    uint8_t getData() const override;
+    uint8_t getData() const override { return data; }
+    bool isEnabled() const override { return enabled; }
+    bool isDacEnabled() const override { return envelope.isDacEnabled(); }
+
+    void clockLength() override;
+    void clockEnvelope() override;
+
+    /// Current 11-bit period value (exposed for tests and diagnostics).
+    uint16_t getPeriod() const { return period(); }
 
 private:
-    uint16_t getFrequency() const;
-    uint8_t getDuty() const;
-    struct {
-        union {
-            struct {
-                uint8_t channel2InitialLengthTimer : 6;
-                uint8_t channel2WaveDuty : 2;
-            };
-            uint8_t channel2LengthTimerAndDutyCycle;
-        };  // FF16
-        union {
-            struct {
-                uint8_t channel2SweepPace : 3;
-                uint8_t channel2EnvelopeDirection : 1;
-                uint8_t channel2InitialVolume : 4;
-            };
-            uint8_t channel2VolumeAndEnvelope;
-        };  // FF17
-        uint8_t channel2PeriodLow; // FF18
-        union {
-            struct {
-                uint8_t channel2PeriodHigh : 3;
-                uint8_t : 3;
-                uint8_t channel2LengthEnable : 1;
-                uint8_t channel2Trigger : 1;
-            };
-            uint8_t channel2PeriodHighAndControl;
-        };  // FF19
-    } registers{};
+    uint16_t period() const
+    {
+        return static_cast<uint16_t>(((nr24 & 0x07) << 8) | nr23);
+    }
+    void trigger();
 
-    uint8_t data;
-    bool enabled;
-    uint16_t counter;
-    uint8_t currentBit;
-    GbLengthTimer lengthTimer;
-    GbVolumeEnvelope volumeEnvelope;
+    uint8_t nr21 = 0;  // FF16
+    uint8_t nr22 = 0;  // FF17
+    uint8_t nr23 = 0;  // FF18
+    uint8_t nr24 = 0;  // FF19
+
+    bool enabled = false;
+    uint16_t frequencyTimer = 0;
+    uint8_t dutyPosition = 0;
+    uint8_t data = 0;
+
+    GbLengthTimer lengthTimer{64};
+    GbVolumeEnvelope envelope;
 };
 
 }  // namespace qnemu

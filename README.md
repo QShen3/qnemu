@@ -182,7 +182,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 191/191, including 78 ROM tests
+The curated CTest set is currently 222/222, including 78 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -250,7 +250,9 @@ Known failures at the moment are concentrated in:
 - `oam_dma/sources-GS`
 - `timer/tima_write_reloading`, `timer/tma_write_reloading` (reload-boundary
   write timing)
-- `interrupt_time` and sound suites (APU not implemented)
+- `interrupt_time`
+- sound suites (the APU is implemented and unit-tested, but the headless ROM
+  runner does not yet expose DIV-APU synchronisation or the CGB PCM registers)
 - `boot_*` (no boot ROM) and `emulator-only` MBC2/MBC3/MBC5 suites
   (those mappers are not implemented)
 
@@ -274,6 +276,27 @@ DMG-compatible CPU/PPU path. SGB-specific features (border, SGB command
 protocol, SGB palettes) are not implemented yet, so `sgb` currently behaves as
 the DMG hardware baseline.
 
+### Audio
+
+The APU implements all four hardware channels:
+
+- **CH1**: pulse wave with duty, envelope, length timer and frequency sweep
+- **CH2**: pulse wave with duty, envelope and length timer
+- **CH3**: 32-sample 4-bit wave-table channel with 100/50/25% output levels
+- **CH4**: LFSR noise with 15-bit/7-bit modes, envelope and length timer
+
+A 512 Hz frame sequencer clocks the length timers at 256 Hz, the CH1 sweep at
+128 Hz and the volume envelopes at 64 Hz.  The mixer applies NR51 panning and
+NR50 master volume, models the DACs' negative slope, high-pass filters the DC
+offset like the hardware's output capacitor, and downsamples to 44100 Hz
+stereo signed 16-bit samples.  Qt Multimedia plays the samples through a small
+ring buffer; when the buffer is full the emulation thread blocks, which also
+acts as the emulator's speed limiter.
+
+Unit tests for the channels, frame sequencer, mixer, panning, volume and
+sample output live in `tests/gb/apu/` (`-L` filtering is not needed; run
+`./build/tests/qnemu_test --gtest_filter='GbChannel*:GbApu*'`).
+
 ### Key binding
 
 | Joypad | Key |
@@ -293,7 +316,7 @@ the DMG hardware baseline.
 | --------- | --------- | ------ |
 | CPU       | ✅       | unit + ROM tests |
 | PPU       | ✅       | unit + acid2 |
-| Sound     | ❌       | ❌    |
+| Sound     | ✅       | unit |
 | Interrupt | ✅       | ✅    |
 | Joypad    | ✅       | ✅    |
 | Timer     | ✅       | ✅    |
