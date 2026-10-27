@@ -68,6 +68,7 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "acceptance/halt_ime1_timing2-GS.gb"
             "acceptance/if_ie_registers.gb"
             "acceptance/instr/daa.gb"
+            "acceptance/interrupts/ie_push.gb"
             "acceptance/intr_timing.gb"
             "acceptance/pop_timing.gb"
             "acceptance/rapid_di_ei.gb"
@@ -76,6 +77,7 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "acceptance/timer/tim01.gb"
             "acceptance/timer/tim10.gb"
             "acceptance/timer/tim11.gb"
+            "acceptance/timer/div_write.gb"
             "acceptance/timer/tma_write_reloading.gb"
         )
         foreach(RELATIVE IN LISTS MOONEYE_CPU_TESTS)
@@ -85,14 +87,35 @@ if(QNEMU_ENABLE_ROM_TESTS)
         # These need the real PPU (OAM visibility and OAM DMA), so attach it
         # instead of using the CPU-only LY/VBlank stub.
         set(MOONEYE_PPU_TESTS
+            "acceptance/add_sp_e_timing.gb"
+            "acceptance/call_cc_timing.gb"
+            "acceptance/call_cc_timing2.gb"
+            "acceptance/call_timing.gb"
+            "acceptance/call_timing2.gb"
+            "acceptance/di_timing-GS.gb"
+            "acceptance/jp_cc_timing.gb"
+            "acceptance/jp_timing.gb"
+            "acceptance/ld_hl_sp_e_timing.gb"
+            "acceptance/push_timing.gb"
+            "acceptance/ret_cc_timing.gb"
+            "acceptance/ret_timing.gb"
+            "acceptance/reti_timing.gb"
+            "acceptance/rst_timing.gb"
             "acceptance/bits/mem_oam.gb"
             "acceptance/oam_dma/basic.gb"
             "acceptance/oam_dma/reg_read.gb"
+            "acceptance/oam_dma_start.gb"
+            "acceptance/oam_dma_restart.gb"
+            "acceptance/oam_dma_timing.gb"
+            "acceptance/ppu/hblank_ly_scx_timing-GS.gb"
             "acceptance/ppu/intr_1_2_timing-GS.gb"
             "acceptance/ppu/intr_2_0_timing.gb"
             "acceptance/ppu/intr_2_mode0_timing.gb"
             "acceptance/ppu/intr_2_mode3_timing.gb"
             "acceptance/ppu/intr_2_oam_ok_timing.gb"
+            "acceptance/ppu/stat_irq_blocking.gb"
+            "acceptance/ppu/stat_lyc_onoff.gb"
+            "acceptance/ppu/vblank_stat_intr-GS.gb"
         )
         foreach(RELATIVE IN LISTS MOONEYE_PPU_TESTS)
             qnemu_add_rom_test("mooneye_ppu_${RELATIVE}"

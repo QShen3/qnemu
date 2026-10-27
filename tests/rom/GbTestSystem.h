@@ -41,7 +41,7 @@ public:
 
     /// Decode the BG tilemap for the simple ASCII console used by some
     /// blargg ROMs.  This is only a diagnostic aid; it is not a renderer.
-    std::string screenText() const;
+    std::string screenText();
 
     const qnemu::FrameBuffer* frameBuffer() const
     {

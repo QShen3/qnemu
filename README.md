@@ -87,11 +87,17 @@ the HALT bug and STOP.
 The PPU is split into three Qt-free pieces under `qnemu/gb/gpu`:
 
 - `GbPpu` owns the dot/line clock, LCDC/STAT/LY/LYC state, OAM DMA, HDMA,
-  palette RAM and the frame boundary.
+  palette RAM and the frame boundary. Mode 3 length includes fine-scroll,
+  window and sprite fetch penalties; OAM DMA has a two-M-cycle startup delay
+  and restart handling.
 - `PpuMemory` owns the two VRAM banks, OAM and the CGB palette RAM.
 - `PpuRenderer` is a stateless scanline renderer: it reads registers and
   memory, writes one row, and returns whether the window was visible. This is
   the part to drive from unit tests with synthetic VRAM/OAM.
+
+STAT interrupts use an edge/blocking line rather than firing on every mode
+change. `GbCpuBus` also implements CGB `KEY0`/`KEY1` and double-speed switching,
+including halving the number of peripheral dots per CPU T-cycle.
 
 The PPU never touches Qt or `GbCartridgeInterface`. External memory needed by
 OAM DMA/HDMA is supplied through a callback, and finished frames are pushed to
@@ -103,8 +109,10 @@ PPU tests live in `tests/gb/gpu/` and cover:
 - background/window tile addressing, signed tile indexes and DMG palettes
 - sprite flips, 8x16 tile selection, the 10-object limit, DMG/CGB priority and
   the CGB object-priority mode (FF6C)
-- OAM DMA byte timing, HDMA block copies, mode transitions, LYC interrupts and
+- OAM DMA startup/restart/byte timing, HDMA block copies, mode transitions,
+  SCX/window/sprite mode-3 penalties, STAT edge blocking, LYC interrupts and
   VBlank frame delivery
+- CGB KEY0/KEY1 and double-speed bus timing
 - full-frame image comparison against dmg-acid2 and cgb-acid2
 
 ## Test ROMs
@@ -170,12 +178,77 @@ To run a whole directory tree manually and get a summary:
         --include 'ppu/' --ppu
 
 The CPU-only bus still has a tiny LY/VBlank stub; `--ppu` attaches the real
-PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering. Mooneye tests that
-need exact PPU mode-3 dot timing, boot ROM state, the APU or rare interrupt
-cancellation cases can still fail. The current passing subset includes blargg
-`cpu_instrs`, `instr_timing`, `mem_timing`, `mem_timing-2`, Mooneye
-CPU/interrupt/timer tests, selected OAM DMA/PPU timing tests, and both acid2
-image tests.
+PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
+
+### Passing ROM tests
+
+The curated CTest set is currently 186/186, including 73 ROM tests
+(labels in parentheses):
+
+Blargg (`-L blargg`):
+
+- `cpu_instrs/individual/01-special` … `11-op a,(hl)`
+- `cpu_instrs/cpu_instrs`
+- `instr_timing/instr_timing`
+- `mem_timing/individual/01-read_timing`, `02-write_timing`, `03-modify_timing`
+- `mem_timing/mem_timing`
+- `mem_timing-2/rom_singles/01-read_timing`, `02-write_timing`, `03-modify_timing`
+- `mem_timing-2/mem_timing`
+
+Mooneye CPU/interrupt/timer (`-L mooneye`, CPU-only bus):
+
+- `bits/reg_f`
+- `div_timing`
+- `ei_sequence`, `ei_timing`
+- `halt_ime0_ei`, `halt_ime0_nointr_timing`, `halt_ime1_timing`,
+  `halt_ime1_timing2-GS`
+- `if_ie_registers`
+- `instr/daa`
+- `interrupts/ie_push`
+- `intr_timing`
+- `pop_timing`
+- `rapid_di_ei`
+- `reti_intr_timing`
+- `timer/div_write`, `timer/tim00`, `timer/tim01`, `timer/tim10`, `timer/tim11`,
+  `timer/tma_write_reloading`
+
+Mooneye PPU/OAM/bus-timing (`-L ppu`, requires `--ppu`):
+
+- `add_sp_e_timing`
+- `call_timing`, `call_timing2`, `call_cc_timing`, `call_cc_timing2`
+- `di_timing-GS`
+- `jp_timing`, `jp_cc_timing`
+- `ld_hl_sp_e_timing`
+- `push_timing`
+- `ret_timing`, `ret_cc_timing`, `reti_timing`, `rst_timing`
+- `bits/mem_oam`
+- `oam_dma/basic`, `oam_dma/reg_read`
+- `oam_dma_start`, `oam_dma_restart`, `oam_dma_timing`
+- `ppu/hblank_ly_scx_timing-GS`
+- `ppu/intr_1_2_timing-GS`
+- `ppu/intr_2_0_timing`
+- `ppu/intr_2_mode0_timing`
+- `ppu/intr_2_mode3_timing`
+- `ppu/intr_2_oam_ok_timing`
+- `ppu/stat_irq_blocking`
+- `ppu/stat_lyc_onoff`
+- `ppu/vblank_stat_intr-GS`
+
+Image tests (`-L acid2`):
+
+- `dmg-acid2`: exact 160x144 match against `reference-dmg.png`
+- `cgb-acid2`: exact 160x144 match against `reference.png`
+
+Known failures at the moment are concentrated in:
+
+- `ppu/intr_2_mode0_timing_sprites` (only the 10-objects-at-X=0 case)
+- `ppu/lcdon_timing-GS`, `ppu/lcdon_write_timing-GS`
+- `oam_dma/sources-GS`
+- `timer/*_div_trigger`, `timer/tima_reload`, `timer/tima_write_reloading`,
+  `timer/rapid_toggle` (test-bus timer edge behavior)
+- `interrupt_time` and sound suites (APU not implemented)
+- `boot_*` (no boot ROM) and `emulator-only` MBC2/MBC3/MBC5 suites
+  (those mappers are not implemented)
 
 ## Play
 

@@ -398,13 +398,14 @@ void GbTestSystem::ppuTick()
     }
 }
 
-std::string GbTestSystem::screenText() const
+std::string GbTestSystem::screenText()
 {
     std::string text;
     for (uint16_t row = 0; row < 32; ++row) {
         std::string line;
         for (uint16_t column = 0; column < 32; ++column) {
-            const uint8_t tile = memory_[static_cast<uint16_t>(0x9800 + row * 32 + column)];
+            const uint16_t address = static_cast<uint16_t>(0x9800 + row * 32 + column);
+            const uint8_t tile = ppu ? ppu->read(address) : memory_[address];
             line.push_back(tile >= 0x20 && tile < 0x7F ? static_cast<char>(tile) : ' ');
         }
         while (!line.empty() && line.back() == ' ') {
