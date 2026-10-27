@@ -7,6 +7,7 @@
 #include <atomic>
 #include <functional>
 #include <mutex>
+#include <optional>
 
 #include <QtGui/QImage>
 #include <QtGui/QKeyEvent>
@@ -14,11 +15,12 @@
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/display/FrameBuffer.h"
+#include "qnemu/input/InputInterface.h"
 
 namespace qnemu
 {
 
-class RasterDisplay : public QRasterWindow, public DisplayInterface
+class RasterDisplay : public QRasterWindow, public DisplayInterface, public InputInterface
 {
     Q_OBJECT
 public:
@@ -31,8 +33,8 @@ public:
     void enable() override;
     void disable() override;
 
-    void setKeyPressCallback(std::function<void(int)> callback) override;
-    void setKeyReleaseCallback(std::function<void(int)> callback) override;
+    void setButtonPressCallback(std::function<void(GbButton)> callback) override;
+    void setButtonReleaseCallback(std::function<void(GbButton)> callback) override;
 
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -41,10 +43,12 @@ signals:
     void startRefresh();
 
 private:
+    static std::optional<GbButton> buttonForQtKey(int key);
+
     QImage buffer;
     std::mutex mutex;
-    std::function<void(int)> keyPressCallback;
-    std::function<void(int)> keyReleaseCallback;
+    std::function<void(GbButton)> buttonPressCallback;
+    std::function<void(GbButton)> buttonReleaseCallback;
     std::atomic_bool enabled{true};
     bool hasFrame = false;
 };

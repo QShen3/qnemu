@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <functional>
-
 #include "qnemu/display/FrameBuffer.h"
 
 namespace qnemu
@@ -13,7 +11,8 @@ namespace qnemu
 
 /**
  * Output side of the emulator.  The PPU only pushes a finished frame here;
- * it never touches QImage or waits for the window system.
+ * it never touches QImage or waits for the window system.  Host input is a
+ * separate concern (see qnemu/input/InputInterface.h).
  */
 class DisplayInterface
 {
@@ -24,9 +23,6 @@ public:
 
     virtual void enable() = 0;
     virtual void disable() = 0;
-
-    virtual void setKeyPressCallback(std::function<void(int)> callback) = 0;
-    virtual void setKeyReleaseCallback(std::function<void(int)> callback) = 0;
 };
 
 }  // namespace qnemu

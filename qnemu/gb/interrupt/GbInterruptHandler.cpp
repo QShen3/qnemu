@@ -19,10 +19,10 @@ uint8_t GbInterruptHandler::read(uint16_t address) const
 {
     if (address == 0xFF0F) {
         // IF bits 5-7 are unused and read as 1.
-        return static_cast<uint8_t>(interruptFlag | 0xE0);
+        return static_cast<uint8_t>(interruptFlag.load() | 0xE0);
     }
     if (address == 0xFFFF) {
-        return interruptEnabled;
+        return interruptEnabled.load();
     }
 
     assert(false && "Wrong address");
@@ -32,11 +32,11 @@ uint8_t GbInterruptHandler::read(uint16_t address) const
 void GbInterruptHandler::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF0F) {
-        interruptFlag = value;
+        interruptFlag.store(value);
         return;
     }
     if (address == 0xFFFF) {
-        interruptEnabled = value;
+        interruptEnabled.store(value);
         return;
     }
 
@@ -50,23 +50,23 @@ void GbInterruptHandler::step()
 
 void GbInterruptHandler::reset()
 {
-    interruptFlag = 0xE1;
-    interruptEnabled = 0x00;
+    interruptFlag.store(0xE1);
+    interruptEnabled.store(0x00);
 }
 
 void GbInterruptHandler::request(GbInterrupt interrupt)
 {
-    interruptFlag = static_cast<uint8_t>(interruptFlag | static_cast<uint8_t>(interrupt));
+    interruptFlag.fetch_or(static_cast<uint8_t>(interrupt));
 }
 
 uint8_t GbInterruptHandler::pending() const
 {
-    return static_cast<uint8_t>(interruptFlag & interruptEnabled & 0x1F);
+    return static_cast<uint8_t>(interruptFlag.load() & interruptEnabled.load() & 0x1F);
 }
 
 void GbInterruptHandler::acknowledge(uint8_t mask)
 {
-    interruptFlag = static_cast<uint8_t>(interruptFlag & static_cast<uint8_t>(~mask));
+    interruptFlag.fetch_and(static_cast<uint8_t>(~mask));
 }
 
 void GbInterruptHandler::requestVBlankInterrupt()

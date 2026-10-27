@@ -186,7 +186,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 245/245, including 98 ROM tests
+The curated CTest set is currently 249/249, including 98 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -327,6 +327,14 @@ with `ctest --preset debug -L sound`.  Wave-RAM accesses while CH3 is actively
 playing (tests 09/10/12) still depend on cycle-exact bus alignment and are not
 part of the curated set.
 
+### Input
+
+Host input is separate from rendering.  `RasterDisplay` implements
+`InputInterface` and maps Qt keys to `GbButton` values; `GbJoypad` only models
+the FF00/P1 matrix and its edge-triggered interrupt.  The joypad is therefore
+Qt-free and a future gamepad, replay or network input backend can feed it
+without touching the renderer.
+
 ### Key binding
 
 | Joypad | Key |
@@ -335,6 +343,8 @@ part of the curated set.
 | ↓      | S   |
 | ←      | A   |
 | →      | D   |
+| A      | J   |
+| B      | K   |
 | Start  | 3   |
 | Select | 2   |
 
@@ -348,7 +358,7 @@ part of the curated set.
 | PPU       | ✅       | unit + acid2 |
 | Sound     | ✅       | unit + blargg sound |
 | Interrupt | ✅       | ✅    |
-| Joypad    | ✅       | ✅    |
+| Joypad    | ✅       | unit |
 | Timer     | ✅       | ✅    |
 | no MBC    | ✅       | ✅    |
 | MBC1      | ✅       | ✅    |

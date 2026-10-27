@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
@@ -33,8 +34,10 @@ public:
     void requestJoypadInterrupt() override;
 
 private:
-    uint8_t interruptFlag = 0xE1;
-    uint8_t interruptEnabled = 0x00;
+    // The CPU thread reads/acknowledges IF while the host input thread may
+    // request a joypad interrupt, so keep both registers atomic.
+    std::atomic<uint8_t> interruptFlag{0xE1};
+    std::atomic<uint8_t> interruptEnabled{0x00};
 };
 
 }  // namespace qnemu

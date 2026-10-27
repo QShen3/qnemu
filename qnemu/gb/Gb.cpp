@@ -48,7 +48,15 @@ Gb::Gb(GbModel model) : model(model)
     auto workRam = std::make_unique<GbWorkRam>();
     auto highRam = std::make_unique<GbHighRam>();
     auto timer = std::make_unique<GbTimer>(interruptHandler);
-    auto joypad = std::make_unique<GbJoypad>(rasterDisplay, interruptHandler);
+
+    auto joypad = std::make_unique<GbJoypad>(interruptHandler);
+    auto* joypadPointer = joypad.get();
+    rasterDisplay->setButtonPressCallback([joypadPointer](GbButton button) {
+        joypadPointer->setButtonState(button, true);
+    });
+    rasterDisplay->setButtonReleaseCallback([joypadPointer](GbButton button) {
+        joypadPointer->setButtonState(button, false);
+    });
 
     auto ppuInstance = std::make_unique<GbPpu>(
         model == GbModel::cgb && cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
@@ -69,6 +77,12 @@ Gb::Gb(GbModel model) : model(model)
 Gb::~Gb()
 {
     stop();
+    if (display) {
+        // The input callbacks capture the joypad's address; drop them before
+        // the MMU (which owns the joypad) is destroyed.
+        display->setButtonPressCallback({});
+        display->setButtonReleaseCallback({});
+    }
 }
 
 void Gb::loadCartridge(const char* filePath)

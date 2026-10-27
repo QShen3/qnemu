@@ -64,27 +64,53 @@ void RasterDisplay::disable()
     enabled.store(false);
 }
 
-void RasterDisplay::setKeyPressCallback(std::function<void(int)> callback)
+void RasterDisplay::setButtonPressCallback(std::function<void(GbButton)> callback)
 {
-    keyPressCallback = std::move(callback);
+    buttonPressCallback = std::move(callback);
 }
 
-void RasterDisplay::setKeyReleaseCallback(std::function<void(int)> callback)
+void RasterDisplay::setButtonReleaseCallback(std::function<void(GbButton)> callback)
 {
-    keyReleaseCallback = std::move(callback);
+    buttonReleaseCallback = std::move(callback);
+}
+
+std::optional<GbButton> RasterDisplay::buttonForQtKey(int key)
+{
+    switch (key) {
+    case Qt::Key_W:
+        return GbButton::up;
+    case Qt::Key_S:
+        return GbButton::down;
+    case Qt::Key_A:
+        return GbButton::left;
+    case Qt::Key_D:
+        return GbButton::right;
+    case Qt::Key_J:
+        return GbButton::a;
+    case Qt::Key_K:
+        return GbButton::b;
+    case Qt::Key_2:
+        return GbButton::select;
+    case Qt::Key_3:
+        return GbButton::start;
+    default:
+        return std::nullopt;
+    }
 }
 
 void RasterDisplay::keyPressEvent(QKeyEvent* event)
 {
-    if (keyPressCallback) {
-        keyPressCallback(event->key());
+    const auto button = buttonForQtKey(event->key());
+    if (button && buttonPressCallback) {
+        buttonPressCallback(*button);
     }
 }
 
 void RasterDisplay::keyReleaseEvent(QKeyEvent* event)
 {
-    if (keyReleaseCallback) {
-        keyReleaseCallback(event->key());
+    const auto button = buttonForQtKey(event->key());
+    if (button && buttonReleaseCallback) {
+        buttonReleaseCallback(*button);
     }
 }
 

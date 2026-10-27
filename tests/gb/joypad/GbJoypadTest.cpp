@@ -1,14 +1,11 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
-#include <functional>
 #include <memory>
 
-#include <QtCore/qnamespace.h>
 #include <gtest/gtest.h>
 
-#include "mock/display/MockDisplay.h"
 #include "mock/gb/interrupt/MockGbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 
@@ -20,68 +17,126 @@ class GbJoypadTest : public testing::Test
 public:
     void SetUp() override
     {
-        mockDisplay = std::make_shared<testing::StrictMock<qnemuMock::MockDisplay>>();
-        mockInterruptHandler = std::make_shared<testing::StrictMock<qnemuMock::MockGbInterruptHanlder>>();
-
-        EXPECT_CALL(*mockDisplay, setKeyPressCallback(testing::_)).WillOnce([this](std::function<void(int)> processKeyPressEvent){
-            keyPress = processKeyPressEvent;
-        });
-        EXPECT_CALL(*mockDisplay, setKeyReleaseCallback(testing::_)).WillOnce([this](std::function<void(int)> processKeyReleaseEvent){
-            keyRelease = processKeyReleaseEvent;
-        });
-        gbJoypad = std::make_unique<qnemu::GbJoypad>(mockDisplay, mockInterruptHandler);
+        mockInterruptHandler =
+            std::make_shared<testing::StrictMock<qnemuMock::MockGbInterruptHanlder>>();
+        gbJoypad = std::make_unique<qnemu::GbJoypad>(mockInterruptHandler);
     }
 
 // NOLINTBEGIN
 protected:
-    std::shared_ptr<testing::StrictMock<qnemuMock::MockDisplay>> mockDisplay;
     std::shared_ptr<testing::StrictMock<qnemuMock::MockGbInterruptHanlder>> mockInterruptHandler;
     std::unique_ptr<qnemu::GbJoypad> gbJoypad;
-    std::function<void(int)> keyPress;
-    std::function<void(int)> keyRelease;
 // NOLINTEND
 };
 
-TEST_F(GbJoypadTest, ProcessKeyEvent)
+TEST_F(GbJoypadTest, ResetAndReadMasks)
 {
-    gbJoypad->write(0xFF00, 0b1110'0000);
+    EXPECT_EQ(gbJoypad->read(0xFF00), 0xCF);
+
+    // Neither group selected: low nibble is released, bits 6-7 read 1.
+    gbJoypad->write(0xFF00, 0xF0);
+    EXPECT_EQ(gbJoypad->read(0xFF00), 0xFF);
+
+    // Bits 6-7 are ignored on writes; both groups selected reads 0xCF.
+    gbJoypad->write(0xFF00, 0x0F);
+    EXPECT_EQ(gbJoypad->read(0xFF00), 0xCF);
+
+    // Lower nibble writes are ignored too.
+    gbJoypad->write(0xFF00, 0x3F);
+    EXPECT_EQ(gbJoypad->read(0xFF00), 0xFF);
+}
+
+TEST_F(GbJoypadTest, DirectionButtons)
+{
+    EXPECT_CALL(*mockInterruptHandler, requestJoypadInterrupt()).Times(testing::AnyNumber());
+    gbJoypad->write(0xFF00, 0xE0);  // select d-pad
+
+    gbJoypad->setButtonState(qnemu::GbButton::right, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0E);
+    gbJoypad->setButtonState(qnemu::GbButton::right, false);
+
+    gbJoypad->setButtonState(qnemu::GbButton::left, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0D);
+    gbJoypad->setButtonState(qnemu::GbButton::left, false);
+
+    gbJoypad->setButtonState(qnemu::GbButton::up, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0B);
+    gbJoypad->setButtonState(qnemu::GbButton::up, false);
+
+    gbJoypad->setButtonState(qnemu::GbButton::down, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x07);
+    gbJoypad->setButtonState(qnemu::GbButton::down, false);
+
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0F);
+}
+
+TEST_F(GbJoypadTest, ActionButtons)
+{
+    EXPECT_CALL(*mockInterruptHandler, requestJoypadInterrupt()).Times(testing::AnyNumber());
+    gbJoypad->write(0xFF00, 0xD0);  // select action buttons
+
+    gbJoypad->setButtonState(qnemu::GbButton::a, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0E);
+    gbJoypad->setButtonState(qnemu::GbButton::a, false);
+
+    gbJoypad->setButtonState(qnemu::GbButton::b, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0D);
+    gbJoypad->setButtonState(qnemu::GbButton::b, false);
+
+    gbJoypad->setButtonState(qnemu::GbButton::select, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0B);
+    gbJoypad->setButtonState(qnemu::GbButton::select, false);
+
+    gbJoypad->setButtonState(qnemu::GbButton::start, true);
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x07);
+    gbJoypad->setButtonState(qnemu::GbButton::start, false);
+
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0F);
+}
+
+TEST_F(GbJoypadTest, BothGroupsAreAnded)
+{
+    EXPECT_CALL(*mockInterruptHandler, requestJoypadInterrupt()).Times(2);
+    gbJoypad->write(0xFF00, 0xC0);  // select both groups
+
+    gbJoypad->setButtonState(qnemu::GbButton::right, true);  // P10 low
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0E);
+
+    gbJoypad->setButtonState(qnemu::GbButton::a, true);  // same P10 line
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0E);
+
+    gbJoypad->setButtonState(qnemu::GbButton::b, true);  // P11 low
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0C);
+
+    gbJoypad->setButtonState(qnemu::GbButton::right, false);  // A still holds P10
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0C);
+}
+
+TEST_F(GbJoypadTest, SelectionChangeRequestsInterruptForHeldButton)
+{
+    gbJoypad->write(0xFF00, 0xF0);  // neither group selected
+    gbJoypad->setButtonState(qnemu::GbButton::right, true);  // not selected yet
+
+    EXPECT_CALL(*mockInterruptHandler, requestJoypadInterrupt()).Times(1);
+    gbJoypad->write(0xFF00, 0xE0);  // selecting the d-pad creates an edge
+    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0x0E);
+}
+
+TEST_F(GbJoypadTest, InterruptsAreEdgeTriggered)
+{
+    gbJoypad->write(0xFF00, 0xE0);  // select d-pad
+
     EXPECT_CALL(*mockInterruptHandler, requestJoypadInterrupt()).Times(4);
 
-    keyPress(Qt::Key_S);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b0111);
-    keyRelease(Qt::Key_S);
-
-    keyPress(Qt::Key_W);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b1011);
-    keyRelease(Qt::Key_W);
-
-    keyPress(Qt::Key_A);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b1101);
-    keyRelease(Qt::Key_A);
-
-    keyPress(Qt::Key_D);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b1110);
-    keyRelease(Qt::Key_D);
-
-
-    gbJoypad->write(0xFF00, 0b1101'0000);
-    EXPECT_CALL(*mockInterruptHandler, requestJoypadInterrupt()).Times(4);
-
-    keyPress(Qt::Key_3);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b0111);
-    keyRelease(Qt::Key_3);
-
-    keyPress(Qt::Key_2);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b1011);
-    keyRelease(Qt::Key_2);
-
-    keyPress(Qt::Key_K);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b1101);
-    keyRelease(Qt::Key_K);
-
-    keyPress(Qt::Key_J);
-    EXPECT_EQ(gbJoypad->read(0xFF00) & 0x0F, 0b1110);
-    keyRelease(Qt::Key_J);
+    gbJoypad->setButtonState(qnemu::GbButton::right, true);  // P10 high->low
+    gbJoypad->setButtonState(qnemu::GbButton::right, true);  // key repeat: no edge
+    gbJoypad->setButtonState(qnemu::GbButton::left, true);   // P11 high->low
+    gbJoypad->setButtonState(qnemu::GbButton::right, false); // release: no edge
+    gbJoypad->setButtonState(qnemu::GbButton::right, true);  // P10 high->low again
+    gbJoypad->setButtonState(qnemu::GbButton::a, true);      // actions not selected
+    gbJoypad->write(0xFF00, 0xD0);  // selecting actions while A is held
+    gbJoypad->setButtonState(qnemu::GbButton::b, true);      // P11 high->low
+    gbJoypad->setButtonState(qnemu::GbButton::a, false);     // release: no edge
 }
 
 TEST_F(GbJoypadTest, ReadWriteError)
@@ -90,7 +145,6 @@ TEST_F(GbJoypadTest, ReadWriteError)
     EXPECT_EQ(gbJoypad->read(0xFF01), 0xFF);
     EXPECT_NO_THROW(gbJoypad->write(0xFF01, 0xFF));
 #else
-    testing::Mock::AllowLeak(mockDisplay.get());
     EXPECT_DEATH(gbJoypad->read(0xFF01), "");
     EXPECT_DEATH(gbJoypad->write(0xFF01, 0), "");
 #endif
@@ -99,12 +153,6 @@ TEST_F(GbJoypadTest, ReadWriteError)
 TEST_F(GbJoypadTest, Step)
 {
     EXPECT_NO_THROW(gbJoypad->step());
-}
-
-TEST_F(GbJoypadTest, Reset)
-{
-    gbJoypad->reset();
-    EXPECT_EQ(gbJoypad->read(0xFF00), 0xCF);
 }
 
 }  // namespace qnemuTest
