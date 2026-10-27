@@ -20,8 +20,10 @@ public:
     void write(uint16_t, const uint8_t&) override {}
     void step() override { ++steps; }
     void reset() override {}
+    void setDoubleSpeed(bool value) override { doubleSpeed = value; }
 
     int steps = 0;
+    bool doubleSpeed = false;
 };
 }  // namespace
 
@@ -36,6 +38,7 @@ TEST(GbCpuBusTest, CgbKeyRegistersAndSpeedSwitch)
     bus.write(0xFF4D, 0x01);
     EXPECT_EQ(bus.read(0xFF4D), 0x7F);
     EXPECT_FALSE(bus.onStop());
+    EXPECT_TRUE(mmu.doubleSpeed);
     EXPECT_EQ(bus.read(0xFF4D), 0xFE);
 
     bus.tick(4);

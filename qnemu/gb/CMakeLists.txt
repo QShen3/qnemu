@@ -17,6 +17,13 @@ set_target_properties(gb_ppu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(gb_ppu PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(gb_ppu PRIVATE qnemu_warnings)
 
+# The timer is Qt-free too.  The headless ROM runner uses this same
+# implementation, so the real emulator and the test bus cannot drift apart.
+add_library(gb_timer STATIC ${CMAKE_CURRENT_SOURCE_DIR}/timer/GbTimer.cpp)
+set_target_properties(gb_timer PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+target_include_directories(gb_timer PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(gb_timer PRIVATE qnemu_warnings)
+
 # The APU is Qt-free as well, so the headless ROM runner and the APU unit
 # tests can link it without pulling in the GUI or Qt Multimedia.
 add_library(gb_apu STATIC
@@ -47,6 +54,8 @@ list(REMOVE_ITEM GPU_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp)
 list(REMOVE_ITEM INTERRUPT_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)
+list(REMOVE_ITEM TIMER_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/timer/GbTimer.cpp)
 
 add_library(
     gb OBJECT
@@ -61,4 +70,4 @@ add_library(
     ${MMU_SRCS}
 )
 target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu Qt6::Core Qt6::Gui)
+target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer Qt6::Core Qt6::Gui)

@@ -1,10 +1,11 @@
-/* 
+/*
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 #include "qnemu/gb/timer/GbTimer.h"
@@ -12,116 +13,137 @@
 namespace qnemu
 {
 
-GbTimer::GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) : interruptHandler(interruptHandler)
+GbTimer::GbTimer(std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
+    interruptHandler(std::move(interruptHandler))
 {
     GbTimer::reset();
 }
 
 uint8_t GbTimer::read(uint16_t address) const
 {
-    if (address == 0xFF04) {
-        return registers.divider >> 8;
+    switch (address) {
+    case 0xFF04:
+        return static_cast<uint8_t>(divider >> 8);
+    case 0xFF05:
+        return timerCounter;
+    case 0xFF06:
+        return timerModulo;
+    case 0xFF07:
+        return static_cast<uint8_t>(timerControl | 0xF8);
+    default:
+        assert(false && "Wrong address");
+        return 0xFF;
     }
-    if (address == 0xFF05) {
-        return registers.timerCounter;
-    }
-    if (address == 0xFF06) {
-        return registers.timerModulo;
-    }
-    if (address == 0xFF07) {
-        return registers.timerControl;
-    }
-
-    assert(false && "Wrong address");
-    return 0xFF;
 }
 
 void GbTimer::write(uint16_t address, const uint8_t& value)
 {
-    if (address == 0xFF04) {
-        // Writing DIV resets it; if the DIV-APU bit was high, this creates a
-        // falling edge and clocks the APU frame sequencer.
-        if (((registers.divider >> 12) & 0x01) != 0) {
+    switch (address) {
+    case 0xFF04: {
+        // Resetting the divider can create a falling edge on both the timer's
+        // selected bit and the DIV-APU bit.
+        if ((timerControl & 0x04) != 0 && selectedClockBit() != 0) {
+            incrementTimerCounter();
+        }
+        if (((divider >> divApuBitIndex()) & 0x01) != 0) {
             divApuTickPending = true;
         }
-        registers.divider = 0;
-        previousBit = 0;
-        previousDivApuBit = 0;
-        return;
-    } 
-    if (address == 0xFF05) {
-        registers.timerCounter = value;
-        return;
-    }
-    if (address == 0xFF06) {
-        registers.timerModulo = value;
-        return;
-    }
-    if (address == 0xFF07) {
-        registers.timerControl = value;
-        if (registers.inputClockSelect == 0) {
-            previousBit = (registers.divider & 1024) >> 10;
-        } else if (registers.inputClockSelect == 1) {
-            previousBit = (registers.divider & 16) >> 4;
-        } else if (registers.inputClockSelect == 2) {
-            previousBit = (registers.divider & 64) >> 6;
-        } else if (registers.inputClockSelect == 3) {
-            previousBit = (registers.divider & 256) >> 8;
-        }
-        return;
-    }
 
-    assert(false && "Wrong address");
+        divider = 0;
+        previousTimerBit = 0;
+        previousDivApuBit = 0;
+        break;
+    }
+    case 0xFF05:
+        if (overflow && overflowCycles == 0) {
+            // Writing TIMA on the overflow cycle suppresses the reload and
+            // the interrupt request.
+            timerCounter = value;
+            overflow = false;
+            overflowCycles = 0;
+            reloadWindowCycles = 0;
+        } else if (overflow || reloadWindowCycles > 0) {
+            // During the reload M-cycle the TMA value wins.
+            timerCounter = timerModulo;
+        } else {
+            timerCounter = value;
+        }
+        break;
+    case 0xFF06:
+        timerModulo = value;
+        if (overflow || reloadWindowCycles > 0) {
+            // A TMA write during the reload M-cycle is copied to TIMA too.
+            timerCounter = timerModulo;
+        }
+        break;
+    case 0xFF07: {
+        const bool oldEnabled = (timerControl & 0x04) != 0;
+        const uint8_t oldBit = selectedClockBit();
+        const uint8_t oldSelect = static_cast<uint8_t>(timerControl & 0x03);
+
+        timerControl = value;
+
+        const bool newEnabled = (timerControl & 0x04) != 0;
+        const uint8_t newBit = selectedClockBit();
+        const uint8_t newSelect = static_cast<uint8_t>(timerControl & 0x03);
+
+        bool tick = false;
+        if (oldEnabled && oldBit != 0) {
+            if (!newEnabled) {
+                // Disabling while the selected bit is high emits a tick.
+                tick = true;
+            } else if (oldSelect != newSelect && newBit == 0) {
+                // Changing from a set bit to an unset one also ticks.
+                tick = true;
+            }
+        }
+        if (tick) {
+            incrementTimerCounter();
+        }
+
+        previousTimerBit = newEnabled ? newBit : 0;
+        break;
+    }
+    default:
+        assert(false && "Wrong address");
+        break;
+    }
 }
 
 void GbTimer::step()
 {
-    registers.divider++;
-    updateDivApuBit();
-
-    if (overflow) {
-        ticksSinceOverflow++;
-        if (ticksSinceOverflow == 4) {
-            interruptHandler->requestTimerInterrupt();
-        } else if (ticksSinceOverflow == 5) {
-            registers.timerCounter = registers.timerModulo;
-        } else if (ticksSinceOverflow == 6) {
-            registers.timerCounter = registers.timerModulo;
-            overflow = false;
-            ticksSinceOverflow = 0;
-        }
-    }
-
-    if (!registers.timerEnable) {
-        return;
-    }
-    uint8_t bit = 0;
-    if (registers.inputClockSelect == 0) {
-        bit = (registers.divider & 1024) >> 10;
-    } else if (registers.inputClockSelect == 1) {
-        bit = (registers.divider & 16) >> 4;
-    } else if (registers.inputClockSelect == 2) {
-        bit = (registers.divider & 64) >> 6;
-    } else if (registers.inputClockSelect == 3) {
-        bit = (registers.divider & 256) >> 8;
-    }
-
-    if (bit != previousBit) {
-        if (registers.timerCounter == 0xFF) {
-            overflow = true;
-        }
-        registers.timerCounter++;
-        previousBit = bit;
+    tick();
+    if (doubleSpeed) {
+        tick();
     }
 }
 
-void GbTimer::updateDivApuBit()
+void GbTimer::reset()
 {
-    const uint8_t bit = static_cast<uint8_t>((registers.divider >> 12) & 0x01);
-    if (previousDivApuBit != 0 && bit == 0) {
-        divApuTickPending = true;
+    divider = 0xAB00;
+    timerCounter = 0;
+    timerModulo = 0;
+    timerControl = 0xF8;
+
+    overflow = false;
+    overflowCycles = 0;
+    reloadWindowCycles = 0;
+    previousTimerBit = 0;
+    previousDivApuBit = static_cast<uint8_t>((divider >> divApuBitIndex()) & 0x01);
+    divApuTickPending = false;
+}
+
+void GbTimer::setDoubleSpeed(bool value)
+{
+    if (doubleSpeed == value) {
+        return;
     }
-    previousDivApuBit = bit;
+    doubleSpeed = value;
+
+    // Update the edge-detector state so the speed switch itself does not
+    // produce a spurious timer or DIV-APU tick.
+    previousDivApuBit = static_cast<uint8_t>((divider >> divApuBitIndex()) & 0x01);
+    previousTimerBit = (timerControl & 0x04) != 0 ? selectedClockBit() : 0;
 }
 
 bool GbTimer::takeDivApuTick()
@@ -133,18 +155,85 @@ bool GbTimer::takeDivApuTick()
     return true;
 }
 
-void GbTimer::reset()
+bool GbTimer::isDivApuBitHigh() const
 {
-    registers.divider = 0xAB00;
-    registers.timerCounter = 0;
-    registers.timerModulo = 0;
-    registers.timerControl = 0xF8;
+    return ((divider >> divApuBitIndex()) & 0x01) != 0;
+}
 
-    overflow = false;
-    previousBit = 0;
-    ticksSinceOverflow = 0;
-    previousDivApuBit = static_cast<uint8_t>((registers.divider >> 12) & 0x01);
-    divApuTickPending = false;
+uint8_t GbTimer::selectedClockBitIndex() const
+{
+    switch (timerControl & 0x03) {
+    case 0:
+        return 9;
+    case 1:
+        return 3;
+    case 2:
+        return 5;
+    default:
+        return 7;
+    }
+}
+
+uint8_t GbTimer::selectedClockBit() const
+{
+    return static_cast<uint8_t>((divider >> selectedClockBitIndex()) & 0x01);
+}
+
+uint8_t GbTimer::divApuBitIndex() const
+{
+    return doubleSpeed ? 13 : 12;
+}
+
+void GbTimer::tick()
+{
+    ++divider;
+    updateDivApuBit();
+
+    if (reloadWindowCycles > 0) {
+        --reloadWindowCycles;
+    }
+
+    if (overflow) {
+        ++overflowCycles;
+        if (overflowCycles >= 4) {
+            timerCounter = timerModulo;
+            overflow = false;
+            overflowCycles = 0;
+            reloadWindowCycles = 4;
+            interruptHandler->requestTimerInterrupt();
+        }
+    }
+
+    if ((timerControl & 0x04) == 0) {
+        return;
+    }
+
+    const uint8_t bit = selectedClockBit();
+    if (previousTimerBit != 0 && bit == 0) {
+        incrementTimerCounter();
+    }
+    previousTimerBit = bit;
+}
+
+void GbTimer::incrementTimerCounter()
+{
+    if (timerCounter == 0xFF) {
+        timerCounter = 0;
+        overflow = true;
+        overflowCycles = 0;
+        reloadWindowCycles = 0;
+    } else {
+        ++timerCounter;
+    }
+}
+
+void GbTimer::updateDivApuBit()
+{
+    const uint8_t bit = static_cast<uint8_t>((divider >> divApuBitIndex()) & 0x01);
+    if (previousDivApuBit != 0 && bit == 0) {
+        divApuTickPending = true;
+    }
+    previousDivApuBit = bit;
 }
 
 }  // namespace qnemu

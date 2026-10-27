@@ -75,6 +75,7 @@ public:
             speedSwitchArmed = false;
             doubleSpeed = !doubleSpeed;
             speedRemainder = 0;
+            mmu.setDoubleSpeed(doubleSpeed);
             return false;
         }
         return true;

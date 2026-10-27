@@ -16,6 +16,7 @@ target_link_libraries(
     gb
     gb_cpu
     gb_apu
+    gb_timer
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets)

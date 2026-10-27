@@ -15,6 +15,7 @@
 #include "qnemu/gb/cpu/CpuBus.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/timer/GbTimer.h"
 #include "tests/support/MemoryDisplay.h"
 
 namespace qnemuTest
@@ -59,12 +60,7 @@ public:
 
 private:
     void reset();
-    void timerTick();
-    void incrementTimerCounter();
-    void writeTimerControl(uint8_t value);
     void ppuTick();
-    uint8_t timerClockBit() const;
-    void updateTimerClockBit();
     uint32_t romOffset(uint16_t address) const;
 
     std::vector<uint8_t> rom_;
@@ -77,17 +73,9 @@ private:
     uint8_t ramBank_ = 0;
     uint8_t bankingMode_ = 0;
 
-    uint16_t divider_ = 0xAB00;
-    uint8_t tima_ = 0;
-    uint8_t tma_ = 0;
-    uint8_t tac_ = 0xF8;
-    uint8_t previousTimerBit_ = 0;
-    bool timaOverflow_ = false;
-    uint8_t overflowCycles_ = 0;
-    uint8_t previousDivApuBit_ = 0;
-
     std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
         std::make_shared<qnemu::GbInterruptHandler>();
+    std::unique_ptr<qnemu::GbTimer> timer;
 
     uint8_t lcdc_ = 0x91;
     uint8_t stat_ = 0x80;

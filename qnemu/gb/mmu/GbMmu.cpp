@@ -123,6 +123,11 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
     }
 }
 
+void GbMmu::setDoubleSpeed(bool doubleSpeed)
+{
+    timer->setDoubleSpeed(doubleSpeed);
+}
+
 void GbMmu::step()
 {
     apu->step();

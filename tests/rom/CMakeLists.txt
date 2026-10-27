@@ -3,7 +3,7 @@ add_executable(
     main.cpp
     GbTestSystem.cpp)
 target_include_directories(gb_test_runner PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu Qt6::Gui)
+target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer Qt6::Gui)
 
 set(QNEMU_TEST_ROM_ROOT "${PROJECT_SOURCE_DIR}/third_party" CACHE PATH
     "Directory containing the gb-test-roms and mooneye-test-roms submodules")
@@ -123,6 +123,8 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "acceptance/timer/div_write.gb"
             "acceptance/timer/rapid_toggle.gb"
             "acceptance/timer/tima_reload.gb"
+            "acceptance/timer/tima_write_reloading.gb"
+            "acceptance/timer/tma_write_reloading.gb"
         )
         foreach(RELATIVE IN LISTS MOONEYE_CPU_TESTS)
             qnemu_add_rom_test("mooneye_${RELATIVE}" "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye")

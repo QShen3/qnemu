@@ -205,6 +205,182 @@ TEST_F(GbTimerTest, DivWriteClocksApuWhenBitIsHigh)
     EXPECT_TRUE(gbTimer->takeDivApuTick());
 }
 
+TEST_F(GbTimerTest, TimerUsesFallingEdge)
+{
+    gbTimer->write(0xFF04, 0);
+    gbTimer->write(0xFF07, 0x04);  // enable, select bit 9
+
+    for (uint32_t i = 0; i < 512; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF05), 0);  // rising edge does nothing
+
+    for (uint32_t i = 0; i < 512; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF05), 1);  // falling edge increments
+}
+
+TEST_F(GbTimerTest, TacUpperBitsReadAsOne)
+{
+    gbTimer->write(0xFF07, 0x00);
+    EXPECT_EQ(gbTimer->read(0xFF07), 0xF8);
+
+    gbTimer->write(0xFF07, 0x07);
+    EXPECT_EQ(gbTimer->read(0xFF07), 0xFF);
+}
+
+TEST_F(GbTimerTest, DivWriteCreatesTimerEdge)
+{
+    gbTimer->write(0xFF04, 0);
+    gbTimer->write(0xFF07, 0x04);
+
+    for (uint32_t i = 0; i < 512; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF05), 0);
+
+    gbTimer->write(0xFF04, 0);  // selected bit was high: falling edge
+    EXPECT_EQ(gbTimer->read(0xFF05), 1);
+    EXPECT_EQ(gbTimer->read(0xFF04), 0);
+}
+
+TEST_F(GbTimerTest, TacClockSelectChangeCreatesTimerEdge)
+{
+    gbTimer->write(0xFF04, 0);
+    for (uint32_t i = 0; i < 512; i++) {
+        gbTimer->step();
+    }
+
+    gbTimer->write(0xFF07, 0x04);  // enable, bit 9 is currently high
+    EXPECT_EQ(gbTimer->read(0xFF05), 0);
+
+    gbTimer->write(0xFF07, 0x07);  // select bit 7, which is currently low
+    EXPECT_EQ(gbTimer->read(0xFF05), 1);
+}
+
+TEST_F(GbTimerTest, DisablingTimerCreatesTimerEdge)
+{
+    gbTimer->write(0xFF04, 0);
+    for (uint32_t i = 0; i < 512; i++) {
+        gbTimer->step();
+    }
+    gbTimer->write(0xFF07, 0x04);
+    gbTimer->write(0xFF07, 0x00);  // disable while bit 9 is high
+    EXPECT_EQ(gbTimer->read(0xFF05), 1);
+}
+
+TEST_F(GbTimerTest, OverflowStaysZeroForOneMcycleThenReloads)
+{
+    gbTimer->write(0xFF04, 0);
+    gbTimer->write(0xFF07, 0x05);  // enable, 16-cycle clock
+    gbTimer->write(0xFF06, 0x42);
+    gbTimer->write(0xFF05, 0xFE);
+
+    for (uint32_t i = 0; i < 32; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF05), 0);
+
+    gbTimer->step();
+    gbTimer->step();
+    gbTimer->step();
+    EXPECT_EQ(gbTimer->read(0xFF05), 0);
+
+    EXPECT_CALL(*mockInterruptHandler, requestTimerInterrupt());
+    gbTimer->step();
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x42);
+    EXPECT_EQ(gbTimer->read(0xFF06), 0x42);
+}
+
+TEST_F(GbTimerTest, TimaWriteCancelsOverflowOnOverflowCycle)
+{
+    gbTimer->write(0xFF04, 0);
+    gbTimer->write(0xFF07, 0x05);
+    gbTimer->write(0xFF06, 0x42);
+    gbTimer->write(0xFF05, 0xFE);
+
+    for (uint32_t i = 0; i < 32; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF05), 0);
+
+    gbTimer->write(0xFF05, 0x7F);
+    for (uint32_t i = 0; i < 15; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x7F);
+}
+
+TEST_F(GbTimerTest, TimaWriteDuringReloadUsesTma)
+{
+    gbTimer->write(0xFF04, 0);
+    gbTimer->write(0xFF07, 0x05);
+    gbTimer->write(0xFF06, 0x42);
+    gbTimer->write(0xFF05, 0xFE);
+
+    for (uint32_t i = 0; i < 32; i++) {
+        gbTimer->step();
+    }
+
+    EXPECT_CALL(*mockInterruptHandler, requestTimerInterrupt());
+    for (uint32_t i = 0; i < 4; i++) {
+        gbTimer->step();
+    }
+
+    gbTimer->write(0xFF05, 0x7F);
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x42);
+
+    for (uint32_t i = 0; i < 4; i++) {
+        gbTimer->step();
+    }
+    gbTimer->write(0xFF05, 0x7F);
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x7F);
+}
+
+TEST_F(GbTimerTest, TmaWriteDuringReloadCopiesToTima)
+{
+    gbTimer->write(0xFF04, 0);
+    gbTimer->write(0xFF07, 0x05);
+    gbTimer->write(0xFF06, 0x42);
+    gbTimer->write(0xFF05, 0xFE);
+
+    for (uint32_t i = 0; i < 32; i++) {
+        gbTimer->step();
+    }
+
+    EXPECT_CALL(*mockInterruptHandler, requestTimerInterrupt());
+    for (uint32_t i = 0; i < 4; i++) {
+        gbTimer->step();
+    }
+
+    gbTimer->write(0xFF06, 0x55);
+    EXPECT_EQ(gbTimer->read(0xFF06), 0x55);
+    EXPECT_EQ(gbTimer->read(0xFF05), 0x55);
+}
+
+TEST_F(GbTimerTest, DoubleSpeedDoublesDividerRate)
+{
+    gbTimer->setDoubleSpeed(true);
+    gbTimer->write(0xFF04, 0);
+
+    for (uint32_t i = 0; i < 128; i++) {
+        gbTimer->step();
+    }
+    EXPECT_EQ(gbTimer->read(0xFF04), 1);
+}
+
+TEST_F(GbTimerTest, DoubleSpeedUsesBit13ForDivApu)
+{
+    gbTimer->setDoubleSpeed(true);
+    gbTimer->write(0xFF04, 0);
+
+    for (uint32_t i = 0; i < 4096; i++) {
+        gbTimer->step();
+    }
+    EXPECT_TRUE(gbTimer->takeDivApuTick());
+}
+
 TEST_F(GbTimerTest, Reset)
 {
     gbTimer->write(0xFF04, 0);

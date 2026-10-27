@@ -38,6 +38,7 @@ public:
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
+    void setDoubleSpeed(bool doubleSpeed) override;
 
 private:
     std::unique_ptr<GbApu> apu;

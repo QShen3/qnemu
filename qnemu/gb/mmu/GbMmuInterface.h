@@ -13,7 +13,10 @@ namespace qnemu
 
 class GbMmuInterface : public MmuInterface<uint8_t, uint16_t>
 {
-
+public:
+    /// CGB speed switch notification.  Peripherals that are affected by the
+    /// double-speed clock (currently the divider/timer) can adjust here.
+    virtual void setDoubleSpeed(bool /*doubleSpeed*/) {}
 };
 
 }  // namespace qnemu

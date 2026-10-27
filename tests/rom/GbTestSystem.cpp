@@ -26,8 +26,6 @@ namespace
 constexpr uint16_t serialDataAddress = 0xFF01;
 constexpr uint16_t serialControlAddress = 0xFF02;
 constexpr uint16_t dividerAddress = 0xFF04;
-constexpr uint16_t timaAddress = 0xFF05;
-constexpr uint16_t tmaAddress = 0xFF06;
 constexpr uint16_t tacAddress = 0xFF07;
 constexpr uint16_t interruptFlagAddress = 0xFF0F;
 constexpr uint16_t lcdcAddress = 0xFF40;
@@ -64,6 +62,7 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
     ppu.reset();
     display.reset();
     apu.reset();
+    timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
     reset();
 
     if (enablePpu) {
@@ -95,14 +94,10 @@ void GbTestSystem::reset()
     ramBank_ = 0;
     bankingMode_ = 0;
 
-    divider_ = 0xAB00;
-    tima_ = 0;
-    tma_ = 0;
-    tac_ = 0xF8;
-    previousTimerBit_ = 0;
-    timaOverflow_ = false;
-    overflowCycles_ = 0;
-    previousDivApuBit_ = static_cast<uint8_t>((divider_ >> 12) & 0x01);
+    if (timer) {
+        timer->setDoubleSpeed(false);
+        timer->reset();
+    }
 
     interruptHandler->reset();
 
@@ -166,17 +161,8 @@ uint8_t GbTestSystem::read(uint16_t address)
     if (address == serialControlAddress) {
         return serialControl_;
     }
-    if (address == dividerAddress) {
-        return static_cast<uint8_t>(divider_ >> 8);
-    }
-    if (address == timaAddress) {
-        return tima_;
-    }
-    if (address == tmaAddress) {
-        return tma_;
-    }
-    if (address == tacAddress) {
-        return static_cast<uint8_t>(tac_ | 0xF8);
+    if (address >= dividerAddress && address <= tacAddress) {
+        return timer->read(address);
     }
     if (address == interruptFlagAddress) {
         return interruptHandler->read(address);
@@ -256,7 +242,7 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
     if (apu && address == 0xFF26) {
         const bool wasPowered = apu->isPowered();
         apu->write(address, value);
-        if (!wasPowered && apu->isPowered() && ((divider_ >> 12) & 0x01) != 0) {
+        if (!wasPowered && apu->isPowered() && timer->isDivApuBitHigh()) {
             apu->skipNextDivApuTick();
         }
         return;
@@ -280,29 +266,11 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         }
         return;
     }
-    if (address == dividerAddress) {
-        if (apu && ((divider_ >> 12) & 0x01) != 0) {
+    if (address >= dividerAddress && address <= tacAddress) {
+        timer->write(address, value);
+        if (apu && timer->takeDivApuTick()) {
             apu->divApuTick();
         }
-        const bool fallingEdge = (tac_ & 0x04) != 0 && timerClockBit() != 0;
-        divider_ = 0;
-        previousTimerBit_ = 0;
-        previousDivApuBit_ = 0;
-        if (fallingEdge) {
-            incrementTimerCounter();
-        }
-        return;
-    }
-    if (address == timaAddress) {
-        tima_ = value;
-        return;
-    }
-    if (address == tmaAddress) {
-        tma_ = value;
-        return;
-    }
-    if (address == tacAddress) {
-        writeTimerControl(value);
         return;
     }
     if (address == interruptFlagAddress) {
@@ -373,17 +341,13 @@ void GbTestSystem::tick(uint8_t cycles)
     }
 
     for (uint8_t cycle = 0; cycle < peripheralCycles; ++cycle) {
-        ++divider_;
         if (apu) {
             apu->step();
         }
-        const uint8_t divApuBit = static_cast<uint8_t>((divider_ >> 12) & 0x01);
-        if (apu && previousDivApuBit_ != 0 && divApuBit == 0) {
+        timer->step();
+        if (apu && timer->takeDivApuTick()) {
             apu->divApuTick();
         }
-        previousDivApuBit_ = divApuBit;
-
-        timerTick();
         if (ppu) {
             ppu->step();
         } else {
@@ -399,60 +363,10 @@ bool GbTestSystem::onStop()
         speedSwitchArmed_ = false;
         doubleSpeed_ = !doubleSpeed_;
         speedRemainder_ = 0;
+        timer->setDoubleSpeed(doubleSpeed_);
         return false;
     }
     return true;
-}
-
-void GbTestSystem::timerTick()
-{
-    if (timaOverflow_) {
-        if (overflowCycles_ > 0) {
-            --overflowCycles_;
-        }
-        if (overflowCycles_ == 0) {
-            tima_ = tma_;
-            timaOverflow_ = false;
-            interruptHandler->requestTimerInterrupt();
-        }
-    }
-
-    if ((tac_ & 0x04) == 0) {
-        previousTimerBit_ = 0;
-        return;
-    }
-
-    const uint8_t bit = timerClockBit();
-    if (previousTimerBit_ != 0 && bit == 0) {
-        incrementTimerCounter();
-    }
-    previousTimerBit_ = bit;
-}
-
-void GbTestSystem::incrementTimerCounter()
-{
-    if (tima_ == 0xFF) {
-        tima_ = 0;
-        timaOverflow_ = true;
-        overflowCycles_ = 4;
-    } else {
-        ++tima_;
-    }
-}
-
-void GbTestSystem::writeTimerControl(uint8_t value)
-{
-    const bool wasEnabled = (tac_ & 0x04) != 0;
-    const uint8_t oldBit = timerClockBit();
-    tac_ = value;
-    const bool isEnabled = (tac_ & 0x04) != 0;
-    const uint8_t newBit = timerClockBit();
-
-    if (wasEnabled && oldBit != 0 && (!isEnabled || newBit == 0)) {
-        incrementTimerCounter();
-    }
-
-    previousTimerBit_ = isEnabled ? newBit : 0;
 }
 
 void GbTestSystem::ppuTick()
@@ -495,23 +409,6 @@ std::string GbTestSystem::screenText()
         }
     }
     return text;
-}
-
-uint8_t GbTestSystem::timerClockBit() const
-{
-    uint8_t bit = 0;
-    switch (tac_ & 0x03) {
-        case 0: bit = 9; break;
-        case 1: bit = 3; break;
-        case 2: bit = 5; break;
-        default: bit = 7; break;
-    }
-    return static_cast<uint8_t>((divider_ >> bit) & 0x01);
-}
-
-void GbTestSystem::updateTimerClockBit()
-{
-    previousTimerBit_ = (tac_ & 0x04) != 0 ? timerClockBit() : 0;
 }
 
 uint32_t GbTestSystem::romOffset(uint16_t address) const
