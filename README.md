@@ -182,7 +182,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 186/186, including 73 ROM tests
+The curated CTest set is currently 191/191, including 78 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -209,8 +209,12 @@ Mooneye CPU/interrupt/timer (`-L mooneye`, CPU-only bus):
 - `pop_timing`
 - `rapid_di_ei`
 - `reti_intr_timing`
-- `timer/div_write`, `timer/tim00`, `timer/tim01`, `timer/tim10`, `timer/tim11`,
-  `timer/tma_write_reloading`
+- `timer/div_write`
+- `timer/rapid_toggle`
+- `timer/tim00`, `timer/tim01`, `timer/tim10`, `timer/tim11`
+- `timer/tim00_div_trigger`, `timer/tim01_div_trigger`,
+  `timer/tim10_div_trigger`, `timer/tim11_div_trigger`
+- `timer/tima_reload`
 
 Mooneye PPU/OAM/bus-timing (`-L ppu`, requires `--ppu`):
 
@@ -241,11 +245,11 @@ Image tests (`-L acid2`):
 
 Known failures at the moment are concentrated in:
 
-- `ppu/intr_2_mode0_timing_sprites` (only the 10-objects-at-X=0 case)
+- `ppu/intr_2_mode0_timing_sprites` (multi-object fetch-penalty edge case)
 - `ppu/lcdon_timing-GS`, `ppu/lcdon_write_timing-GS`
 - `oam_dma/sources-GS`
-- `timer/*_div_trigger`, `timer/tima_reload`, `timer/tima_write_reloading`,
-  `timer/rapid_toggle` (test-bus timer edge behavior)
+- `timer/tima_write_reloading`, `timer/tma_write_reloading` (reload-boundary
+  write timing)
 - `interrupt_time` and sound suites (APU not implemented)
 - `boot_*` (no boot ROM) and `emulator-only` MBC2/MBC3/MBC5 suites
   (those mappers are not implemented)

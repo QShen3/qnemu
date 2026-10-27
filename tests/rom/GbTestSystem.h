@@ -58,6 +58,8 @@ public:
 private:
     void reset();
     void timerTick();
+    void incrementTimerCounter();
+    void writeTimerControl(uint8_t value);
     void ppuTick();
     uint8_t timerClockBit() const;
     void updateTimerClockBit();

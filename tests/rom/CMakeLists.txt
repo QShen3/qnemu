@@ -74,11 +74,16 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "acceptance/rapid_di_ei.gb"
             "acceptance/reti_intr_timing.gb"
             "acceptance/timer/tim00.gb"
+            "acceptance/timer/tim00_div_trigger.gb"
             "acceptance/timer/tim01.gb"
+            "acceptance/timer/tim01_div_trigger.gb"
             "acceptance/timer/tim10.gb"
+            "acceptance/timer/tim10_div_trigger.gb"
             "acceptance/timer/tim11.gb"
+            "acceptance/timer/tim11_div_trigger.gb"
             "acceptance/timer/div_write.gb"
-            "acceptance/timer/tma_write_reloading.gb"
+            "acceptance/timer/rapid_toggle.gb"
+            "acceptance/timer/tima_reload.gb"
         )
         foreach(RELATIVE IN LISTS MOONEYE_CPU_TESTS)
             qnemu_add_rom_test("mooneye_${RELATIVE}" "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye")

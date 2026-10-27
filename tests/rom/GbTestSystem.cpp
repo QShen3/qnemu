@@ -237,8 +237,12 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
     if (address == dividerAddress) {
+        const bool fallingEdge = (tac_ & 0x04) != 0 && timerClockBit() != 0;
         divider_ = 0;
         previousTimerBit_ = 0;
+        if (fallingEdge) {
+            incrementTimerCounter();
+        }
         return;
     }
     if (address == timaAddress) {
@@ -250,8 +254,7 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
     if (address == tacAddress) {
-        tac_ = value;
-        updateTimerClockBit();
+        writeTimerControl(value);
         return;
     }
     if (address == interruptFlagAddress) {
@@ -347,15 +350,13 @@ bool GbTestSystem::onStop()
 void GbTestSystem::timerTick()
 {
     if (timaOverflow_) {
-        ++overflowCycles_;
-        if (overflowCycles_ == 4) {
-            interruptHandler->requestTimerInterrupt();
-        } else if (overflowCycles_ == 5) {
-            tima_ = tma_;
-        } else if (overflowCycles_ == 6) {
+        if (overflowCycles_ > 0) {
+            --overflowCycles_;
+        }
+        if (overflowCycles_ == 0) {
             tima_ = tma_;
             timaOverflow_ = false;
-            overflowCycles_ = 0;
+            interruptHandler->requestTimerInterrupt();
         }
     }
 
@@ -366,15 +367,35 @@ void GbTestSystem::timerTick()
 
     const uint8_t bit = timerClockBit();
     if (previousTimerBit_ != 0 && bit == 0) {
-        if (tima_ == 0xFF) {
-            tima_ = 0;
-            timaOverflow_ = true;
-            overflowCycles_ = 0;
-        } else {
-            ++tima_;
-        }
+        incrementTimerCounter();
     }
     previousTimerBit_ = bit;
+}
+
+void GbTestSystem::incrementTimerCounter()
+{
+    if (tima_ == 0xFF) {
+        tima_ = 0;
+        timaOverflow_ = true;
+        overflowCycles_ = 4;
+    } else {
+        ++tima_;
+    }
+}
+
+void GbTestSystem::writeTimerControl(uint8_t value)
+{
+    const bool wasEnabled = (tac_ & 0x04) != 0;
+    const uint8_t oldBit = timerClockBit();
+    tac_ = value;
+    const bool isEnabled = (tac_ & 0x04) != 0;
+    const uint8_t newBit = timerClockBit();
+
+    if (wasEnabled && oldBit != 0 && (!isEnabled || newBit == 0)) {
+        incrementTimerCounter();
+    }
+
+    previousTimerBit_ = isEnabled ? newBit : 0;
 }
 
 void GbTestSystem::ppuTick()
