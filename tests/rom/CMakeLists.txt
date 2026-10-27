@@ -3,7 +3,7 @@ add_executable(
     main.cpp
     GbTestSystem.cpp)
 target_include_directories(gb_test_runner PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu Qt6::Gui)
+target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu Qt6::Gui)
 
 set(QNEMU_TEST_ROM_ROOT "${PROJECT_SOURCE_DIR}/third_party" CACHE PATH
     "Directory containing the gb-test-roms and mooneye-test-roms submodules")
@@ -50,6 +50,45 @@ if(QNEMU_ENABLE_ROM_TESTS)
             qnemu_add_rom_test("blargg_mem_timing2_${NAME}" "${ROM}" "blargg")
         endforeach()
         qnemu_add_rom_test("blargg_mem_timing2" "${BLARGG_ROM_ROOT}/mem_timing-2/mem_timing.gb" "blargg")
+
+        # Sound register/length/trigger/sweep tests.  The remaining wave-RAM
+        # timing tests need cycle-exact CPU/APU bus alignment and are not
+        # registered yet.
+        set(BLARGG_DMG_SOUND_TESTS
+            "01-registers"
+            "02-len ctr"
+            "03-trigger"
+            "04-sweep"
+            "05-sweep details"
+            "06-overflow on trigger"
+            "07-len sweep period sync"
+            "08-len ctr during power"
+            "11-regs after power"
+        )
+        foreach(NAME IN LISTS BLARGG_DMG_SOUND_TESTS)
+            qnemu_add_rom_test("blargg_dmg_sound_${NAME}"
+                "${BLARGG_ROM_ROOT}/dmg_sound/rom_singles/${NAME}.gb"
+                "blargg;sound" --model dmg --apu)
+        endforeach()
+
+        set(BLARGG_CGB_SOUND_TESTS
+            "01-registers"
+            "02-len ctr"
+            "03-trigger"
+            "04-sweep"
+            "05-sweep details"
+            "06-overflow on trigger"
+            "07-len sweep period sync"
+            "08-len ctr during power"
+            "10-wave trigger while on"
+            "11-regs after power"
+            "12-wave"
+        )
+        foreach(NAME IN LISTS BLARGG_CGB_SOUND_TESTS)
+            qnemu_add_rom_test("blargg_cgb_sound_${NAME}"
+                "${BLARGG_ROM_ROOT}/cgb_sound/rom_singles/${NAME}.gb"
+                "blargg;sound" --model cgb --apu)
+        endforeach()
     endif()
 
     set(MOONEYE_ROM_ROOT "${QNEMU_TEST_ROM_ROOT}/mooneye-test-roms")

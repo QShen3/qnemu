@@ -25,7 +25,16 @@ public:
     void step() override;
     void reset() override;
 
+    /// Consume a pending DIV-APU clock (falling edge of DIV bit 4).
+    bool takeDivApuTick();
+
+    bool isDivApuBitHigh() const
+    {
+        return ((registers.divider >> 12) & 0x01) != 0;
+    }
+
 private:
+    void updateDivApuBit();
     struct {
         uint16_t divider;
         uint8_t timerCounter;
@@ -43,6 +52,8 @@ private:
     bool overflow;
     uint8_t previousBit;
     uint8_t ticksSinceOverflow;
+    uint8_t previousDivApuBit;
+    bool divApuTickPending;
 };
 
 }  // namespace qnemu

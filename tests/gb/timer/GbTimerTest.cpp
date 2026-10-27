@@ -179,6 +179,32 @@ TEST_F(GbTimerTest, TimerCounter256)
     EXPECT_EQ(gbTimer->read(0xFF05), 0x33);
 }
 
+TEST_F(GbTimerTest, DivApuTickUsesFallingEdge)
+{
+    // Power-on DIV is 0xAB00; bit 12 rises after 0x500 cycles and falls
+    // after another 0x1000, which is the 512 Hz DIV-APU clock.
+    for (uint32_t i = 0; i < 0x500; i++) {
+        gbTimer->step();
+    }
+    EXPECT_FALSE(gbTimer->takeDivApuTick());
+
+    for (uint32_t i = 0; i < 0x1000; i++) {
+        gbTimer->step();
+    }
+    EXPECT_TRUE(gbTimer->takeDivApuTick());
+    EXPECT_FALSE(gbTimer->takeDivApuTick());
+}
+
+TEST_F(GbTimerTest, DivWriteClocksApuWhenBitIsHigh)
+{
+    for (uint32_t i = 0; i < 0x500; i++) {
+        gbTimer->step();
+    }
+
+    gbTimer->write(0xFF04, 0);
+    EXPECT_TRUE(gbTimer->takeDivApuTick());
+}
+
 TEST_F(GbTimerTest, Reset)
 {
     gbTimer->write(0xFF04, 0);

@@ -37,10 +37,25 @@ public:
     virtual void clockSweep() {}
 
     /**
-     * Power the APU down.  Most channels simply reset; the wave channel keeps
-     * its wave RAM because the hardware preserves it while NR52 bit 7 is 0.
+     * Tell the channel whether the frame sequencer's next step clocks the
+     * length timer.  NRx4 writes use this for the "extra length clocking"
+     * quirk, and triggers use it when they reload a frozen length counter.
      */
-    virtual void powerOff() { reset(); }
+    virtual void setLengthClockPhase(bool /*nextStepClocksLength*/) {}
+
+    /// The wave channel needs to know whether it is running on DMG or CGB:
+    /// DMG only allows wave RAM access when it coincides with an internal read.
+    virtual void setCgb(bool /*cgb*/) {}
+
+    /// DMG only: NRx1 length writes still work while the APU is powered off.
+    /// Only the length counter is affected; readable register bits stay clear.
+    virtual void writeLengthWhileOff(uint8_t /*value*/) {}
+
+    /**
+     * Power the APU down.  On DMG the length counters survive; on CGB they
+     * are cleared.  The wave channel always keeps its wave RAM.
+     */
+    virtual void powerOff(bool /*preserveLength*/ = false) { reset(); }
 };
 
 }  // namespace qnemu

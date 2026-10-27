@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "qnemu/display/FrameBuffer.h"
+#include "qnemu/gb/apu/GbApu.h"
 #include "qnemu/gb/cpu/CpuBus.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
@@ -30,7 +31,8 @@ namespace qnemuTest
 class GbTestSystem : public qnemu::CpuBus
 {
 public:
-    bool loadRom(const std::string& path, bool cgb, bool enablePpu = false);
+    bool loadRom(const std::string& path, bool cgb, bool enablePpu = false,
+        bool enableApu = false);
 
     uint8_t read(uint16_t address) override;
     void write(uint16_t address, uint8_t value) override;
@@ -82,6 +84,7 @@ private:
     uint8_t previousTimerBit_ = 0;
     bool timaOverflow_ = false;
     uint8_t overflowCycles_ = 0;
+    uint8_t previousDivApuBit_ = 0;
 
     std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
         std::make_shared<qnemu::GbInterruptHandler>();
@@ -94,6 +97,7 @@ private:
 
     std::shared_ptr<MemoryDisplay> display;
     std::unique_ptr<qnemu::GbPpu> ppu;
+    std::unique_ptr<qnemu::GbApu> apu;
 
     uint8_t serialData_ = 0;
     uint8_t serialControl_ = 0x00;

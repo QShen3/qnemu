@@ -17,6 +17,20 @@ set_target_properties(gb_ppu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(gb_ppu PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(gb_ppu PRIVATE qnemu_warnings)
 
+# The APU is Qt-free as well, so the headless ROM runner and the APU unit
+# tests can link it without pulling in the GUI or Qt Multimedia.
+add_library(gb_apu STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbApu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel1.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel2.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel3.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel4.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbLengthTimer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbVolumeEnvelope.cpp)
+set_target_properties(gb_apu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+target_include_directories(gb_apu PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(gb_apu PRIVATE qnemu_warnings)
+
 # C++
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge CARTRIDGE_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge/mbc CARTRIDGE_MBC_SRCS)
@@ -26,7 +40,6 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gpu GPU_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/joypad JOYPAD_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/timer TIMER_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/mmu MMU_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/apu APU_SRCS)
 
 list(REMOVE_ITEM GPU_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
@@ -46,7 +59,6 @@ add_library(
     ${JOYPAD_SRCS}
     ${TIMER_SRCS}
     ${MMU_SRCS}
-    ${APU_SRCS}
 )
 target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu Qt6::Core Qt6::Gui)
+target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu Qt6::Core Qt6::Gui)

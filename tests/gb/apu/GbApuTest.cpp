@@ -102,7 +102,7 @@ TEST_F(GbApuTest, GlobalRegisterReadBack)
     EXPECT_EQ(apu->read(0xFF25), 0xA5);
 }
 
-TEST_F(GbApuTest, FrameSequencerClocksLength)
+TEST_F(GbApuTest, DivApuClocksLength)
 {
     apu->write(0xFF16, 0x3F);  // length = 1
     apu->write(0xFF17, 0xF0);
@@ -110,10 +110,13 @@ TEST_F(GbApuTest, FrameSequencerClocksLength)
 
     EXPECT_EQ(apu->read(0xFF26) & 0x02, 0x02);
 
-    for (uint16_t i = 0; i < qnemu::GbApu::FrameSequencerPeriod; ++i) {
+    for (int i = 0; i < 100; ++i) {
         apu->step();
     }
+    EXPECT_EQ(apu->frameSequencerStep(), 0);
+    EXPECT_EQ(apu->read(0xFF26) & 0x02, 0x02);
 
+    apu->divApuTick();
     EXPECT_EQ(apu->frameSequencerStep(), 1);
     EXPECT_EQ(apu->read(0xFF26) & 0x02, 0x00);
 }

@@ -32,6 +32,7 @@ target_link_libraries(
     gb
     gb_cpu
     gb_ppu
+    gb_apu
     sound
     display
     GTest::gmock_main

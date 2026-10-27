@@ -14,10 +14,13 @@ namespace qnemu
 {
 
 GbApu::GbApu(std::unique_ptr<SoundInterface> sound,
-    std::array<std::unique_ptr<GbChannelInterface>, 4> channels) :
+    std::array<std::unique_ptr<GbChannelInterface>, 4> channels,
+    bool cgb) :
     sound(std::move(sound)),
-    channels(std::move(channels))
+    channels(std::move(channels)),
+    cgb(cgb)
 {
+    this->channels[2]->setCgb(cgb);
     reset();
 }
 
@@ -38,13 +41,6 @@ uint8_t GbApu::read(uint16_t address) const
             }
         }
         return static_cast<uint8_t>(0x70 | (powered ? 0x80 : 0x00) | status);
-    }
-
-    if (!powered) {
-        if (address >= 0xFF10 && address <= 0xFF25) {
-            return 0x00;
-        }
-        return 0xFF;
     }
 
     if (address >= 0xFF10 && address <= 0xFF14) {
@@ -84,13 +80,12 @@ void GbApu::write(uint16_t address, const uint8_t& value)
             if (powered) {
                 powered = false;
                 for (auto& channel : channels) {
-                    channel->powerOff();
+                    // DMG keeps the length counters across APU power-off.
+                    channel->powerOff(!cgb);
                 }
 
                 nr50 = 0;
                 nr51 = 0;
-                frameCounter = 0;
-                frameStep = 0;
                 sampleAccumulator = 0;
                 sampleCycles = 0;
                 mixAccumLeft = 0;
@@ -102,23 +97,50 @@ void GbApu::write(uint16_t address, const uint8_t& value)
                 capacitorRight = 0;
                 sampleCount = 0;
             }
-        } else {
+        } else if (!powered) {
             powered = true;
+            // Powering up restarts the frame sequencer phase.
+            frameStep = 0;
         }
         return;
     }
 
     if (!powered) {
+        // On DMG the length registers (NRx1) are not cleared by power-off and
+        // remain writable; all other APU registers are read-only while off.
+        if (!cgb) {
+            switch (address) {
+            case 0xFF11:
+                channels[0]->writeLengthWhileOff(value);
+                break;
+            case 0xFF16:
+                channels[1]->writeLengthWhileOff(value);
+                break;
+            case 0xFF1B:
+                channels[2]->writeLengthWhileOff(value);
+                break;
+            case 0xFF20:
+                channels[3]->writeLengthWhileOff(value);
+                break;
+            default:
+                break;
+            }
+        }
         return;
     }
 
+    const bool nextStepClocksLength = (frameStep & 0x01) == 0;
     if (address >= 0xFF10 && address <= 0xFF14) {
+        channels[0]->setLengthClockPhase(nextStepClocksLength);
         channels[0]->write(address, value);
     } else if (address >= 0xFF16 && address <= 0xFF19) {
+        channels[1]->setLengthClockPhase(nextStepClocksLength);
         channels[1]->write(address, value);
     } else if (address >= 0xFF1A && address <= 0xFF1E) {
+        channels[2]->setLengthClockPhase(nextStepClocksLength);
         channels[2]->write(address, value);
     } else if (address >= 0xFF20 && address <= 0xFF23) {
+        channels[3]->setLengthClockPhase(nextStepClocksLength);
         channels[3]->write(address, value);
     } else if (address == 0xFF24) {
         nr50 = value;
@@ -149,6 +171,22 @@ void GbApu::clockFrameSequencer()
     frameStep = static_cast<uint8_t>((frameStep + 1) & 0x07);
 }
 
+void GbApu::divApuTick()
+{
+    if (skipDivApuEvent) {
+        skipDivApuEvent = false;
+        return;
+    }
+
+    if (powered) {
+        clockFrameSequencer();
+    } else {
+        // The DIV-APU counter keeps running while the APU is off; only the
+        // channel state machines are cleared/stopped.
+        frameStep = static_cast<uint8_t>((frameStep + 1) & 0x07);
+    }
+}
+
 void GbApu::step()
 {
     if (!powered) {
@@ -157,12 +195,6 @@ void GbApu::step()
 
     for (auto& channel : channels) {
         channel->step();
-    }
-
-    ++frameCounter;
-    if (frameCounter >= FrameSequencerPeriod) {
-        frameCounter = 0;
-        clockFrameSequencer();
     }
 
     mixAndAccumulate();
@@ -266,8 +298,8 @@ void GbApu::reset()
         channel->reset();
     }
 
-    frameCounter = 0;
     frameStep = 0;
+    skipDivApuEvent = false;
     sampleAccumulator = 0;
     sampleCycles = 0;
     mixAccumLeft = 0;

@@ -24,6 +24,7 @@ public:
 
     void reset();
     void setLength(uint8_t registerValue);
+    void setCounter(uint16_t value) { length = value; }
     void setEnabled(bool enabled);
     void trigger();
     void clock();

@@ -2,6 +2,7 @@
  *  Copyright [2023] <qazxdrcssc2006@163.com>
  */
 
+#include <cstddef>
 #include <cstdint>
 
 #include "qnemu/gb/apu/GbChannel3.h"
@@ -22,7 +23,7 @@ bool isWaveRamAddress(uint16_t address)
 
 }  // namespace
 
-GbChannel3::GbChannel3()
+GbChannel3::GbChannel3(bool cgb) : cgb(cgb)
 {
     reset();
 }
@@ -74,13 +75,26 @@ void GbChannel3::write(uint16_t address, const uint8_t& value)
     case 0xFF1D:
         nr33 = value;
         break;
-    case 0xFF1E:
+    case 0xFF1E: {
+        const bool wasEnabled = lengthTimer.isEnabled();
         nr34 = static_cast<uint8_t>(value & 0xC7);
-        lengthTimer.setEnabled((nr34 & 0x40) != 0);
+        const bool nowEnabled = (nr34 & 0x40) != 0;
+        lengthTimer.setEnabled(nowEnabled);
+
+        if (!wasEnabled && nowEnabled && !nextStepClocksLength
+            && lengthTimer.getLength() != 0) {
+            lengthTimer.clock();
+            if (lengthTimer.expired() && (nr34 & 0x80) == 0) {
+                enabled = false;
+                data = 0;
+            }
+        }
+
         if ((nr34 & 0x80) != 0) {
             trigger();
         }
         break;
+    }
     default:
         break;
     }
@@ -88,18 +102,38 @@ void GbChannel3::write(uint16_t address, const uint8_t& value)
 
 void GbChannel3::trigger()
 {
-    if (!isDacEnabled()) {
-        return;
+    // DMG quirk: retriggering just as the channel is about to read a wave byte
+    // corrupts the beginning of wave RAM.
+    if (!cgb && enabled && isDacEnabled() && frequencyTimer <= 2) {
+        const uint8_t nextByte = static_cast<uint8_t>(((wavePosition + 1) >> 1) & 0x0F);
+        if (nextByte < 4) {
+            waveRam[0] = waveRam[nextByte];
+        } else {
+            const uint8_t base = static_cast<uint8_t>(nextByte & ~0x03);
+            for (std::size_t i = 0; i < 4; ++i) {
+                waveRam[i] = waveRam[base + i];
+            }
+        }
+        sampleBuffer = waveRam[0];
     }
 
-    enabled = true;
+    const bool lengthWasZero = lengthTimer.expired();
     lengthTimer.trigger();
+    if (lengthWasZero && lengthTimer.isEnabled() && !nextStepClocksLength) {
+        lengthTimer.clock();
+    }
+
+    enabled = isDacEnabled();
     frequencyTimer = static_cast<uint16_t>((2048 - period()) * 2);
 
     // The hardware resets the index, then reads sample 1 first (the lower
     // nibble of FF30).  The previously played sample keeps being emitted
     // until the first wave RAM read happens.
     wavePosition = 0;
+
+    if (!enabled) {
+        data = 0;
+    }
 }
 
 uint8_t GbChannel3::applyOutputLevel(uint8_t sample) const
@@ -120,7 +154,12 @@ void GbChannel3::step()
 {
     if (!enabled) {
         data = 0;
+        waveReadWindow = 0;
         return;
+    }
+
+    if (waveReadWindow > 0) {
+        --waveReadWindow;
     }
 
     if (frequencyTimer > 0) {
@@ -133,6 +172,7 @@ void GbChannel3::step()
         sampleBuffer = (wavePosition & 0x01) != 0
             ? static_cast<uint8_t>(byte & 0x0F)
             : static_cast<uint8_t>((byte >> 4) & 0x0F);
+        waveReadWindow = 1;
     }
 
     data = applyOutputLevel(sampleBuffer);
@@ -149,9 +189,12 @@ void GbChannel3::clockLength()
 
 uint8_t GbChannel3::readWaveRam(uint16_t address) const
 {
-    // While CH3 is active the CPU sees the byte the channel is currently
-    // reading, regardless of the address it asked for (CGB behaviour).
     if (enabled && isDacEnabled()) {
+        // On CGB the CPU sees the byte the channel is currently reading.  On
+        // DMG the access only succeeds when it coincides with a channel read.
+        if (!cgb && waveReadWindow == 0) {
+            return 0xFF;
+        }
         return waveRam[(wavePosition >> 1) & 0x0F];
     }
     return waveRam[(address - WaveRamStart) & 0x0F];
@@ -160,6 +203,9 @@ uint8_t GbChannel3::readWaveRam(uint16_t address) const
 void GbChannel3::writeWaveRam(uint16_t address, uint8_t value)
 {
     if (enabled && isDacEnabled()) {
+        if (!cgb && waveReadWindow == 0) {
+            return;
+        }
         waveRam[(wavePosition >> 1) & 0x0F] = value;
         return;
     }
@@ -175,21 +221,27 @@ void GbChannel3::reset()
     nr34 = 0;
 
     enabled = false;
+    nextStepClocksLength = true;
     frequencyTimer = 0;
     wavePosition = 0;
     sampleBuffer = 0;
+    waveReadWindow = 0;
     data = 0;
 
     lengthTimer.reset();
     waveRam.fill(0);
 }
 
-void GbChannel3::powerOff()
+void GbChannel3::powerOff(bool preserveLength)
 {
     // Wave RAM survives NR52 power-off.
     const auto savedWaveRam = waveRam;
+    const uint16_t savedLength = lengthTimer.getLength();
     reset();
     waveRam = savedWaveRam;
+    if (preserveLength) {
+        lengthTimer.setCounter(savedLength);
+    }
 }
 
 }  // namespace qnemu

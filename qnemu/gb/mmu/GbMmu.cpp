@@ -89,8 +89,19 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         joypad->write(address, value);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
         timer->write(address, value);
+        if (timer->takeDivApuTick()) {
+            apu->divApuTick();
+        }
     } else if (address >= 0xFF10 && address <= 0xFF26) {
-        apu->write(address, value);
+        if (address == 0xFF26) {
+            const bool wasPowered = apu->isPowered();
+            apu->write(address, value);
+            if (!wasPowered && apu->isPowered() && timer->isDivApuBitHigh()) {
+                apu->skipNextDivApuTick();
+            }
+        } else {
+            apu->write(address, value);
+        }
     } else if (address >= 0xFF30 && address <= 0xFF3F) {
         apu->write(address, value);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
@@ -120,6 +131,9 @@ void GbMmu::step()
     workRam->step();
     highRam->step();
     timer->step();
+    if (timer->takeDivApuTick()) {
+        apu->divApuTick();
+    }
     joypad->step();
     interruptHandler->step();
 }

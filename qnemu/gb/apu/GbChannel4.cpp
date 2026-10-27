@@ -48,13 +48,26 @@ void GbChannel4::write(uint16_t address, const uint8_t& value)
     case 0xFF22:
         nr43 = value;
         break;
-    case 0xFF23:
+    case 0xFF23: {
+        const bool wasEnabled = lengthTimer.isEnabled();
         nr44 = static_cast<uint8_t>(value & 0xC0);
-        lengthTimer.setEnabled((nr44 & 0x40) != 0);
+        const bool nowEnabled = (nr44 & 0x40) != 0;
+        lengthTimer.setEnabled(nowEnabled);
+
+        if (!wasEnabled && nowEnabled && !nextStepClocksLength
+            && lengthTimer.getLength() != 0) {
+            lengthTimer.clock();
+            if (lengthTimer.expired() && (nr44 & 0x80) == 0) {
+                enabled = false;
+                data = 0;
+            }
+        }
+
         if ((nr44 & 0x80) != 0) {
             trigger();
         }
         break;
+    }
     default:
         break;
     }
@@ -62,12 +75,13 @@ void GbChannel4::write(uint16_t address, const uint8_t& value)
 
 void GbChannel4::trigger()
 {
-    if (!envelope.isDacEnabled()) {
-        return;
+    const bool lengthWasZero = lengthTimer.expired();
+    lengthTimer.trigger();
+    if (lengthWasZero && lengthTimer.isEnabled() && !nextStepClocksLength) {
+        lengthTimer.clock();
     }
 
-    enabled = true;
-    lengthTimer.trigger();
+    enabled = envelope.isDacEnabled();
     envelope.trigger();
 
     // The hardware clears the LFSR on trigger; the first shifted-out bit is
@@ -136,6 +150,15 @@ void GbChannel4::clockEnvelope()
     envelope.clock();
 }
 
+void GbChannel4::powerOff(bool preserveLength)
+{
+    const uint16_t savedLength = lengthTimer.getLength();
+    reset();
+    if (preserveLength) {
+        lengthTimer.setCounter(savedLength);
+    }
+}
+
 void GbChannel4::reset()
 {
     nr41 = 0;
@@ -144,6 +167,7 @@ void GbChannel4::reset()
     nr44 = 0;
 
     enabled = false;
+    nextStepClocksLength = true;
     timer = 0;
     lfsr = 0;
     data = 0;

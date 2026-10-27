@@ -15,6 +15,7 @@ target_link_libraries(
     sound
     gb
     gb_cpu
+    gb_apu
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets)

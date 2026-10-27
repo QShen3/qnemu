@@ -39,8 +39,14 @@ uint8_t GbTimer::read(uint16_t address) const
 void GbTimer::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF04) {
+        // Writing DIV resets it; if the DIV-APU bit was high, this creates a
+        // falling edge and clocks the APU frame sequencer.
+        if (((registers.divider >> 12) & 0x01) != 0) {
+            divApuTickPending = true;
+        }
         registers.divider = 0;
         previousBit = 0;
+        previousDivApuBit = 0;
         return;
     } 
     if (address == 0xFF05) {
@@ -71,6 +77,7 @@ void GbTimer::write(uint16_t address, const uint8_t& value)
 void GbTimer::step()
 {
     registers.divider++;
+    updateDivApuBit();
 
     if (overflow) {
         ticksSinceOverflow++;
@@ -108,6 +115,24 @@ void GbTimer::step()
     }
 }
 
+void GbTimer::updateDivApuBit()
+{
+    const uint8_t bit = static_cast<uint8_t>((registers.divider >> 12) & 0x01);
+    if (previousDivApuBit != 0 && bit == 0) {
+        divApuTickPending = true;
+    }
+    previousDivApuBit = bit;
+}
+
+bool GbTimer::takeDivApuTick()
+{
+    if (!divApuTickPending) {
+        return false;
+    }
+    divApuTickPending = false;
+    return true;
+}
+
 void GbTimer::reset()
 {
     registers.divider = 0xAB00;
@@ -118,6 +143,8 @@ void GbTimer::reset()
     overflow = false;
     previousBit = 0;
     ticksSinceOverflow = 0;
+    previousDivApuBit = static_cast<uint8_t>((registers.divider >> 12) & 0x01);
+    divApuTickPending = false;
 }
 
 }  // namespace qnemu

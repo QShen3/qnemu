@@ -67,6 +67,7 @@ void printUsage(const char* program)
               << "  --max-cycles N      emulated cycle budget (default: 300000000)\n"
               << "  --max-seconds N     wall-clock budget (default: 60)\n"
               << "  --ppu               attach the full PPU (OAM DMA, LY/STAT, VRAM)\n"
+              << "  --apu               attach the APU (sound register tests)\n"
               << "  --frames N          run N PPU frames instead of result protocols\n"
               << "  --compare-image P   compare the final frame with a PNG\n"
               << "  --dump-frame P      write the final frame as a binary PPM\n"
@@ -139,6 +140,7 @@ int main(int argc, char** argv)
     std::string compareImage;
     std::string dumpFrame;
     bool enablePpu = false;
+    bool enableApu = false;
     bool verbose = false;
 
     for (int index = 1; index < argc; ++index) {
@@ -157,6 +159,8 @@ int main(int argc, char** argv)
             dumpFrame = argv[++index];
         } else if (argument == "--ppu") {
             enablePpu = true;
+        } else if (argument == "--apu") {
+            enableApu = true;
         } else if (argument == "--verbose") {
             verbose = true;
         } else if (argument == "--help" || argument == "-h") {
@@ -186,7 +190,7 @@ int main(int argc, char** argv)
     }
 
     qnemuTest::GbTestSystem system;
-    if (!system.loadRom(romPath, model == "cgb", attachPpu)) {
+    if (!system.loadRom(romPath, model == "cgb", attachPpu, enableApu)) {
         std::cerr << "Failed to load ROM: " << romPath << '\n';
         return 2;
     }

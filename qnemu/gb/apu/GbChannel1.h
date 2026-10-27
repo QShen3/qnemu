@@ -29,6 +29,7 @@ public:
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
+    void powerOff(bool preserveLength = false) override;
 
     uint8_t getData() const override { return data; }
     bool isEnabled() const override { return enabled; }
@@ -37,6 +38,14 @@ public:
     void clockLength() override;
     void clockEnvelope() override;
     void clockSweep() override;
+    void setLengthClockPhase(bool nextStepClocksLength) override
+    {
+        this->nextStepClocksLength = nextStepClocksLength;
+    }
+    void writeLengthWhileOff(uint8_t value) override
+    {
+        lengthTimer.setLength(static_cast<uint8_t>(value & 0x3F));
+    }
 
     /// Current 11-bit period value (exposed for tests and diagnostics).
     uint16_t getPeriod() const { return period(); }
@@ -57,6 +66,8 @@ private:
     uint8_t nr14 = 0;  // FF14
 
     bool enabled = false;
+    bool nextStepClocksLength = true;
+    bool sweepNegateUsed = false;
     uint16_t frequencyTimer = 0;
     uint8_t dutyPosition = 0;
     uint8_t data = 0;

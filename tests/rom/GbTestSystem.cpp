@@ -2,13 +2,21 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <array>
 #include <cstdint>
 #include <fstream>
 #include <ios>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "qnemu/gb/apu/GbChannel1.h"
+#include "qnemu/gb/apu/GbChannel2.h"
+#include "qnemu/gb/apu/GbChannel3.h"
+#include "qnemu/gb/apu/GbChannel4.h"
 #include "tests/rom/GbTestSystem.h"
+#include "tests/support/NullSound.h"
 
 namespace qnemuTest
 {
@@ -30,7 +38,8 @@ constexpr uint16_t key0Address = 0xFF4C;
 constexpr uint16_t interruptEnableAddress = 0xFFFF;
 }  // namespace
 
-bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu)
+bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
+    bool enableApu)
 {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file) {
@@ -54,6 +63,7 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu)
 
     ppu.reset();
     display.reset();
+    apu.reset();
     reset();
 
     if (enablePpu) {
@@ -62,6 +72,17 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu)
         ppu->setExternalRead([this](uint16_t address) {
             return read(address);
         });
+    }
+
+    if (enableApu) {
+        std::array<std::unique_ptr<qnemu::GbChannelInterface>, 4> channels {
+            std::make_unique<qnemu::GbChannel1>(),
+            std::make_unique<qnemu::GbChannel2>(),
+            std::make_unique<qnemu::GbChannel3>(),
+            std::make_unique<qnemu::GbChannel4>(),
+        };
+        apu = std::make_unique<qnemu::GbApu>(
+            std::make_unique<NullSound>(), std::move(channels), cgb);
     }
     return true;
 }
@@ -81,8 +102,13 @@ void GbTestSystem::reset()
     previousTimerBit_ = 0;
     timaOverflow_ = false;
     overflowCycles_ = 0;
+    previousDivApuBit_ = static_cast<uint8_t>((divider_ >> 12) & 0x01);
 
     interruptHandler->reset();
+
+    if (apu) {
+        apu->reset();
+    }
 
     lcdc_ = 0x91;
     stat_ = 0x80;
@@ -125,6 +151,10 @@ uint8_t GbTestSystem::read(uint16_t address)
             || (address >= 0xFF51 && address <= 0xFF55)
             || (address >= 0xFF68 && address <= 0xFF6C))) {
         return ppu->read(address);
+    }
+
+    if (apu && address >= 0xFF10 && address <= 0xFF3F) {
+        return apu->read(address);
     }
 
     if (address == 0xFF00) {
@@ -223,6 +253,20 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
 
+    if (apu && address == 0xFF26) {
+        const bool wasPowered = apu->isPowered();
+        apu->write(address, value);
+        if (!wasPowered && apu->isPowered() && ((divider_ >> 12) & 0x01) != 0) {
+            apu->skipNextDivApuTick();
+        }
+        return;
+    }
+
+    if (apu && address >= 0xFF10 && address <= 0xFF3F) {
+        apu->write(address, value);
+        return;
+    }
+
     if (address == serialDataAddress) {
         serialData_ = value;
         return;
@@ -237,9 +281,13 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
     if (address == dividerAddress) {
+        if (apu && ((divider_ >> 12) & 0x01) != 0) {
+            apu->divApuTick();
+        }
         const bool fallingEdge = (tac_ & 0x04) != 0 && timerClockBit() != 0;
         divider_ = 0;
         previousTimerBit_ = 0;
+        previousDivApuBit_ = 0;
         if (fallingEdge) {
             incrementTimerCounter();
         }
@@ -326,6 +374,15 @@ void GbTestSystem::tick(uint8_t cycles)
 
     for (uint8_t cycle = 0; cycle < peripheralCycles; ++cycle) {
         ++divider_;
+        if (apu) {
+            apu->step();
+        }
+        const uint8_t divApuBit = static_cast<uint8_t>((divider_ >> 12) & 0x01);
+        if (apu && previousDivApuBit_ != 0 && divApuBit == 0) {
+            apu->divApuTick();
+        }
+        previousDivApuBit_ = divApuBit;
+
         timerTick();
         if (ppu) {
             ppu->step();

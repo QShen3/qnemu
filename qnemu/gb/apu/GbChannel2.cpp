@@ -61,13 +61,26 @@ void GbChannel2::write(uint16_t address, const uint8_t& value)
     case 0xFF18:
         nr23 = value;
         break;
-    case 0xFF19:
+    case 0xFF19: {
+        const bool wasEnabled = lengthTimer.isEnabled();
         nr24 = static_cast<uint8_t>(value & 0xC7);
-        lengthTimer.setEnabled((nr24 & 0x40) != 0);
+        const bool nowEnabled = (nr24 & 0x40) != 0;
+        lengthTimer.setEnabled(nowEnabled);
+
+        if (!wasEnabled && nowEnabled && !nextStepClocksLength
+            && lengthTimer.getLength() != 0) {
+            lengthTimer.clock();
+            if (lengthTimer.expired() && (nr24 & 0x80) == 0) {
+                enabled = false;
+                data = 0;
+            }
+        }
+
         if ((nr24 & 0x80) != 0) {
             trigger();
         }
         break;
+    }
     default:
         break;
     }
@@ -75,14 +88,19 @@ void GbChannel2::write(uint16_t address, const uint8_t& value)
 
 void GbChannel2::trigger()
 {
-    if (!envelope.isDacEnabled()) {
-        return;
+    const bool lengthWasZero = lengthTimer.expired();
+    lengthTimer.trigger();
+    if (lengthWasZero && lengthTimer.isEnabled() && !nextStepClocksLength) {
+        lengthTimer.clock();
     }
 
-    enabled = true;
-    lengthTimer.trigger();
+    enabled = envelope.isDacEnabled();
     frequencyTimer = static_cast<uint16_t>((2048 - period()) * 4);
     envelope.trigger();
+
+    if (!enabled) {
+        data = 0;
+    }
 }
 
 void GbChannel2::step()
@@ -119,6 +137,15 @@ void GbChannel2::clockEnvelope()
     envelope.clock();
 }
 
+void GbChannel2::powerOff(bool preserveLength)
+{
+    const uint16_t savedLength = lengthTimer.getLength();
+    reset();
+    if (preserveLength) {
+        lengthTimer.setCounter(savedLength);
+    }
+}
+
 void GbChannel2::reset()
 {
     nr21 = 0;
@@ -127,6 +154,7 @@ void GbChannel2::reset()
     nr24 = 0;
 
     enabled = false;
+    nextStepClocksLength = true;
     frequencyTimer = 0;
     dutyPosition = 0;
     data = 0;

@@ -22,20 +22,26 @@ namespace qnemu
 class GbChannel3 : public GbChannelInterface
 {
 public:
-    GbChannel3();
+    explicit GbChannel3(bool cgb = true);
     ~GbChannel3() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
-    void powerOff() override;
+    void powerOff(bool preserveLength = false) override;
 
     uint8_t getData() const override { return data; }
     bool isEnabled() const override { return enabled; }
     bool isDacEnabled() const override { return (nr30 & 0x80) != 0; }
 
     void clockLength() override;
+    void setLengthClockPhase(bool nextStepClocksLength) override
+    {
+        this->nextStepClocksLength = nextStepClocksLength;
+    }
+    void setCgb(bool cgb) override { this->cgb = cgb; }
+    void writeLengthWhileOff(uint8_t value) override { lengthTimer.setLength(value); }
 
     /// Current 11-bit period value (exposed for tests and diagnostics).
     uint16_t getPeriod() const { return period(); }
@@ -56,10 +62,13 @@ private:
     uint8_t nr33 = 0;  // FF1D
     uint8_t nr34 = 0;  // FF1E
 
+    bool cgb = true;
     bool enabled = false;
+    bool nextStepClocksLength = true;
     uint16_t frequencyTimer = 0;
     uint8_t wavePosition = 0;  // 0..31, index of the most recent sample
     uint8_t sampleBuffer = 0;
+    uint8_t waveReadWindow = 0;
     uint8_t data = 0;
 
     GbLengthTimer lengthTimer{256};

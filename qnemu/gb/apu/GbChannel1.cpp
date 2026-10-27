@@ -49,9 +49,17 @@ uint8_t GbChannel1::read(uint16_t address) const
 void GbChannel1::write(uint16_t address, const uint8_t& value)
 {
     switch (address) {
-    case 0xFF10:
+    case 0xFF10: {
+        const bool wasNegate = (nr10 & 0x08) != 0;
         nr10 = static_cast<uint8_t>(value & 0x7F);
+        if (wasNegate && (nr10 & 0x08) == 0 && sweepNegateUsed) {
+            // Clearing the negate bit after it has actually been used
+            // disables CH1 immediately.
+            enabled = false;
+            data = 0;
+        }
         break;
+    }
     case 0xFF11:
         nr11 = static_cast<uint8_t>(value & 0xC0);
         lengthTimer.setLength(static_cast<uint8_t>(value & 0x3F));
@@ -67,13 +75,28 @@ void GbChannel1::write(uint16_t address, const uint8_t& value)
     case 0xFF13:
         nr13 = value;
         break;
-    case 0xFF14:
+    case 0xFF14: {
+        const bool wasEnabled = lengthTimer.isEnabled();
         nr14 = static_cast<uint8_t>(value & 0xC7);
-        lengthTimer.setEnabled((nr14 & 0x40) != 0);
+        const bool nowEnabled = (nr14 & 0x40) != 0;
+        lengthTimer.setEnabled(nowEnabled);
+
+        // Extra length clocking: enabling the length timer while the next
+        // frame-sequencer step does not clock it decrements the counter once.
+        if (!wasEnabled && nowEnabled && !nextStepClocksLength
+            && lengthTimer.getLength() != 0) {
+            lengthTimer.clock();
+            if (lengthTimer.expired() && (nr14 & 0x80) == 0) {
+                enabled = false;
+                data = 0;
+            }
+        }
+
         if ((nr14 & 0x80) != 0) {
             trigger();
         }
         break;
+    }
     default:
         break;
     }
@@ -81,27 +104,39 @@ void GbChannel1::write(uint16_t address, const uint8_t& value)
 
 void GbChannel1::trigger()
 {
-    if (!envelope.isDacEnabled()) {
-        return;
+    const bool lengthWasZero = lengthTimer.expired();
+    lengthTimer.trigger();
+    if (lengthWasZero && lengthTimer.isEnabled() && !nextStepClocksLength) {
+        lengthTimer.clock();
     }
 
-    enabled = true;
-    lengthTimer.trigger();
+    enabled = envelope.isDacEnabled();
     frequencyTimer = static_cast<uint16_t>((2048 - period()) * 4);
     envelope.trigger();
     triggerSweep();
+
+    if (!enabled) {
+        data = 0;
+    }
 }
 
 void GbChannel1::triggerSweep()
 {
     shadowPeriod = period();
-    sweepTimer = static_cast<uint8_t>((nr10 >> 4) & 0x07);
-    sweepEnabled = sweepTimer != 0 || (nr10 & 0x07) != 0;
+    const uint8_t pace = static_cast<uint8_t>((nr10 >> 4) & 0x07);
+    sweepTimer = pace != 0 ? pace : 8;
+    sweepEnabled = pace != 0 || (nr10 & 0x07) != 0;
+    sweepNegateUsed = false;
 
     // The overflow check also runs when the sweep pace is 0, as long as the
     // individual step is non-zero.
-    if ((nr10 & 0x07) != 0 && calculateSweepPeriod() > 0x7FF) {
-        enabled = false;
+    if ((nr10 & 0x07) != 0) {
+        if ((nr10 & 0x08) != 0) {
+            sweepNegateUsed = true;
+        }
+        if (calculateSweepPeriod() > 0x7FF) {
+            enabled = false;
+        }
     }
 }
 
@@ -128,12 +163,15 @@ void GbChannel1::clockSweep()
     }
 
     const uint8_t pace = static_cast<uint8_t>((nr10 >> 4) & 0x07);
+    sweepTimer = pace != 0 ? pace : 8;
     if (pace == 0) {
         return;
     }
-    sweepTimer = pace;
 
     const uint16_t newPeriod = calculateSweepPeriod();
+    if ((nr10 & 0x08) != 0) {
+        sweepNegateUsed = true;
+    }
     if (newPeriod > 0x7FF) {
         enabled = false;
         return;
@@ -185,6 +223,15 @@ void GbChannel1::clockEnvelope()
     envelope.clock();
 }
 
+void GbChannel1::powerOff(bool preserveLength)
+{
+    const uint16_t savedLength = lengthTimer.getLength();
+    reset();
+    if (preserveLength) {
+        lengthTimer.setCounter(savedLength);
+    }
+}
+
 void GbChannel1::reset()
 {
     nr10 = 0;
@@ -194,6 +241,8 @@ void GbChannel1::reset()
     nr14 = 0;
 
     enabled = false;
+    nextStepClocksLength = true;
+    sweepNegateUsed = false;
     frequencyTimer = 0;
     dutyPosition = 0;
     data = 0;

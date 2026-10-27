@@ -28,16 +28,25 @@ class GbApu : public GbDeviceInterface
 {
 public:
     static constexpr uint32_t SampleRate = 44100;
-    static constexpr uint16_t FrameSequencerPeriod = 8192;
 
     GbApu(std::unique_ptr<SoundInterface> sound,
-        std::array<std::unique_ptr<GbChannelInterface>, 4> channels);
+        std::array<std::unique_ptr<GbChannelInterface>, 4> channels,
+        bool cgb = true);
     ~GbApu() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
     void step() override;
     void reset() override;
+
+    /// One DIV-APU tick (512 Hz, on the falling edge of DIV bit 4).  The frame
+    /// sequencer runs from this rather than from an internal cycle counter so
+    /// that programs can synchronise to it by writing DIV.
+    void divApuTick();
+
+    /// Hardware quirk: powering the APU on while the DIV-APU bit is high
+    /// swallows the next DIV-APU event.
+    void skipNextDivApuTick() { skipDivApuEvent = true; }
 
     /// Current un-filtered mixer output, in units of 1/8 of a channel step.
     /// Exposed for tests and diagnostics.
@@ -55,13 +64,14 @@ private:
 
     std::unique_ptr<SoundInterface> sound;
     std::array<std::unique_ptr<GbChannelInterface>, 4> channels;
+    bool cgb = true;
 
     uint8_t nr50 = 0x77;  // FF24 master volume
     uint8_t nr51 = 0xF3;  // FF25 panning
     bool powered = true;
 
-    uint16_t frameCounter = 0;
     uint8_t frameStep = 0;
+    bool skipDivApuEvent = false;
 
     uint32_t sampleAccumulator = 0;
     uint32_t sampleCycles = 0;

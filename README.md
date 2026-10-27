@@ -132,6 +132,9 @@ Usage:
     # attach the real PPU (OAM DMA / LY / STAT / VRAM)
     ./build/tests/rom/gb_test_runner path/to/test.gb --ppu
 
+    # attach the APU (sound register/length/sweep tests)
+    ./build/tests/rom/gb_test_runner path/to/test.gb --apu --model dmg
+
     # render frames and compare against a reference PNG
     ./build/tests/rom/gb_test_runner path/to/acid2.gb --frames 10 \
         --compare-image path/to/reference.png
@@ -162,6 +165,7 @@ submodules are present, so plain `ctest` covers them as well:
     ctest --preset debug -L blargg
     ctest --preset debug -L mooneye
     ctest --preset debug -L ppu
+    ctest --preset debug -L sound
     ctest --preset debug -L acid2
 
 The acid2 tests render 10 frames and require an exact 160x144 image match.
@@ -182,7 +186,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 222/222, including 78 ROM tests
+The curated CTest set is currently 244/244, including 98 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -194,6 +198,16 @@ Blargg (`-L blargg`):
 - `mem_timing/mem_timing`
 - `mem_timing-2/rom_singles/01-read_timing`, `02-write_timing`, `03-modify_timing`
 - `mem_timing-2/mem_timing`
+
+Blargg sound (`-L sound`, requires `--apu`):
+
+- DMG (`--model dmg`): `dmg_sound/rom_singles/01-registers`, `02-len ctr`,
+  `03-trigger`, `04-sweep`, `05-sweep details`, `06-overflow on trigger`,
+  `07-len sweep period sync`, `08-len ctr during power`, `11-regs after power`
+- CGB (`--model cgb`): `cgb_sound/rom_singles/01-registers`, `02-len ctr`,
+  `03-trigger`, `04-sweep`, `05-sweep details`, `06-overflow on trigger`,
+  `07-len sweep period sync`, `08-len ctr during power`,
+  `10-wave trigger while on`, `11-regs after power`, `12-wave`
 
 Mooneye CPU/interrupt/timer (`-L mooneye`, CPU-only bus):
 
@@ -251,8 +265,10 @@ Known failures at the moment are concentrated in:
 - `timer/tima_write_reloading`, `timer/tma_write_reloading` (reload-boundary
   write timing)
 - `interrupt_time`
-- sound suites (the APU is implemented and unit-tested, but the headless ROM
-  runner does not yet expose DIV-APU synchronisation or the CGB PCM registers)
+- `dmg_sound/rom_singles/09-wave read while on`, `10-wave trigger while on`,
+  `12-wave write while on` and `cgb_sound/rom_singles/09-wave read while on`
+  (wave-RAM accesses while CH3 is active need cycle-exact CPU/APU bus
+  alignment; the other sound tests pass)
 - `boot_*` (no boot ROM) and `emulator-only` MBC2/MBC3/MBC5 suites
   (those mappers are not implemented)
 
@@ -286,16 +302,24 @@ The APU implements all four hardware channels:
 - **CH4**: LFSR noise with 15-bit/7-bit modes, envelope and length timer
 
 A 512 Hz frame sequencer clocks the length timers at 256 Hz, the CH1 sweep at
-128 Hz and the volume envelopes at 64 Hz.  The mixer applies NR51 panning and
-NR50 master volume, models the DACs' negative slope, high-pass filters the DC
-offset like the hardware's output capacitor, and downsamples to 44100 Hz
-stereo signed 16-bit samples.  Qt Multimedia plays the samples through a small
-ring buffer; when the buffer is full the emulation thread blocks, which also
-acts as the emulator's speed limiter.
+128 Hz and the volume envelopes at 64 Hz.  It is driven by the DIV-APU falling
+edge, so writing DIV synchronises the APU exactly like the hardware (including
+the power-on DIV glitch).  The mixer applies NR51 panning and NR50 master
+volume, models the DACs' negative slope, high-pass filters the DC offset like
+the hardware's output capacitor, and downsamples to 44100 Hz stereo signed
+16-bit samples.  Qt Multimedia plays the samples through a small ring buffer;
+when the buffer is full the emulation thread blocks, which also acts as the
+emulator's speed limiter.
 
 Unit tests for the channels, frame sequencer, mixer, panning, volume and
 sample output live in `tests/gb/apu/` (`-L` filtering is not needed; run
 `./build/tests/qnemu_test --gtest_filter='GbChannel*:GbApu*'`).
+
+The headless runner can attach the APU with `--apu`; the curated
+`dmg_sound`/`cgb_sound` register, length, trigger, sweep and power tests run
+with `ctest --preset debug -L sound`.  Wave-RAM accesses while CH3 is actively
+playing (tests 09/10/12) still depend on cycle-exact bus alignment and are not
+part of the curated set.
 
 ### Key binding
 
@@ -316,7 +340,7 @@ sample output live in `tests/gb/apu/` (`-L` filtering is not needed; run
 | --------- | --------- | ------ |
 | CPU       | ✅       | unit + ROM tests |
 | PPU       | ✅       | unit + acid2 |
-| Sound     | ✅       | unit |
+| Sound     | ✅       | unit + blargg sound |
 | Interrupt | ✅       | ✅    |
 | Joypad    | ✅       | ✅    |
 | Timer     | ✅       | ✅    |
