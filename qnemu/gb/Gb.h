@@ -19,6 +19,7 @@ namespace qnemu
 class GbCpu;
 class GbCpuBus;
 class GbMmu;
+class GbPpu;
 class RasterDisplay;
 
 class Gb
@@ -42,6 +43,7 @@ private:
     std::unique_ptr<GbMmu> mmu;
     std::unique_ptr<GbCpuBus> bus;
     std::unique_ptr<GbCpu> cpu;
+    GbPpu* ppu = nullptr;
     const GbMbcFactory mbcFactory;
     std::shared_ptr<RasterDisplay> display;
     std::thread work;

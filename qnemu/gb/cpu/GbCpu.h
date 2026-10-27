@@ -30,7 +30,7 @@ public:
     GbCpu(const GbCpu&) = delete;
     GbCpu& operator=(const GbCpu&) = delete;
 
-    void reset();
+    void reset(bool cgb = true);
 
     /**
      * Execute one instruction, service a pending interrupt, or idle one
@@ -45,6 +45,7 @@ public:
     bool isHalted() const { return halted_; }
     bool isStopped() const { return stopped_; }
     bool interruptsEnabled() const { return ime_; }
+    bool isLocked() const { return locked_; }
     uint64_t invalidOpcodeCount() const { return invalidOpcodeCount_; }
 
 private:
@@ -143,6 +144,7 @@ private:
     bool halted_ = false;
     bool stopped_ = false;
     bool haltBug_ = false;
+    bool locked_ = false;
 
     uint64_t cycles_ = 0;
     uint64_t invalidOpcodeCount_ = 0;

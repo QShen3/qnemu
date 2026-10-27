@@ -21,22 +21,38 @@ GbCpu::GbCpu(CpuBus& bus) : bus(bus)
     reset();
 }
 
-void GbCpu::reset()
+void GbCpu::reset(bool cgb)
 {
-    // Post-boot CGB register values.  The emulator has no boot ROM, so the
-    // first fetched instruction is the cartridge entry point at 0x0100.
+    // Post-boot register values.  The emulator has no boot ROM, so the first
+    // fetched instruction is the cartridge entry point at 0x0100.
     registers_ = Registers{};
+    if (!cgb) {
+        registers_.a = 0x01;
+        registers_.f = 0xB0;
+        registers_.b = 0x00;
+        registers_.c = 0x13;
+        registers_.d = 0x00;
+        registers_.e = 0xD8;
+        registers_.h = 0x01;
+        registers_.l = 0x4D;
+    }
     ime_ = false;
     imeDelay_ = 0;
     halted_ = false;
     stopped_ = false;
     haltBug_ = false;
+    locked_ = false;
     cycles_ = 0;
     invalidOpcodeCount_ = 0;
 }
 
 void GbCpu::step()
 {
+    if (locked_) {
+        tick(4);
+        return;
+    }
+
     const uint8_t pending = pendingInterrupts();
 
     if (ime_ && pending != 0) {
@@ -261,8 +277,6 @@ void GbCpu::dispatchInterrupt(uint8_t pending)
         mask = static_cast<uint8_t>(mask << 1);
     }
 
-    bus.write(interruptFlagAddress,
-        static_cast<uint8_t>(bus.read(interruptFlagAddress) & static_cast<uint8_t>(~mask)));
     ime_ = false;
     imeDelay_ = 0;
     halted_ = false;
@@ -272,7 +286,31 @@ void GbCpu::dispatchInterrupt(uint8_t pending)
     // the final internal cycle before the vector is fetched.
     tick(8);
     write8(static_cast<uint16_t>(registers_.sp - 1), static_cast<uint8_t>(registers_.pc >> 8));
+
+    // The high-byte push can target IE when SP=0.  Hardware re-evaluates the
+    // pending interrupts after that write: if the selected source vanished,
+    // dispatch is canceled; if another source is still pending, that source
+    // takes over.
+    const uint8_t afterHighPush = pendingInterrupts();
+    if ((afterHighPush & mask) == 0) {
+        if (afterHighPush == 0) {
+            registers_.pc = 0x0000;
+            return;
+        }
+
+        mask = 0x01;
+        for (uint8_t index = 0; index < 5; ++index) {
+            if ((afterHighPush & mask) != 0) {
+                vector = static_cast<uint16_t>(0x40 + index * 8);
+                break;
+            }
+            mask = static_cast<uint8_t>(mask << 1);
+        }
+    }
+
     write8(static_cast<uint16_t>(registers_.sp - 2), static_cast<uint8_t>(registers_.pc & 0xFF));
+    bus.write(interruptFlagAddress,
+        static_cast<uint8_t>(bus.read(interruptFlagAddress) & static_cast<uint8_t>(~mask)));
     registers_.sp -= 2;
     registers_.pc = vector;
     tick(4);
@@ -837,9 +875,8 @@ void GbCpu::executeLoad(uint8_t destination, uint8_t source)
 
 void GbCpu::invalidOpcode()
 {
-    // Real hardware locks up.  Keeping the emulator alive and counting the
-    // event lets a test ROM report a useful failure instead of hanging.
     ++invalidOpcodeCount_;
+    locked_ = true;
 }
 
 void GbCpu::add(uint8_t value, bool withCarry)

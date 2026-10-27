@@ -61,6 +61,19 @@ TEST_F(GbCpuTest, ResetState)
     EXPECT_EQ(cpu.cycles(), 0U);
 }
 
+TEST_F(GbCpuTest, ResetStateForDmg)
+{
+    cpu.reset(false);
+
+    EXPECT_EQ(cpu.registers().a, 0x01);
+    EXPECT_EQ(cpu.registers().f, 0xB0);
+    EXPECT_EQ(cpu.registers().bc(), 0x0013);
+    EXPECT_EQ(cpu.registers().de(), 0x00D8);
+    EXPECT_EQ(cpu.registers().hl(), 0x014D);
+    EXPECT_EQ(cpu.registers().sp, 0xFFFE);
+    EXPECT_EQ(cpu.registers().pc, 0x0100);
+}
+
 TEST_F(GbCpuTest, NopAdvancesPcAndConsumesFourCycles)
 {
     load({0x00, 0x00});
@@ -691,14 +704,20 @@ TEST(GbCpuStopTest, SystemCanCompleteStopImmediately)
     EXPECT_EQ(cpu.registers().pc, 0x0103);
 }
 
-TEST_F(GbCpuTest, InvalidOpcodeIsCountedAndTreatedAsNop)
+TEST_F(GbCpuTest, InvalidOpcodeLocksTheCpu)
 {
     load({0xD3});
 
     cpu.step();
     EXPECT_EQ(cpu.invalidOpcodeCount(), 1U);
+    EXPECT_TRUE(cpu.isLocked());
     EXPECT_EQ(cpu.registers().pc, 0x0101);
     EXPECT_EQ(cpu.cycles(), 4U);
+
+    cpu.step();
+    EXPECT_TRUE(cpu.isLocked());
+    EXPECT_EQ(cpu.registers().pc, 0x0101);
+    EXPECT_EQ(cpu.cycles(), 8U);
 }
 
 TEST_F(GbCpuTest, InvalidOpcodeSetMatchesSm83)

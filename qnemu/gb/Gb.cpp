@@ -49,15 +49,16 @@ Gb::Gb()
     auto timer = std::make_unique<GbTimer>(interruptHandler);
     auto joypad = std::make_unique<GbJoypad>(rasterDisplay, interruptHandler);
 
-    auto ppu = std::make_unique<GbPpu>(cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
-    GbPpu* ppuPointer = ppu.get();
+    auto ppuInstance = std::make_unique<GbPpu>(
+        cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
+    ppu = ppuInstance.get();
 
-    mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppu), std::move(highRam),
+    mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppuInstance), std::move(highRam),
         interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
-    ppuPointer->setExternalRead([mmuPointer = mmu.get()](uint16_t address) {
+    ppu->setExternalRead([mmuPointer = mmu.get()](uint16_t address) {
         return mmuPointer->read(address);
     });
-    bus = std::make_unique<GbCpuBus>(*mmu);
+    bus = std::make_unique<GbCpuBus>(*mmu, cartridge->isGbcCartridge());
     cpu = std::make_unique<GbCpu>(*bus);
 
     display = rasterDisplay;
@@ -71,9 +72,12 @@ Gb::~Gb()
 void Gb::loadCartridge(const char* filePath)
 {
     stop();
-    mmu->reset();
-    cpu->reset();
     cartridge->load(filePath);
+    const bool cgb = cartridge->isGbcCartridge();
+    bus->setCgb(cgb);
+    ppu->setCgb(cgb);
+    mmu->reset();
+    cpu->reset(cgb);
     start();
 }
 
