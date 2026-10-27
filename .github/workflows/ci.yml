@@ -17,18 +17,25 @@ jobs:
   linux:
     name: Linux (GCC)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 25
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get update \
+            -o Acquire::Retries=5 \
+            -o Acquire::http::Timeout=60 \
+            -o Acquire::https::Timeout=60
           sudo apt-get install -y --no-install-recommends \
-            -o Acquire::Retries=3 \
+            -o Acquire::Retries=5 \
+            -o Acquire::http::Timeout=60 \
+            -o Acquire::https::Timeout=60 \
             cmake \
             ninja-build \
             g++ \
@@ -52,7 +59,7 @@ jobs:
   macos:
     name: macOS (AppleClang)
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -150,16 +157,23 @@ jobs:
   coverage:
     name: Coverage (Linux)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 25
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get update \
+            -o Acquire::Retries=5 \
+            -o Acquire::http::Timeout=60 \
+            -o Acquire::https::Timeout=60
           sudo apt-get install -y --no-install-recommends \
-            -o Acquire::Retries=3 \
+            -o Acquire::Retries=5 \
+            -o Acquire::http::Timeout=60 \
+            -o Acquire::https::Timeout=60 \
             cmake \
             ninja-build \
             g++ \
