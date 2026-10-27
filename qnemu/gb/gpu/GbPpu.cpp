@@ -2,6 +2,8 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <utility>
@@ -153,7 +155,9 @@ void GbPpu::write(uint16_t address, const uint8_t& value)
             return;
         case lycAddress:
             registers_.lyc = value;
-            updateLyc();
+            if (registers_.lcdEnabled()) {
+                updateLyc();
+            }
             return;
         case oamDmaAddress:
             startOamDma(value);
@@ -252,8 +256,11 @@ void GbPpu::reset()
     memory_.reset();
     frame_.fill(rgb(255, 255, 255));
     dot_ = 0;
+    mode0StartDot_ = 252;
     windowLine_ = 0;
     frameCount_ = 0;
+    statIrqLine_ = false;
+    lcdJustEnabled_ = false;
     registers_.ly = 0;
     registers_.setMode(2);
     updateLyc();
@@ -261,8 +268,10 @@ void GbPpu::reset()
     oamDmaActive_ = false;
     oamDmaRegister_ = 0x00;
     oamDmaSource_ = 0x0000;
+    oamDmaPendingSource_ = 0x0000;
     oamDmaIndex_ = 0;
     oamDmaTicks_ = 0;
+    oamDmaStartupTicks_ = 0;
 
     hdmaActive_ = false;
     hdmaHblank_ = false;
@@ -288,8 +297,24 @@ void GbPpu::setExternalRead(std::function<uint8_t(uint16_t)> reader)
     externalRead_ = std::move(reader);
 }
 
+void GbPpu::setCgb(bool cgb)
+{
+    cgb_ = cgb;
+    renderer_ = PpuRenderer(cgb);
+}
+
 void GbPpu::stepOamDma()
 {
+    if (oamDmaStartupTicks_ > 0) {
+        --oamDmaStartupTicks_;
+        if (oamDmaStartupTicks_ == 0) {
+            oamDmaSource_ = oamDmaPendingSource_;
+            oamDmaIndex_ = 0;
+            oamDmaTicks_ = 0;
+            oamDmaActive_ = true;
+        }
+    }
+
     if (!oamDmaActive_) {
         return;
     }
@@ -326,18 +351,34 @@ void GbPpu::stepTiming()
     if (!registers_.lcdEnabled()) {
         registers_.ly = 0;
         dot_ = 0;
+        mode0StartDot_ = 252;
         windowLine_ = 0;
+        lcdJustEnabled_ = false;
         registers_.setMode(0);
+        updateStatIrq();
         return;
     }
 
     if (registers_.ly < 144) {
-        if (dot_ == 0) {
+        if (lcdJustEnabled_ && registers_.ly == 0) {
+            // The first line after LCD enable starts in mode 0 and skips the
+            // normal OAM-scan phase.
+            if (dot_ == 0) {
+                setMode(0);
+            } else if (dot_ == 20) {
+                setMode(3);
+                renderScanline();
+                mode0StartDot_ = static_cast<uint16_t>(20 + mode3Length());
+            } else if (dot_ == mode0StartDot_) {
+                setMode(0);
+            }
+        } else if (dot_ == 0) {
             setMode(2);
         } else if (dot_ == 80) {
             setMode(3);
             renderScanline();
-        } else if (dot_ == 252) {
+            mode0StartDot_ = static_cast<uint16_t>(80 + mode3Length());
+        } else if (dot_ == mode0StartDot_) {
             setMode(0);
         }
     } else if (dot_ == 0 && registers_.ly == 144) {
@@ -355,9 +396,13 @@ void GbPpu::stepTiming()
     if (dot_ >= 456) {
         dot_ = 0;
         ++registers_.ly;
+        if (registers_.ly != 0) {
+            lcdJustEnabled_ = false;
+        }
         if (registers_.ly >= 154) {
             registers_.ly = 0;
             windowLine_ = 0;
+            mode0StartDot_ = 252;
         }
         updateLyc();
     }
@@ -365,38 +410,94 @@ void GbPpu::stepTiming()
 
 void GbPpu::setMode(uint8_t mode)
 {
-    const uint8_t previous = registers_.mode();
     registers_.setMode(mode);
-    if (mode == previous) {
-        return;
+    if (mode == 0 && hdmaActive_ && hdmaHblank_) {
+        transferHdmaBlock();
     }
-
-    if (mode == 0) {
-        if (registers_.stat & StatBits::mode0Interrupt) {
-            requestLcdInterrupt();
-        }
-        if (hdmaActive_ && hdmaHblank_) {
-            transferHdmaBlock();
-        }
-    } else if (mode == 1) {
-        if (registers_.stat & StatBits::mode1Interrupt) {
-            requestLcdInterrupt();
-        }
-    } else if (mode == 2) {
-        if (registers_.stat & StatBits::mode2Interrupt) {
-            requestLcdInterrupt();
-        }
-    }
+    updateStatIrq();
 }
 
 void GbPpu::updateLyc()
 {
     const bool equal = registers_.ly == registers_.lyc;
-    const bool wasEqual = registers_.lycCoincidence();
     registers_.setLycCoincidence(equal);
-    if (equal && !wasEqual && (registers_.stat & StatBits::lycInterrupt)) {
+    updateStatIrq();
+}
+
+void GbPpu::updateStatIrq()
+{
+    const uint8_t mode = registers_.mode();
+    const bool signal = ((registers_.stat & StatBits::mode0Interrupt) && mode == 0)
+        || ((registers_.stat & StatBits::mode1Interrupt) && mode == 1)
+        || ((registers_.stat & StatBits::mode2Interrupt) && mode == 2)
+        // DMG also raises the mode-2 STAT line at the start of VBlank.
+        || ((registers_.stat & StatBits::mode2Interrupt)
+            && mode == 1 && registers_.ly == 144)
+        || ((registers_.stat & StatBits::lycInterrupt) && registers_.lycCoincidence());
+
+    if (signal && !statIrqLine_) {
         requestLcdInterrupt();
     }
+    statIrqLine_ = signal;
+}
+
+uint16_t GbPpu::mode3Length() const
+{
+    uint16_t length = 172;
+    const uint8_t fineScroll = static_cast<uint8_t>(registers_.scx & 0x07);
+    if (fineScroll != 0) {
+        // The fetcher/STAT alignment used by the hardware timing tests makes
+        // non-zero fine scroll consume an extra 4 dots, and 8 for the last
+        // three fine-scroll positions.
+        length = static_cast<uint16_t>(length + (fineScroll <= 4 ? 4 : 8));
+    }
+
+    const bool windowVisible = registers_.windowEnabled()
+        && registers_.wx >= 7 && registers_.wx <= 166
+        && registers_.ly >= registers_.wy;
+    if (windowVisible) {
+        length = static_cast<uint16_t>(length + 6);
+    }
+
+    const int spriteHeight = registers_.objSize16() ? 16 : 8;
+    std::array<bool, 21> tilesSeen{};
+    bool x0ExtraApplied = false;
+    int spriteCount = 0;
+    for (uint8_t index = 0; index < OamSize && spriteCount < 10; index += 4) {
+        const int spriteY = static_cast<int>(memory_.readOamByte(index)) - 16;
+        if (static_cast<int>(registers_.ly) < spriteY
+            || static_cast<int>(registers_.ly) >= spriteY + spriteHeight) {
+            continue;
+        }
+
+        const uint8_t oamX = memory_.readOamByte(static_cast<uint8_t>(index + 1));
+        const int screenX = static_cast<int>(oamX) - 8;
+        if (screenX >= 160) {
+            continue;
+        }
+
+        ++spriteCount;
+        int penalty = 6;
+        if (oamX == 0) {
+            // The left-edge object has one extra alignment penalty, but only
+            // once even when several objects share X=0.
+            if (!x0ExtraApplied) {
+                penalty += 5;
+                x0ExtraApplied = true;
+            }
+        } else if (screenX >= 0) {
+            const int scrolledX = screenX + registers_.scx;
+            const int tile = std::min(20, scrolledX >> 3);
+            if (!tilesSeen.at(static_cast<std::size_t>(tile))) {
+                const int pixel = scrolledX & 0x07;
+                penalty += std::max(0, (7 - pixel) - 2);
+                tilesSeen.at(static_cast<std::size_t>(tile)) = true;
+            }
+        }
+        length = static_cast<uint16_t>(length + penalty);
+    }
+
+    return std::min<uint16_t>(length, 289);
 }
 
 void GbPpu::requestLcdInterrupt()
@@ -416,10 +517,10 @@ void GbPpu::renderScanline()
 void GbPpu::startOamDma(uint8_t source)
 {
     oamDmaRegister_ = source;
-    oamDmaSource_ = static_cast<uint16_t>(source) << 8;
-    oamDmaIndex_ = 0;
-    oamDmaTicks_ = 0;
-    oamDmaActive_ = true;
+    oamDmaPendingSource_ = static_cast<uint16_t>(source) << 8;
+    // The new transfer starts two M-cycles after the FF46 write.  If another
+    // transfer is already running it keeps the OAM bus for those cycles.
+    oamDmaStartupTicks_ = 8;
 }
 
 uint8_t GbPpu::readDmaSource(uint16_t address) const
@@ -493,25 +594,34 @@ void GbPpu::writeLcdc(uint8_t value)
 
     registers_.ly = 0;
     dot_ = 0;
+    mode0StartDot_ = 252;
     windowLine_ = 0;
-    updateLyc();
     if (isEnabled) {
-        setMode(2);
-    } else {
+        lcdJustEnabled_ = true;
+        updateLyc();
         registers_.setMode(0);
+        updateStatIrq();
+    } else {
+        lcdJustEnabled_ = false;
+        registers_.setMode(0);
+        // LY=LYC is retained while the comparison clock is stopped.
+        updateStatIrq();
     }
 }
 
 void GbPpu::writeStat(uint8_t value)
 {
     registers_.stat = static_cast<uint8_t>((value & 0x78) | (registers_.stat & 0x07));
+    updateStatIrq();
 }
 
 void GbPpu::writeLy(uint8_t)
 {
     registers_.ly = 0;
     dot_ = 0;
-    updateLyc();
+    if (registers_.lcdEnabled()) {
+        updateLyc();
+    }
 }
 
 }  // namespace qnemu

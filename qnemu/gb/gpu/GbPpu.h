@@ -46,6 +46,7 @@ public:
 
     /// External memory used by OAM DMA/HDMA (ROM, cartridge RAM, WRAM).
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);
+    void setCgb(bool cgb);
 
     const FrameBuffer& frameBuffer() const { return frame_; }
     uint64_t frameCount() const { return frameCount_; }
@@ -56,8 +57,10 @@ private:
     void stepTiming();
     void setMode(uint8_t mode);
     void updateLyc();
+    void updateStatIrq();
     void requestLcdInterrupt();
     void renderScanline();
+    uint16_t mode3Length() const;
 
     void startOamDma(uint8_t source);
     uint8_t readDmaSource(uint16_t address) const;
@@ -79,14 +82,19 @@ private:
 
     FrameBuffer frame_;
     uint16_t dot_ = 0;
+    uint16_t mode0StartDot_ = 252;
     uint16_t windowLine_ = 0;
     uint64_t frameCount_ = 0;
+    bool statIrqLine_ = false;
+    bool lcdJustEnabled_ = false;
 
     bool oamDmaActive_ = false;
     uint8_t oamDmaRegister_ = 0x00;
     uint16_t oamDmaSource_ = 0x0000;
+    uint16_t oamDmaPendingSource_ = 0x0000;
     uint16_t oamDmaIndex_ = 0;
     uint8_t oamDmaTicks_ = 0;
+    uint8_t oamDmaStartupTicks_ = 0;
 
     bool hdmaActive_ = false;
     bool hdmaHblank_ = false;

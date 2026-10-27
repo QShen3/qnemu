@@ -77,7 +77,7 @@ TEST_F(GbPpuTest, OamDmaCopiesOneBytePerFourCycles)
     });
     ppu->write(0xFF46, 0x02);
 
-    for (int i = 0; i < 640; ++i) {
+    for (int i = 0; i < 648; ++i) {
         ppu->step();
     }
 
