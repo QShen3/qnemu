@@ -2,7 +2,9 @@
  *  Copyright [2024] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -155,9 +157,10 @@ TEST_F(GbApuTest, MixerOutputIsInterleavedStereo)
         apu->step();
     }
 
-    ASSERT_FALSE(fakeSound->frames.empty());
-    EXPECT_LT(fakeSound->frames.front().first, -4000);
-    EXPECT_LT(fakeSound->frames.front().second, -4000);
+    ASSERT_GE(fakeSound->frames.size(), 32U);
+    // The first few samples are still settling through the output low-pass.
+    EXPECT_LT(fakeSound->frames[16].first, -4000);
+    EXPECT_LT(fakeSound->frames[16].second, -4000);
 }
 
 TEST_F(GbApuTest, AllDacsOffProducesSilence)
@@ -169,6 +172,46 @@ TEST_F(GbApuTest, AllDacsOffProducesSilence)
     ASSERT_FALSE(fakeSound->frames.empty());
     EXPECT_EQ(fakeSound->frames.front().first, 0);
     EXPECT_EQ(fakeSound->frames.front().second, 0);
+}
+
+TEST_F(GbApuTest, FadeInSuppressesDacEnablePop)
+{
+    auto sound = std::make_unique<FakeSound>();
+    auto* fadeSound = sound.get();
+
+    std::array<std::unique_ptr<qnemu::GbChannelInterface>, 4> channels {
+        std::make_unique<qnemu::GbChannel1>(),
+        std::make_unique<qnemu::GbChannel2>(),
+        std::make_unique<qnemu::GbChannel3>(),
+        std::make_unique<qnemu::GbChannel4>(),
+    };
+    auto fadeApu = std::make_unique<qnemu::GbApu>(
+        std::move(sound), std::move(channels), true, 1000);
+
+    // A 128 Hz square wave: low enough to pass the output filters and give
+    // the fade-in something audible to reveal.
+    for (uint16_t address = 0xFF30; address <= 0xFF3F; ++address) {
+        fadeApu->write(address, 0x0F);
+    }
+    fadeApu->write(0xFF1A, 0x80);
+    fadeApu->write(0xFF1C, 0x20);
+    fadeApu->write(0xFF1D, 0x00);
+    fadeApu->write(0xFF1E, 0x86);
+    fadeApu->write(0xFF24, 0x77);
+    fadeApu->write(0xFF25, 0x44);
+
+    for (int i = 0; i < 60000; ++i) {
+        fadeApu->step();
+    }
+
+    ASSERT_GE(fadeSound->frames.size(), 512U);
+    EXPECT_LT(std::abs(static_cast<int>(fadeSound->frames.front().first)), 100);
+
+    int peak = 0;
+    for (std::size_t i = 400; i < 512; ++i) {
+        peak = std::max(peak, std::abs(static_cast<int>(fadeSound->frames[i].first)));
+    }
+    EXPECT_GT(peak, 1000);
 }
 
 }  // namespace qnemuTest

@@ -221,6 +221,13 @@ void DefaultSound::disable()
     }
 }
 
+void DefaultSound::flush()
+{
+    if (stream) {
+        stream->clear();
+    }
+}
+
 void DefaultSound::addSamples(const int16_t* samples, std::size_t frameCount)
 {
     if (!enabled.load() || !sinkActive.load() || !stream || frameCount == 0) {

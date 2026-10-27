@@ -38,8 +38,8 @@ Gb::Gb(GbModel model) : model(model)
         std::make_unique<GbChannel4>(),
     };
     auto sound = std::make_unique<DefaultSound>(GbApu::SampleRate, 2);
-    auto apu = std::make_unique<GbApu>(
-        std::move(sound), std::move(channels), model == GbModel::cgb);
+    auto apu = std::make_unique<GbApu>(std::move(sound), std::move(channels),
+        model == GbModel::cgb, GbApu::DefaultFadeInFrames);
 
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto rasterDisplay = std::make_shared<RasterDisplay>();

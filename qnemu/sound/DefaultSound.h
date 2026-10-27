@@ -40,6 +40,7 @@ public:
 
     void enable() override;
     void disable() override;
+    void flush() override;
     void addSamples(const int16_t* samples, std::size_t frameCount) override;
 
 private:

@@ -23,6 +23,9 @@ public:
     virtual void enable() = 0;
     virtual void disable() = 0;
 
+    /// Drop any buffered samples (used when a new ROM is loaded).
+    virtual void flush() {}
+
     virtual void addSamples(const int16_t* samples, std::size_t frameCount) = 0;
 };
 

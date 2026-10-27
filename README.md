@@ -186,7 +186,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 244/244, including 98 ROM tests
+The curated CTest set is currently 245/245, including 98 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -307,9 +307,15 @@ edge, so writing DIV synchronises the APU exactly like the hardware (including
 the power-on DIV glitch).  The mixer applies NR51 panning and NR50 master
 volume, models the DACs' negative slope, high-pass filters the DC offset like
 the hardware's output capacitor, and downsamples to 44100 Hz stereo signed
-16-bit samples.  Qt Multimedia plays the samples through a small ring buffer;
-when the buffer is full the emulation thread blocks, which also acts as the
-emulator's speed limiter.
+16-bit samples.
+
+Two small quality-of-life filters run on the final output: a 20 ms fade-in
+when the DACs are enabled (which suppresses the power-on click) and a gentle
+2nd-order 10 kHz Butterworth low-pass (which takes the harsh edge off the raw
+square waves).  The sound buffer is flushed whenever a ROM is loaded, so audio
+from the previous game cannot leak into the next one.  Qt Multimedia plays the
+samples through a small ring buffer; when the buffer is full the emulation
+thread blocks, which also acts as the emulator's speed limiter.
 
 Unit tests for the channels, frame sequencer, mixer, panning, volume and
 sample output live in `tests/gb/apu/` (`-L` filtering is not needed; run

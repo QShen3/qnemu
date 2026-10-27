@@ -3,8 +3,10 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <numbers>
 #include <utility>
 
 #include "qnemu/gb/apu/GbApu.h"
@@ -13,13 +15,51 @@
 namespace qnemu
 {
 
+void GbApu::Biquad::configure(double cutoff, double sampleRate)
+{
+    const double omega = 2.0 * std::numbers::pi * cutoff / sampleRate;
+    const double cosine = std::cos(omega);
+    constexpr double Q = 0.7071067811865476;  // Butterworth
+    const double alpha = std::sin(omega) / (2.0 * Q);
+    const double a0 = 1.0 + alpha;
+
+    b0 = (1.0 - cosine) * 0.5 / a0;
+    b1 = (1.0 - cosine) / a0;
+    b2 = b0;
+    a1 = -2.0 * cosine / a0;
+    a2 = (1.0 - alpha) / a0;
+    reset();
+}
+
+double GbApu::Biquad::process(double input)
+{
+    const double output = b0 * input + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    x2 = x1;
+    x1 = input;
+    y2 = y1;
+    y1 = output;
+    return output;
+}
+
+void GbApu::Biquad::reset()
+{
+    x1 = 0;
+    x2 = 0;
+    y1 = 0;
+    y2 = 0;
+}
+
 GbApu::GbApu(std::unique_ptr<SoundInterface> sound,
     std::array<std::unique_ptr<GbChannelInterface>, 4> channels,
-    bool cgb) :
+    bool cgb,
+    uint32_t fadeInFrames) :
     sound(std::move(sound)),
     channels(std::move(channels)),
-    cgb(cgb)
+    cgb(cgb),
+    fadeInFrames(fadeInFrames)
 {
+    lowPassLeft.configure(LowPassCutoff, SampleRate);
+    lowPassRight.configure(LowPassCutoff, SampleRate);
     this->channels[2]->setCgb(cgb);
     reset();
 }
@@ -101,6 +141,7 @@ void GbApu::write(uint16_t address, const uint8_t& value)
             powered = true;
             // Powering up restarts the frame sequencer phase.
             frameStep = 0;
+            fadeInRemaining = fadeInFrames;
         }
         return;
     }
@@ -236,6 +277,15 @@ void GbApu::mixAndAccumulate()
     mixRight = right * (((nr50 >> 4) & 0x07) + 1);
     dacsEnabled = anyDac;
 
+    if (anyDac && !hadDacs) {
+        // Turning all DACs back on creates a DC step.  Fade the output in
+        // over a few milliseconds so it does not become an audible click.
+        fadeInRemaining = fadeInFrames;
+        lowPassLeft.reset();
+        lowPassRight.reset();
+    }
+    hadDacs = anyDac;
+
     mixAccumLeft += mixLeft;
     mixAccumRight += mixRight;
 }
@@ -264,6 +314,19 @@ void GbApu::emitSample()
         capacitorLeft = static_cast<double>(left) - outputLeft * HighPassCharge;
         outputRight = static_cast<double>(right) - capacitorRight;
         capacitorRight = static_cast<double>(right) - outputRight * HighPassCharge;
+
+        // Gentle low-pass to soften the square-wave edges and reduce the
+        // harshness of the raw DAC output.
+        outputLeft = lowPassLeft.process(outputLeft);
+        outputRight = lowPassRight.process(outputRight);
+    }
+
+    if (fadeInFrames > 0 && fadeInRemaining > 0) {
+        const double gain = 1.0
+            - static_cast<double>(fadeInRemaining) / static_cast<double>(fadeInFrames);
+        outputLeft *= gain;
+        outputRight *= gain;
+        --fadeInRemaining;
     }
 
     constexpr double MaxMix = 4.0 * 15.0 * 8.0;  // 4 channels, ±15, volume 8
@@ -300,6 +363,10 @@ void GbApu::reset()
 
     frameStep = 0;
     skipDivApuEvent = false;
+    fadeInRemaining = fadeInFrames;
+    hadDacs = false;
+    lowPassLeft.reset();
+    lowPassRight.reset();
     sampleAccumulator = 0;
     sampleCycles = 0;
     mixAccumLeft = 0;
@@ -310,6 +377,10 @@ void GbApu::reset()
     capacitorLeft = 0;
     capacitorRight = 0;
     sampleCount = 0;
+
+    if (sound) {
+        sound->flush();
+    }
 }
 
 }  // namespace qnemu
