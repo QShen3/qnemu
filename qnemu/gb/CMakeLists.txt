@@ -49,30 +49,17 @@ target_include_directories(gb_cartridge PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(gb_cartridge PRIVATE qnemu_warnings)
 
 # C++
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/interrupt INTERRUPT_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/memory MEMORY_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gpu GPU_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/joypad JOYPAD_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/timer TIMER_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/mmu MMU_SRCS)
 
-list(REMOVE_ITEM GPU_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp)
-list(REMOVE_ITEM INTERRUPT_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)
-list(REMOVE_ITEM TIMER_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/timer/GbTimer.cpp)
-
+# Interrupt, PPU and timer sources live in gb_ppu/gb_timer, which are linked
+# below; they must not be compiled into the gb object library again.
 add_library(
     gb OBJECT
     Gb.cpp
-    ${INTERRUPT_SRCS}
     ${MEMORY_SRCS}
-    ${GPU_SRCS}
     ${JOYPAD_SRCS}
-    ${TIMER_SRCS}
     ${MMU_SRCS}
 )
 target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
