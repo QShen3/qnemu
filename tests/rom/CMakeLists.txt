@@ -176,6 +176,7 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "emulator-only/mbc1/bits_bank2.gb"
             "emulator-only/mbc1/bits_mode.gb"
             "emulator-only/mbc1/bits_ramg.gb"
+            "emulator-only/mbc1/multicart_rom_8Mb.gb"
             "emulator-only/mbc1/ram_256kb.gb"
             "emulator-only/mbc1/ram_64kb.gb"
             "emulator-only/mbc1/rom_16Mb.gb"

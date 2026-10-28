@@ -20,6 +20,32 @@
 namespace qnemu
 {
 
+namespace
+{
+
+bool isMbc1Multicart(const std::vector<std::array<uint8_t, RomBankSize>>& romBanks)
+{
+    // MBC1M carts are 1 MiB and normally contain another cartridge header
+    // (including the Nintendo logo) in bank $10.  Regular 1 MiB MBC1 carts
+    // do not.  This is the same heuristic used by other emulators.
+    if (romBanks.size() != 64) {
+        return false;
+    }
+
+    static constexpr uint8_t logoPrefix[] = {
+        0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B,
+    };
+    const auto& bank = romBanks.at(0x10);
+    for (std::size_t i = 0; i < sizeof(logoPrefix); ++i) {
+        if (bank.at(0x104 + i) != logoPrefix[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+}  // namespace
+
 std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
         std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) const
 {
@@ -28,7 +54,9 @@ std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint
     if (type == 0x0 || type == 0x8 || type == 0x9) {
         mbc = std::make_unique<GbCircuitMbc>(std::move(romBanks), std::move(ramBanks), type);
     } else if (type == 0x1 || type == 0x2 || type == 0x3) {
-        mbc = std::make_unique<GbMbc1>(std::move(romBanks), std::move(ramBanks), type);
+        const bool mbc1m = isMbc1Multicart(romBanks);
+        mbc = std::make_unique<GbMbc1>(
+            std::move(romBanks), std::move(ramBanks), type, mbc1m);
     } else if (type == 0x5 || type == 0x6) {
         mbc = std::make_unique<GbMbc2>(std::move(romBanks), std::move(ramBanks), type);
     } else if (type >= 0x0F && type <= 0x13) {

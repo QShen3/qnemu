@@ -13,10 +13,12 @@ namespace qnemu
 {
 
 GbMbc1::GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type) :
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type,
+        bool mbc1m) :
     romBanks(std::move(romBanks)),
     ramBanks(std::move(ramBanks)),
-    type(type)
+    type(type),
+    mbc1m(mbc1m)
 {
     GbMbc1::reset();
 }
@@ -82,9 +84,9 @@ uint8_t GbMbc1::getRomBankNumberForAddress(uint16_t address) const
 
     if (address < 0x4000) {
         if (registers.bankingModeSelect != 0) {
-            // The secondary register supplies bits 5-6.  Smaller carts ignore
-            // the bits they do not have, so mask the final bank number.
-            bankNumber = static_cast<uint8_t>(((registers.ramBankNumber & 0b11) << 5)
+            // MBC1M wires the secondary register to bits 4-5 instead of 5-6.
+            const uint8_t shift = mbc1m ? 4 : 5;
+            bankNumber = static_cast<uint8_t>(((registers.ramBankNumber & 0b11) << shift)
                 & (romBanks.size() - 1));
         }
     } else {
@@ -94,10 +96,19 @@ uint8_t GbMbc1::getRomBankNumberForAddress(uint16_t address) const
         if (rawBank == 0) {
             rawBank = 1;
         }
-        bankNumber = static_cast<uint8_t>(rawBank & (romBanks.size() - 1));
-        if (romBanks.size() > 32) {
-            bankNumber |= static_cast<uint8_t>(
-                (registers.ramBankNumber & ((romBanks.size() >> 5) - 1)) << 5);
+
+        if (mbc1m) {
+            // MBC1M ignores the top bit of the main banking register and
+            // uses the secondary register for bits 4-5.
+            bankNumber = static_cast<uint8_t>((rawBank & 0x0F)
+                | ((registers.ramBankNumber & 0b11) << 4));
+            bankNumber = static_cast<uint8_t>(bankNumber & (romBanks.size() - 1));
+        } else {
+            bankNumber = static_cast<uint8_t>(rawBank & (romBanks.size() - 1));
+            if (romBanks.size() > 32) {
+                bankNumber |= static_cast<uint8_t>(
+                    (registers.ramBankNumber & ((romBanks.size() >> 5) - 1)) << 5);
+            }
         }
     }
 

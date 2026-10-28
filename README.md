@@ -187,7 +187,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 308/308, including 127 ROM tests
+The curated CTest set is currently 310/310, including 128 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -213,6 +213,7 @@ Blargg sound (`-L sound`, requires `--apu`):
 Mooneye MBC1/MBC2/MBC5 (`-L mbc`, uses the real `GbCartridge`/MBC code):
 
 - `emulator-only/mbc1/bits_bank1`, `bits_bank2`, `bits_mode`, `bits_ramg`
+- `emulator-only/mbc1/multicart_rom_8Mb` (MBC1M)
 - `emulator-only/mbc1/ram_64kb`, `ram_256kb`
 - `emulator-only/mbc1/rom_1Mb`, `rom_2Mb`, `rom_4Mb`, `rom_8Mb`,
   `rom_16Mb`, `rom_512kb`
@@ -279,9 +280,9 @@ Known failures at the moment are concentrated in:
   `12-wave write while on` and `cgb_sound/rom_singles/09-wave read while on`
   (wave-RAM accesses while CH3 is active need cycle-exact CPU/APU bus
   alignment; the other sound tests pass)
-- `emulator-only/mbc1/multicart_rom_8Mb` (the MBC1M multi-cart wiring is not
-  implemented)
 - `boot_*` (no boot ROM)
+- MBC3 RTC time is not battery-persisted yet
+- `emulator-only` MBC6/MBC7 and other rare mapper suites are not implemented
 
 ## Play
 
@@ -372,14 +373,14 @@ without touching the renderer.
 | Joypad    | ✅       | unit |
 | Timer     | ✅       | ✅    |
 | no MBC    | ✅       | ✅    |
-| MBC1      | ✅       | ✅    |
+| MBC1      | ✅       | unit + Mooneye MBC (incl. MBC1M) |
 | MBC2      | ✅       | unit + Mooneye MBC |
 | MBC3      | ✅       | unit |
 | MBC5      | ✅       | unit + Mooneye MBC |
 
 MBC3's RTC register/latch protocol and 1 Hz ticking are implemented; RTC time
-is not persisted across emulator restarts yet.  The MBC1M multi-cart wiring is
-also still missing.
+is not persisted across emulator restarts yet.  MBC1M multi-cart wiring is
+detected from the extra header in bank $10 and is supported.
 | MBC6      | ❌       | ❌    |
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |

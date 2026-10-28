@@ -24,7 +24,8 @@ public:
 
     GbMbc1() = delete;
     GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type);
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type,
+        bool mbc1m = false);
     ~GbMbc1() override = default;
 
     uint8_t read(uint16_t address) const override;
@@ -48,6 +49,7 @@ private:
     std::vector<std::array<uint8_t, RomBankSize>> romBanks;
     std::vector<std::array<uint8_t, RamBankSize>> ramBanks;
     uint8_t type;
+    bool mbc1m;
 };
 
 }  // namespace qnemu

@@ -55,6 +55,36 @@ TEST(GbMbc1Test, ReadFrom1BankRom)
     EXPECT_EQ(gbMbc1.read(qnemu::MemoryRomBank00End + 1), data.at(0));
 }
 
+TEST(GbMbc1Test, Mbc1mWiring)
+{
+    constexpr std::size_t bankCount = 64;
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(bankCount);
+    for (std::size_t bank = 0; bank < bankCount; ++bank) {
+        romBanks.at(bank).at(0) = static_cast<uint8_t>(bank);
+    }
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
+
+    qnemu::GbMbc1 mbc(std::move(romBanks), std::move(ramBanks), 1, true);
+
+    // The top bit of the 5-bit main register is ignored for banking, but the
+    // full register still takes part in the 00 -> 01 translation.
+    mbc.write(qnemu::GbMbc1::romBankNumberAddress, 0x10);
+    EXPECT_EQ(mbc.read(qnemu::MemoryRomBank01Start), 0);
+    mbc.write(qnemu::GbMbc1::romBankNumberAddress, 0x11);
+    EXPECT_EQ(mbc.read(qnemu::MemoryRomBank01Start), 1);
+
+    // The secondary register supplies bits 4-5 in MBC1M.
+    mbc.write(qnemu::GbMbc1::bankingModeSelectAddress, 1);
+    mbc.write(qnemu::GbMbc1::ramBankNumberAddress, 1);
+    mbc.write(qnemu::GbMbc1::romBankNumberAddress, 0x00);
+    EXPECT_EQ(mbc.read(qnemu::MemoryRomBank00Start), 0x10);
+    EXPECT_EQ(mbc.read(qnemu::MemoryRomBank01Start), 0x11);
+
+    mbc.write(qnemu::GbMbc1::ramBankNumberAddress, 2);
+    EXPECT_EQ(mbc.read(qnemu::MemoryRomBank00Start), 0x20);
+    EXPECT_EQ(mbc.read(qnemu::MemoryRomBank01Start), 0x21);
+}
+
 TEST(GbMbc1Test, BankZeroTranslationUsesFullRegister)
 {
     constexpr std::size_t bankCount = 16;
