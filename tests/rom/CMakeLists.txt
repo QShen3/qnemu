@@ -168,6 +168,17 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --ppu)
         endforeach()
 
+        # LCD enable/disable timing is verified on DMG only (the CGB has a
+        # different first-line sequence).
+        set(MOONEYE_LCD_TESTS
+            "acceptance/ppu/lcdon_timing-GS.gb"
+            "acceptance/ppu/lcdon_write_timing-GS.gb"
+        )
+        foreach(RELATIVE IN LISTS MOONEYE_LCD_TESTS)
+            qnemu_add_rom_test("mooneye_ppu_${RELATIVE}"
+                "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --model dmg --ppu)
+        endforeach()
+
         # The runner now uses the same GbCartridge/MBC code as the emulator.
         # MBC1M multi-cart wiring is not implemented yet, so that one is left
         # out of the curated set.

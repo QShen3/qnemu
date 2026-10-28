@@ -10,6 +10,7 @@ target_link_libraries(gb_cpu PRIVATE qnemu_warnings)
 # and the PPU unit tests link this library directly.
 add_library(gb_ppu STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuFifo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)

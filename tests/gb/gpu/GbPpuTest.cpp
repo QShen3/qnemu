@@ -133,4 +133,44 @@ TEST_F(GbPpuTest, DisablingLcdResetsLyAndMode)
     EXPECT_FALSE(ppu->isLcdEnable());
 }
 
+TEST_F(GbPpuTest, LcdEnableStartsLineZeroInModeZero)
+{
+    ppu->write(0xFF40, 0x00);
+    ppu->step();
+    ppu->write(0xFF40, 0x91);
+
+    for (int i = 0; i < 79; ++i) {
+        ppu->step();
+    }
+    EXPECT_EQ(ppu->read(0xFF44), 0x00);
+    EXPECT_EQ(ppu->currentMode(), 0);
+
+    ppu->step();
+    EXPECT_EQ(ppu->currentMode(), 3);
+
+    for (int i = 0; i < 371; ++i) {
+        ppu->step();
+    }
+    EXPECT_EQ(ppu->read(0xFF44), 0x00);
+    ppu->step();
+    EXPECT_EQ(ppu->read(0xFF44), 0x01);
+}
+
+TEST_F(GbPpuTest, PixelFifoEmitsBackgroundDuringModeThree)
+{
+    ppu->write(0xFF40, 0x00);
+    ppu->write(0x8000, 0xFF);
+    ppu->write(0x8001, 0xFF);
+    ppu->write(0x9800, 0x00);
+    ppu->write(0xFF40, 0x91);
+
+    for (int i = 0; i < 100; ++i) {
+        ppu->step();
+    }
+
+    EXPECT_EQ(ppu->currentMode(), 3);
+    EXPECT_EQ(ppu->frameBuffer().at(0, 0), qnemu::rgb(0, 0, 0));
+    EXPECT_EQ(ppu->frameBuffer().at(10, 0), qnemu::rgb(255, 255, 255));
+}
+
 }  // namespace qnemuTest

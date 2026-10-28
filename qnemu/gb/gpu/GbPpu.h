@@ -11,6 +11,7 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/display/FrameBuffer.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
+#include "qnemu/gb/gpu/PpuFifo.h"
 #include "qnemu/gb/gpu/PpuMemory.h"
 #include "qnemu/gb/gpu/PpuRegisters.h"
 #include "qnemu/gb/gpu/PpuRenderer.h"
@@ -59,8 +60,12 @@ private:
     void updateLyc();
     void updateStatIrq();
     void requestLcdInterrupt();
-    void renderScanline();
-    uint16_t mode3Length() const;
+    bool oamAccessBlocked() const;
+    bool oamReadBlocked() const;
+    bool vramAccessBlocked() const;
+    bool vramReadBlocked() const;
+    bool firstLineAccessBlocked() const;
+    void finishMode3();
 
     void startOamDma(uint8_t source);
     uint8_t readDmaSource(uint16_t address) const;
@@ -79,10 +84,12 @@ private:
     PpuRegisters registers_;
     PpuMemory memory_;
     PpuRenderer renderer_;
+    PpuFifo fifo_;
 
     FrameBuffer frame_;
     uint16_t dot_ = 0;
-    uint16_t mode0StartDot_ = 252;
+    uint16_t lineLength_ = 456;
+    uint8_t mode3Dots_ = 0;
     uint16_t windowLine_ = 0;
     uint64_t frameCount_ = 0;
     bool statIrqLine_ = false;

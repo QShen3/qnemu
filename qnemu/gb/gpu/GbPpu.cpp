@@ -47,7 +47,8 @@ GbPpu::GbPpu(bool cgb,
     cgb_(cgb),
     display_(std::move(display)),
     interruptHandler_(std::move(interruptHandler)),
-    renderer_(cgb)
+    renderer_(cgb),
+    fifo_(cgb)
 {
     GbPpu::reset();
 }
@@ -55,15 +56,14 @@ GbPpu::GbPpu(bool cgb,
 uint8_t GbPpu::read(uint16_t address) const
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
-        if (registers_.mode() == 3 && registers_.lcdEnabled()) {
+        if (vramReadBlocked()) {
             return 0xFF;
         }
         return memory_.readVram(address);
     }
 
     if (address >= OamStart && address <= OamEnd) {
-        if (((registers_.mode() == 2 || registers_.mode() == 3) && registers_.lcdEnabled())
-            || oamDmaActive_) {
+        if (oamReadBlocked()) {
             return 0xFF;
         }
         return memory_.readOam(address);
@@ -121,7 +121,7 @@ uint8_t GbPpu::read(uint16_t address) const
 void GbPpu::write(uint16_t address, const uint8_t& value)
 {
     if (address >= VideoRamStart && address <= VideoRamEnd) {
-        if (registers_.mode() == 3 && registers_.lcdEnabled()) {
+        if (vramAccessBlocked()) {
             return;
         }
         memory_.writeVram(address, value);
@@ -129,8 +129,7 @@ void GbPpu::write(uint16_t address, const uint8_t& value)
     }
 
     if (address >= OamStart && address <= OamEnd) {
-        if (((registers_.mode() == 2 || registers_.mode() == 3) && registers_.lcdEnabled())
-            || oamDmaActive_) {
+        if (oamAccessBlocked()) {
             return;
         }
         memory_.writeOam(address, value);
@@ -256,7 +255,8 @@ void GbPpu::reset()
     memory_.reset();
     frame_.fill(rgb(255, 255, 255));
     dot_ = 0;
-    mode0StartDot_ = 252;
+    lineLength_ = 456;
+    mode3Dots_ = 0;
     windowLine_ = 0;
     frameCount_ = 0;
     statIrqLine_ = false;
@@ -301,6 +301,7 @@ void GbPpu::setCgb(bool cgb)
 {
     cgb_ = cgb;
     renderer_ = PpuRenderer(cgb);
+    fifo_.setCgb(cgb);
 }
 
 void GbPpu::stepOamDma()
@@ -351,7 +352,8 @@ void GbPpu::stepTiming()
     if (!registers_.lcdEnabled()) {
         registers_.ly = 0;
         dot_ = 0;
-        mode0StartDot_ = 252;
+        lineLength_ = 456;
+        mode3Dots_ = 0;
         windowLine_ = 0;
         lcdJustEnabled_ = false;
         registers_.setMode(0);
@@ -361,25 +363,32 @@ void GbPpu::stepTiming()
 
     if (registers_.ly < 144) {
         if (lcdJustEnabled_ && registers_.ly == 0) {
-            // The first line after LCD enable starts in mode 0 and skips the
-            // normal OAM-scan phase.
-            if (dot_ == 0) {
-                setMode(0);
-            } else if (dot_ == 20) {
+            // The first line after the LCD is enabled starts in mode 0 and
+            // skips the OAM scan.  The fetcher starts slightly early so the
+            // line ends four dots ahead of a normal line.
+            if (dot_ == 79) {
                 setMode(3);
-                renderScanline();
-                mode0StartDot_ = static_cast<uint16_t>(20 + mode3Length());
-            } else if (dot_ == mode0StartDot_) {
-                setMode(0);
+                mode3Dots_ = 0;
+                fifo_.startLine(registers_, memory_, registers_.ly, windowLine_);
             }
         } else if (dot_ == 0) {
             setMode(2);
+            mode3Dots_ = 0;
+            updateLyc();
         } else if (dot_ == 80) {
             setMode(3);
-            renderScanline();
-            mode0StartDot_ = static_cast<uint16_t>(80 + mode3Length());
-        } else if (dot_ == mode0StartDot_) {
-            setMode(0);
+            mode3Dots_ = 0;
+            fifo_.startLine(registers_, memory_, registers_.ly, windowLine_);
+        }
+
+        if (registers_.mode() == 3) {
+            fifo_.step(registers_, memory_, frame_);
+            if (mode3Dots_ < 255) {
+                ++mode3Dots_;
+            }
+            if (fifo_.finished()) {
+                finishMode3();
+            }
         }
     } else if (dot_ == 0 && registers_.ly == 144) {
         setMode(1);
@@ -393,8 +402,9 @@ void GbPpu::stepTiming()
     }
 
     ++dot_;
-    if (dot_ >= 456) {
+    if (dot_ >= lineLength_) {
         dot_ = 0;
+        lineLength_ = 456;
         ++registers_.ly;
         if (registers_.ly != 0) {
             lcdJustEnabled_ = false;
@@ -402,10 +412,96 @@ void GbPpu::stepTiming()
         if (registers_.ly >= 154) {
             registers_.ly = 0;
             windowLine_ = 0;
-            mode0StartDot_ = 252;
         }
-        updateLyc();
+        if (registers_.ly >= 144 || registers_.ly == 0) {
+            updateLyc();
+        } else {
+            // The LY=LYC comparator lags a little behind the LY increment;
+            // the new result becomes visible at the start of the line.
+            registers_.setLycCoincidence(false);
+            updateStatIrq();
+        }
     }
+}
+
+bool GbPpu::vramReadBlocked() const
+{
+    if (vramAccessBlocked()) {
+        return true;
+    }
+    // As with OAM, reads lose access one dot before mode 3 becomes visible.
+    return registers_.lcdEnabled() && registers_.ly < 144 && dot_ == 80;
+}
+
+void GbPpu::finishMode3()
+{
+    if (registers_.objEnabled()) {
+        renderer_.renderSprites(registers_, memory_, registers_.ly,
+            fifo_.backgroundColorIndex(), fifo_.backgroundPriority(), frame_);
+    }
+    if (fifo_.windowUsed()) {
+        ++windowLine_;
+    }
+    setMode(0);
+}
+
+bool GbPpu::firstLineAccessBlocked() const
+{
+    if (!lcdJustEnabled_ || registers_.ly != 0) {
+        return false;
+    }
+    if (registers_.mode() == 3) {
+        return true;
+    }
+    // The PPU grabs the VRAM/OAM bus two dots before mode 3 starts on the
+    // first line; once the first mode 3 has finished, access follows the
+    // normal mode rules.
+    return registers_.mode() == 0 && !fifo_.finished() && dot_ >= 78;
+}
+
+bool GbPpu::oamAccessBlocked() const
+{
+    if (!registers_.lcdEnabled()) {
+        return oamDmaActive_;
+    }
+    if (firstLineAccessBlocked()) {
+        return true;
+    }
+    if (registers_.mode() == 2) {
+        // Hardware allows the final OAM-scan dot to slip through.
+        return dot_ != 80;
+    }
+    if (registers_.mode() == 3) {
+        return mode3Dots_ >= 2;
+    }
+    return oamDmaActive_;
+}
+
+bool GbPpu::oamReadBlocked() const
+{
+    if (!registers_.lcdEnabled()) {
+        return oamDmaActive_;
+    }
+    if (firstLineAccessBlocked()) {
+        return true;
+    }
+    // Read access is cut one dot before mode 2 becomes visible, while writes
+    // are still accepted on that boundary dot.
+    if (registers_.ly < 144 && dot_ == 0) {
+        return true;
+    }
+    return registers_.mode() == 2 || registers_.mode() == 3 || oamDmaActive_;
+}
+
+bool GbPpu::vramAccessBlocked() const
+{
+    if (!registers_.lcdEnabled()) {
+        return false;
+    }
+    if (firstLineAccessBlocked()) {
+        return true;
+    }
+    return registers_.mode() == 3;
 }
 
 void GbPpu::setMode(uint8_t mode)
@@ -441,76 +537,10 @@ void GbPpu::updateStatIrq()
     statIrqLine_ = signal;
 }
 
-uint16_t GbPpu::mode3Length() const
-{
-    uint16_t length = 172;
-    const uint8_t fineScroll = static_cast<uint8_t>(registers_.scx & 0x07);
-    if (fineScroll != 0) {
-        // The fetcher/STAT alignment used by the hardware timing tests makes
-        // non-zero fine scroll consume an extra 4 dots, and 8 for the last
-        // three fine-scroll positions.
-        length = static_cast<uint16_t>(length + (fineScroll <= 4 ? 4 : 8));
-    }
-
-    const bool windowVisible = registers_.windowEnabled()
-        && registers_.wx >= 7 && registers_.wx <= 166
-        && registers_.ly >= registers_.wy;
-    if (windowVisible) {
-        length = static_cast<uint16_t>(length + 6);
-    }
-
-    const int spriteHeight = registers_.objSize16() ? 16 : 8;
-    std::array<bool, 21> tilesSeen{};
-    bool x0ExtraApplied = false;
-    int spriteCount = 0;
-    for (uint8_t index = 0; index < OamSize && spriteCount < 10; index += 4) {
-        const int spriteY = static_cast<int>(memory_.readOamByte(index)) - 16;
-        if (static_cast<int>(registers_.ly) < spriteY
-            || static_cast<int>(registers_.ly) >= spriteY + spriteHeight) {
-            continue;
-        }
-
-        const uint8_t oamX = memory_.readOamByte(static_cast<uint8_t>(index + 1));
-        const int screenX = static_cast<int>(oamX) - 8;
-        if (screenX >= 160) {
-            continue;
-        }
-
-        ++spriteCount;
-        int penalty = 6;
-        if (oamX == 0) {
-            // The left-edge object has one extra alignment penalty, but only
-            // once even when several objects share X=0.
-            if (!x0ExtraApplied) {
-                penalty += 5;
-                x0ExtraApplied = true;
-            }
-        } else if (screenX >= 0) {
-            const int scrolledX = screenX + registers_.scx;
-            const int tile = std::min(20, scrolledX >> 3);
-            if (!tilesSeen.at(static_cast<std::size_t>(tile))) {
-                const int pixel = scrolledX & 0x07;
-                penalty += std::max(0, (7 - pixel) - 2);
-                tilesSeen.at(static_cast<std::size_t>(tile)) = true;
-            }
-        }
-        length = static_cast<uint16_t>(length + penalty);
-    }
-
-    return std::min<uint16_t>(length, 289);
-}
-
 void GbPpu::requestLcdInterrupt()
 {
     if (interruptHandler_) {
         interruptHandler_->requestLcdInterrupt();
-    }
-}
-
-void GbPpu::renderScanline()
-{
-    if (renderer_.renderLine(registers_, memory_, registers_.ly, windowLine_, frame_)) {
-        ++windowLine_;
     }
 }
 
@@ -594,10 +624,14 @@ void GbPpu::writeLcdc(uint8_t value)
 
     registers_.ly = 0;
     dot_ = 0;
-    mode0StartDot_ = 252;
+    lineLength_ = 456;
+    mode3Dots_ = 0;
     windowLine_ = 0;
     if (isEnabled) {
         lcdJustEnabled_ = true;
+        // The first line after enabling the LCD skips OAM scan and ends four
+        // dots early.
+        lineLength_ = 452;
         updateLyc();
         registers_.setMode(0);
         updateStatIrq();

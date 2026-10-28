@@ -15,9 +15,11 @@ namespace qnemu
 {
 
 /**
- * Stateless scanline renderer.  It only reads PPU memory/registers and writes
- * one row of the framebuffer, so it can be unit-tested with synthetic VRAM and
- * OAM data without running a CPU or a clock.
+ * Stateless pixel/scanline renderer.  It only reads PPU memory/registers and
+ * writes into the framebuffer, so it can be unit-tested with synthetic VRAM
+ * and OAM data without running a CPU or a clock.  PpuFifo uses the per-pixel
+ * background fetch and the object compositor; the full-line entry point is
+ * kept as the reference renderer used by the unit tests.
  */
 class PpuRenderer
 {
@@ -31,19 +33,11 @@ public:
         uint16_t windowLine,
         FrameBuffer& frame) const;
 
-private:
     struct BackgroundPixel
     {
         uint8_t colorIndex = 0;
         uint8_t palette = 0;
         bool priority = false;
-    };
-
-    struct Sprite
-    {
-        uint8_t oamIndex = 0;
-        int x = 0;
-        int y = 0;
     };
 
     BackgroundPixel fetchBackgroundPixel(const PpuRegisters& registers,
@@ -58,6 +52,14 @@ private:
         const std::array<uint8_t, FrameBuffer::width>& backgroundColorIndex,
         const std::array<bool, FrameBuffer::width>& backgroundPriority,
         FrameBuffer& frame) const;
+
+private:
+    struct Sprite
+    {
+        uint8_t oamIndex = 0;
+        int x = 0;
+        int y = 0;
+    };
 
     static uint16_t tileDataAddress(const PpuRegisters& registers, uint8_t tileIndex);
 

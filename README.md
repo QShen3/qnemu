@@ -84,16 +84,23 @@ the HALT bug and STOP.
 
 ## PPU core
 
-The PPU is split into three Qt-free pieces under `qnemu/gb/gpu`:
+The PPU is split into four Qt-free pieces under `qnemu/gb/gpu`:
 
 - `GbPpu` owns the dot/line clock, LCDC/STAT/LY/LYC state, OAM DMA, HDMA,
-  palette RAM and the frame boundary. Mode 3 length includes fine-scroll,
-  window and sprite fetch penalties; OAM DMA has a two-M-cycle startup delay
-  and restart handling.
+  palette RAM and the frame boundary. Mode 3 is driven dot by dot by
+  `PpuFifo`; fine-scroll startup, window activation and object fetch
+  penalties extend the line as they occur. OAM DMA has a two-M-cycle startup
+  delay and restart handling.
+- `PpuFifo` is a background/window pixel FIFO. It fetches eight-pixel rows,
+  emits one pixel per dot, handles SCX discard and window restarts, and keeps
+  the per-pixel background colour/priority data used for object compositing.
+  Moving the LCD from off to on restarts line 0 in mode 0 and shortens that
+  first line, matching the DMG `lcdon` timing tests.
 - `PpuMemory` owns the two VRAM banks, OAM and the CGB palette RAM.
 - `PpuRenderer` is a stateless scanline renderer: it reads registers and
-  memory, writes one row, and returns whether the window was visible. This is
-  the part to drive from unit tests with synthetic VRAM/OAM.
+  memory, writes one row, and returns whether the window was visible. It is
+  the reference implementation used by unit tests and by `PpuFifo` for
+  per-pixel background fetches and the final object-compositing pass.
 
 STAT interrupts use an edge/blocking line rather than firing on every mode
 change. `GbCpuBus` also implements CGB `KEY0`/`KEY1` and double-speed switching,
@@ -110,8 +117,8 @@ PPU tests live in `tests/gb/gpu/` and cover:
 - sprite flips, 8x16 tile selection, the 10-object limit, DMG/CGB priority and
   the CGB object-priority mode (FF6C)
 - OAM DMA startup/restart/byte timing, HDMA block copies, mode transitions,
-  SCX/window/sprite mode-3 penalties, STAT edge blocking, LYC interrupts and
-  VBlank frame delivery
+  SCX/window/sprite mode-3 penalties, STAT edge blocking, LYC interrupts,
+  LCD enable/disable timing and VBlank frame delivery
 - CGB KEY0/KEY1 and double-speed bus timing
 - full-frame image comparison against dmg-acid2 and cgb-acid2
 
@@ -187,7 +194,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 323/323, including 128 ROM tests
+The curated CTest set is currently 327/327, including 130 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -261,6 +268,7 @@ Mooneye PPU/OAM/bus-timing (`-L ppu`, requires `--ppu`):
 - `ppu/intr_2_mode0_timing`
 - `ppu/intr_2_mode3_timing`
 - `ppu/intr_2_oam_ok_timing`
+- `ppu/lcdon_timing-GS`, `ppu/lcdon_write_timing-GS` (DMG)
 - `ppu/stat_irq_blocking`
 - `ppu/stat_lyc_onoff`
 - `ppu/vblank_stat_intr-GS`
@@ -273,7 +281,6 @@ Image tests (`-L acid2`):
 Known failures at the moment are concentrated in:
 
 - `ppu/intr_2_mode0_timing_sprites` (multi-object fetch-penalty edge case)
-- `ppu/lcdon_timing-GS`, `ppu/lcdon_write_timing-GS`
 - `oam_dma/sources-GS`
 - `interrupt_time`
 - `dmg_sound/rom_singles/09-wave read while on`, `10-wave trigger while on`,
