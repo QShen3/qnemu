@@ -10,6 +10,7 @@
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc1M.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc2.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc3.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc5.h"
@@ -54,9 +55,13 @@ std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint
     if (type == 0x0 || type == 0x8 || type == 0x9) {
         mbc = std::make_unique<GbCircuitMbc>(std::move(romBanks), std::move(ramBanks), type);
     } else if (type == 0x1 || type == 0x2 || type == 0x3) {
-        const bool mbc1m = isMbc1Multicart(romBanks);
-        mbc = std::make_unique<GbMbc1>(
-            std::move(romBanks), std::move(ramBanks), type, mbc1m);
+        if (isMbc1Multicart(romBanks)) {
+            mbc = std::make_unique<GbMbc1M>(
+                std::move(romBanks), std::move(ramBanks), type);
+        } else {
+            mbc = std::make_unique<GbMbc1>(
+                std::move(romBanks), std::move(ramBanks), type);
+        }
     } else if (type == 0x5 || type == 0x6) {
         mbc = std::make_unique<GbMbc2>(std::move(romBanks), std::move(ramBanks), type);
     } else if (type >= 0x0F && type <= 0x13) {

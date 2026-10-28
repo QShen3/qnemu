@@ -1,4 +1,4 @@
-/* 
+/*
  *  Copyright [2020] <qazxdrcssc2006@163.com>
  */
 
@@ -24,8 +24,7 @@ public:
 
     GbMbc1() = delete;
     GbMbc1(std::vector<std::array<uint8_t, RomBankSize>>&& romBanks,
-        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type,
-        bool mbc1m = false);
+        std::vector<std::array<uint8_t, RamBankSize>>&& ramBanks, uint8_t type);
     ~GbMbc1() override = default;
 
     uint8_t read(uint16_t address) const override;
@@ -37,11 +36,8 @@ public:
     std::vector<uint8_t> dumpRam() const override;
     void loadRam(const std::vector<uint8_t>& data) override;
 
-private:
+protected:
     static constexpr uint8_t ramEnableFlag = 0xA;
-
-    uint8_t getRomBankNumberForAddress(uint16_t address) const;
-    uint8_t getRamBankNumber() const;
 
     struct Registers
     {
@@ -51,10 +47,14 @@ private:
         uint8_t bankingModeSelect;
     } registers;
 
+    virtual uint8_t getRomBankNumberForAddress(uint16_t address) const;
+    virtual uint8_t getRamBankNumber() const;
+
     std::vector<std::array<uint8_t, RomBankSize>> romBanks;
+
+private:
     std::vector<std::array<uint8_t, RamBankSize>> ramBanks;
     uint8_t type;
-    bool mbc1m;
 };
 
 }  // namespace qnemu

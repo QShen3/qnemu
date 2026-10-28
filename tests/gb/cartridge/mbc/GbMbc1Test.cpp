@@ -20,6 +20,7 @@
 #endif
 
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc1M.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
 #include "qnemu/gb/const.h"
 
@@ -64,7 +65,7 @@ TEST(GbMbc1Test, Mbc1mWiring)
     }
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(1);
 
-    qnemu::GbMbc1 mbc(std::move(romBanks), std::move(ramBanks), 1, true);
+    qnemu::GbMbc1M mbc(std::move(romBanks), std::move(ramBanks), 1);
 
     // The top bit of the 5-bit main register is ignored for banking, but the
     // full register still takes part in the 00 -> 01 translation.

@@ -2,6 +2,7 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <tuple>
@@ -21,6 +22,7 @@
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc1M.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc2.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc3.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc5.h"
@@ -75,6 +77,20 @@ INSTANTIATE_TEST_CASE_P(GbMbcFactoryCreate, GbMbcFactoryTest, testing::ValuesIn(
 #else
 INSTANTIATE_TEST_SUITE_P(GbMbcFactoryCreate, GbMbcFactoryTest, testing::ValuesIn(typesOfMbc));
 #endif
+
+TEST_F(GbMbcFactoryTest, DetectsMbc1Multicart)
+{
+    const qnemu::GbMbcFactory gbMbcFactory;
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(64);
+    const std::array<uint8_t, 8> logoPrefix = {
+        0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B,
+    };
+    std::copy(logoPrefix.begin(), logoPrefix.end(), romBanks.at(0x10).begin() + 0x104);
+
+    auto mbc = gbMbcFactory.create(
+        std::move(romBanks), std::vector<std::array<uint8_t, qnemu::RamBankSize>>(), 0x1);
+    EXPECT_NE(dynamic_cast<qnemu::GbMbc1M*>(mbc.get()), nullptr);
+}
 
 TEST_F(GbMbcFactoryTest, CreateMbcWithInvalidType)
 {

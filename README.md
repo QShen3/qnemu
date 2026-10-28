@@ -187,7 +187,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 318/318, including 128 ROM tests
+The curated CTest set is currently 319/319, including 128 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
