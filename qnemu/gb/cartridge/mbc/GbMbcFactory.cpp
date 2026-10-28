@@ -9,10 +9,12 @@
 #include <vector>
 
 #include "qnemu/gb/cartridge/mbc/GbCircuitMbc.h"
+#include "qnemu/gb/cartridge/mbc/GbHuc1.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc1.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc1M.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc2.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc3.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc30.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc5.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
@@ -65,9 +67,18 @@ std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint
     } else if (type == 0x5 || type == 0x6) {
         mbc = std::make_unique<GbMbc2>(std::move(romBanks), std::move(ramBanks), type);
     } else if (type >= 0x0F && type <= 0x13) {
-        mbc = std::make_unique<GbMbc3>(std::move(romBanks), std::move(ramBanks), type);
+        // MBC30 is an MBC3 with 64 KiB SRAM (and usually a 4 MiB ROM).
+        if (ramBanks.size() == 8 || romBanks.size() == 256) {
+            mbc = std::make_unique<GbMbc30>(
+                std::move(romBanks), std::move(ramBanks), type);
+        } else {
+            mbc = std::make_unique<GbMbc3>(
+                std::move(romBanks), std::move(ramBanks), type);
+        }
     } else if (type >= 0x19 && type <= 0x1E) {
         mbc = std::make_unique<GbMbc5>(std::move(romBanks), std::move(ramBanks), type);
+    } else if (type == 0xFF) {
+        mbc = std::make_unique<GbHuc1>(std::move(romBanks), std::move(ramBanks), type);
     } else {
         throw std::runtime_error("This game is not supported!");
     }

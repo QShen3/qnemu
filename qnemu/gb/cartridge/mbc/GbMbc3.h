@@ -52,6 +52,10 @@ public:
     void loadRtc(const std::vector<uint8_t>& data) override;
     void advanceRtc(uint64_t seconds) override;
 
+protected:
+    /// MBC30 extends the ROM bank register from 7 to 8 bits.
+    virtual uint8_t romBankMask() const { return 0x7F; }
+
 private:
     void latchClock();
     void updateRtcRegisterBytes();

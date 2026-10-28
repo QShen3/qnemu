@@ -187,7 +187,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 319/319, including 128 ROM tests
+The curated CTest set is currently 323/323, including 128 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -392,14 +392,19 @@ without touching the renderer.
 | MBC1      | ✅       | unit + Mooneye MBC (incl. MBC1M) |
 | MBC2      | ✅       | unit + Mooneye MBC |
 | MBC3      | ✅       | unit |
+| MBC30     | ✅       | unit |
 | MBC5      | ✅       | unit + Mooneye MBC |
 
 MBC3's RTC register/latch protocol, 1 Hz ticking and persistence via a
-timestamped `.rtc` file are implemented.  MBC1M multi-cart wiring is detected
-from the extra header in bank $10 and is supported.
+timestamped `.rtc` file are implemented.  MBC30 is selected for MBC3 headers
+with 64 KiB SRAM (or a 4 MiB ROM) and extends ROM/RAM banking accordingly.
+MBC1M multi-cart wiring is detected from the extra header in bank $10 and is
+supported.  HuC1 ROM/RAM/battery banking is implemented; its infrared port is
+not connected, so IR reads report "no light" and IR-based linking is not
+available yet.
 | MBC6      | ❌       | ❌    |
 | MBC7      | ❌       | ❌    |
-| HuC1      | ❌       | ❌    |
+| HuC1      | ✅       | unit (IR not emulated) |
 | HDMA      | ✅       | unit  |
 
 | Feature         | Implement | Test |

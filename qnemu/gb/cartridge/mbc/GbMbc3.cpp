@@ -27,7 +27,7 @@ uint8_t GbMbc3::read(uint16_t address) const
             return romBanks.at(0).at(address);
         }
 
-        uint8_t bank = static_cast<uint8_t>(romBankNumber & 0x7F);
+        uint8_t bank = static_cast<uint8_t>(romBankNumber & romBankMask());
         if (bank == 0) {
             bank = 1;
         }
@@ -62,7 +62,7 @@ void GbMbc3::write(uint16_t address, const uint8_t value)
         return;
     }
     if (address < ramBankOrRtcAddress) {
-        romBankNumber = static_cast<uint8_t>(value & 0x7F);
+        romBankNumber = static_cast<uint8_t>(value & romBankMask());
         if (romBankNumber == 0) {
             romBankNumber = 1;
         }
