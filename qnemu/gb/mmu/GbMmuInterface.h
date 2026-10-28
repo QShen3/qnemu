@@ -17,6 +17,9 @@ public:
     /// CGB speed switch notification.  Peripherals that are affected by the
     /// double-speed clock (currently the divider/timer) can adjust here.
     virtual void setDoubleSpeed(bool /*doubleSpeed*/) {}
+
+    /// Selects CGB or DMG compatibility behavior for model-specific registers.
+    virtual void setCgb(bool /*cgb*/) {}
 };
 
 }  // namespace qnemu

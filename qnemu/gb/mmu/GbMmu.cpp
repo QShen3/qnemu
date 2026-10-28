@@ -4,11 +4,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
-#include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/const.h"
-#include "qnemu/gb/gpu/GbGpuInterface.h"
-#include "qnemu/gb/memory/GbWorkRam.h"
 #include "qnemu/gb/mmu/GbMmu.h"
 
 namespace qnemu
@@ -126,6 +124,11 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
 void GbMmu::setDoubleSpeed(bool doubleSpeed)
 {
     timer->setDoubleSpeed(doubleSpeed);
+}
+
+void GbMmu::setCgb(bool cgb)
+{
+    workRam->setCgb(cgb);
 }
 
 void GbMmu::step()

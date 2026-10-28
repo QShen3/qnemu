@@ -61,6 +61,20 @@ On Debian/Ubuntu, install the Qt and Google Test development packages:
 
     sudo apt install cmake ninja-build qt6-base-dev qt6-multimedia-dev libgtest-dev libgmock-dev
 
+## Project layout
+
+`qnemu/display`, `qnemu/sound` and `qnemu/save` contain host-facing services
+that are shared by future console implementations.  `qnemu/gb` is the Game
+Boy implementation:
+
+- `gb_cpu`, `gb_interrupt`, `gb_ppu`, `gb_apu`, `gb_timer`, `gb_cartridge`,
+  `gb_memory`, `gb_joypad` and `gb_mmu` are Qt-free static libraries, one per
+  hardware block.
+- `gb` is the complete GB system library (`Gb.cpp`).  It links the device
+  libraries publicly and keeps the Qt display/sound/save bindings private.
+- The GUI executable links only `gb`; the headless ROM runner links the
+  device libraries it needs without pulling in Qt Multimedia or the GUI.
+
 ## CPU core
 
 The SM83 core lives in `qnemu/gb/cpu` and is deliberately independent of Qt,
@@ -194,7 +208,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 327/327, including 130 ROM tests
+The curated CTest set is currently 338/338, including 130 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):

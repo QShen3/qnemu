@@ -24,7 +24,16 @@ public:
     explicit GbCpuBus(GbMmuInterface& mmu, bool cgb = false) : mmu(mmu), cgb(cgb) {}
     ~GbCpuBus() override = default;
 
-    void setCgb(bool value) { cgb = value; }
+    void setCgb(bool value) { cgb = value; mmu.setCgb(value); }
+
+    /// Returns the bus to normal speed.  Used when a cartridge is (re)loaded.
+    void reset()
+    {
+        doubleSpeed = false;
+        speedSwitchArmed = false;
+        speedRemainder = 0;
+        mmu.setDoubleSpeed(false);
+    }
 
     uint8_t read(uint16_t address) override
     {

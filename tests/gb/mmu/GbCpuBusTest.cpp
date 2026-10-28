@@ -21,9 +21,11 @@ public:
     void step() override { ++steps; }
     void reset() override {}
     void setDoubleSpeed(bool value) override { doubleSpeed = value; }
+    void setCgb(bool value) override { cgb = value; }
 
     int steps = 0;
     bool doubleSpeed = false;
+    bool cgb = false;
 };
 }  // namespace
 
@@ -59,6 +61,35 @@ TEST(GbCpuBusTest, DmgDoesNotExposeKeyRegisters)
     bus.write(0xFF4D, 0x01);
     EXPECT_TRUE(bus.onStop());
     EXPECT_EQ(bus.read(0xFF4D), 0x7E);
+}
+
+TEST(GbCpuBusTest, ResetReturnsToNormalSpeed)
+{
+    FakeMmu mmu;
+    qnemu::GbCpuBus bus(mmu, true);
+
+    bus.write(0xFF4D, 0x01);
+    ASSERT_FALSE(bus.onStop());
+    ASSERT_TRUE(mmu.doubleSpeed);
+    ASSERT_EQ(bus.read(0xFF4D), 0xFE);
+
+    bus.reset();
+    EXPECT_FALSE(mmu.doubleSpeed);
+    EXPECT_EQ(bus.read(0xFF4D), 0x7E);
+
+    bus.tick(4);
+    EXPECT_EQ(mmu.steps, 4);
+}
+
+TEST(GbCpuBusTest, SetCgbForwardsModelToMmu)
+{
+    FakeMmu mmu;
+    qnemu::GbCpuBus bus(mmu, false);
+
+    bus.setCgb(true);
+    EXPECT_TRUE(mmu.cgb);
+    bus.setCgb(false);
+    EXPECT_FALSE(mmu.cgb);
 }
 
 }  // namespace qnemuTest

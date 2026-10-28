@@ -39,6 +39,7 @@ public:
     void step() override;
     void reset() override;
     void setDoubleSpeed(bool doubleSpeed) override;
+    void setCgb(bool cgb) override;
 
 private:
     std::unique_ptr<GbApu> apu;

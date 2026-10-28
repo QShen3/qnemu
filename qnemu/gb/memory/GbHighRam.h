@@ -12,6 +12,7 @@
 namespace qnemu
 {
 
+/// FF80-FFFE High RAM.  It is not cleared by reset, matching hardware.
 class GbHighRam : public GbDeviceInterface
 {
 public:
@@ -24,7 +25,7 @@ public:
     void reset() override;
 
 private:
-    std::array<uint8_t, 0x7F> data = {0};
+    std::array<uint8_t, 0x7F> data{};
 };
 
 }  // namespace qnemu

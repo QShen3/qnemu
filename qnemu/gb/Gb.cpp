@@ -104,6 +104,7 @@ void Gb::loadCartridge(const char* filePath)
     // always use the DMG-compatible PPU/CPU state.
     const bool cgb = model == GbModel::cgb && cartridge->isGbcCartridge();
     bus->setCgb(cgb);
+    bus->reset();
     ppu->setCgb(cgb);
     mmu->reset();
     cpu->reset(cgb);
