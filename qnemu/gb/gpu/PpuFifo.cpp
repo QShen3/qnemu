@@ -126,7 +126,7 @@ void PpuFifo::prepareSpritePenalties(const PpuRegisters& registers, const PpuMem
 
     const int spriteHeight = registers.objSize16() ? 16 : 8;
     std::array<bool, 21> tilesSeen{};
-    bool x0ExtraApplied = false;
+    bool leftEdgePenaltyApplied = false;
     std::size_t penaltyCount = 0;
     int spriteCount = 0;
 
@@ -145,19 +145,20 @@ void PpuFifo::prepareSpritePenalties(const PpuRegisters& registers, const PpuMem
 
         ++spriteCount;
         int penalty = 6;
-        if (oamX == 0) {
-            // Objects at OAM X=0 are completely off-screen and always cost
-            // 11 dots, but the extra alignment cost is shared on DMG.
-            if (!x0ExtraApplied) {
-                penalty += 5;
-                x0ExtraApplied = true;
+        if (oamX < 8) {
+            // Objects completely or partially left of the screen share the
+            // first tile fetch.  The wait is longest for X=0 (5 dots) and
+            // shrinks by one dot per pixel to the right, once per line.
+            if (!leftEdgePenaltyApplied) {
+                penalty += std::max(0, 5 - (oamX & 0x07));
+                leftEdgePenaltyApplied = true;
             }
-        } else if (screenX >= 0) {
+        } else {
             const int scrolledX = screenX + registers.scx;
             const int tile = std::min(20, scrolledX >> 3);
             if (!tilesSeen.at(static_cast<std::size_t>(tile))) {
                 const int pixel = scrolledX & 0x07;
-                penalty += std::max(0, (7 - pixel) - 2);
+                penalty += std::max(0, 5 - pixel);
                 tilesSeen.at(static_cast<std::size_t>(tile)) = true;
             }
         }
