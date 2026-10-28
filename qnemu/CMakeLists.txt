@@ -12,14 +12,5 @@ target_link_libraries(
     qnemu
     PRIVATE
     qnemu_warnings
-    display
-    sound
     gb
-    gb_cpu
-    gb_apu
-    gb_timer
-    gb_cartridge
-    save
-    Qt6::Core
-    Qt6::Gui
     Qt6::Widgets)

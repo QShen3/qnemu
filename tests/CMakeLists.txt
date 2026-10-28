@@ -26,24 +26,17 @@ add_executable(
     ${GB_GPUTEST_SRCS}
     ${SAVE_TEST_SRCS}
 )
+set_target_properties(qnemu_test PROPERTIES
+    AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(qnemu_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
     qnemu_test
     PRIVATE
     qnemu_warnings
     gb
-    gb_cpu
-    gb_ppu
-    gb_apu
-    gb_timer
-    gb_cartridge
     save
-    sound
-    display
     GTest::gmock_main
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Multimedia)
+    Qt6::Core)
 
 include(GoogleTest)
 gtest_discover_tests(qnemu_test DISCOVERY_TIMEOUT 30)

@@ -1,3 +1,6 @@
-add_library(display OBJECT RasterDisplay.cpp)
-target_include_directories(display PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(display PRIVATE qnemu_warnings Qt6::Gui)
+add_library(display STATIC RasterDisplay.cpp)
+set_target_properties(display PROPERTIES AUTOUIC OFF AUTORCC OFF)
+target_include_directories(display PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(display
+    PUBLIC Qt6::Gui
+    PRIVATE qnemu_warnings)

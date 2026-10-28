@@ -8,10 +8,10 @@
 #include <memory>
 #include <thread>
 
-#include <QtGui/QWindow>
-
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
+
+class QWindow;
 
 namespace qnemu
 {

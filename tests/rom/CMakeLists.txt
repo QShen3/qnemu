@@ -2,8 +2,18 @@ add_executable(
     gb_test_runner
     main.cpp
     GbTestSystem.cpp)
+set_target_properties(gb_test_runner PROPERTIES
+    AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
 target_include_directories(gb_test_runner PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_test_runner PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer gb_cartridge Qt6::Gui)
+target_link_libraries(gb_test_runner PRIVATE
+    qnemu_warnings
+    gb_cpu
+    gb_interrupt
+    gb_ppu
+    gb_apu
+    gb_timer
+    gb_cartridge
+    Qt6::Gui)
 
 set(QNEMU_TEST_ROM_ROOT "${PROJECT_SOURCE_DIR}/third_party" CACHE PATH
     "Directory containing the gb-test-roms and mooneye-test-roms submodules")

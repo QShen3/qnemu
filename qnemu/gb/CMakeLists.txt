@@ -1,33 +1,32 @@
-# The SM83 core is deliberately independent of Qt and of the rest of the
-# emulator.  Keeping it in its own library makes it linkable by the headless
-# ROM test runner and by CPU unit tests without dragging in the GUI.
-add_library(gb_cpu STATIC ${CMAKE_CURRENT_SOURCE_DIR}/cpu/GbCpu.cpp)
-set_target_properties(gb_cpu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
-target_include_directories(gb_cpu PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_cpu PRIVATE qnemu_warnings)
+# Each hardware block is a separate Qt-free static library.  Keeping them
+# apart lets the unit tests and the headless ROM runner link only the devices
+# they exercise; the `gb` library at the end assembles the complete system.
+function(qnemu_add_gb_library target)
+    add_library(${target} STATIC ${ARGN})
+    set_target_properties(${target} PROPERTIES
+        AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    target_include_directories(${target} PUBLIC ${PROJECT_SOURCE_DIR})
+    target_link_libraries(${target} PRIVATE qnemu_warnings)
+endfunction()
 
-# The PPU and interrupt controller are also Qt-free.  The headless test tools
-# and the PPU unit tests link this library directly.
-add_library(gb_ppu STATIC
+# SM83 CPU core.
+qnemu_add_gb_library(gb_cpu
+    ${CMAKE_CURRENT_SOURCE_DIR}/cpu/GbCpu.cpp)
+
+# Interrupt controller (IF/IE, priority, edge/latch handling).
+qnemu_add_gb_library(gb_interrupt
+    ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)
+
+# PPU: dot clock, VRAM/OAM/palette memory, pixel FIFO and the reference
+# scanline renderer.
+qnemu_add_gb_library(gb_ppu
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuFifo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/interrupt/GbInterruptHandler.cpp)
-set_target_properties(gb_ppu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
-target_include_directories(gb_ppu PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_ppu PRIVATE qnemu_warnings)
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp)
 
-# The timer is Qt-free too.  The headless ROM runner uses this same
-# implementation, so the real emulator and the test bus cannot drift apart.
-add_library(gb_timer STATIC ${CMAKE_CURRENT_SOURCE_DIR}/timer/GbTimer.cpp)
-set_target_properties(gb_timer PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
-target_include_directories(gb_timer PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_timer PRIVATE qnemu_warnings)
-
-# The APU is Qt-free as well, so the headless ROM runner and the APU unit
-# tests can link it without pulling in the GUI or Qt Multimedia.
-add_library(gb_apu STATIC
+# APU and its four channels.
+qnemu_add_gb_library(gb_apu
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbApu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel1.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel2.cpp
@@ -35,33 +34,54 @@ add_library(gb_apu STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbChannel4.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbLengthTimer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbVolumeEnvelope.cpp)
-set_target_properties(gb_apu PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
-target_include_directories(gb_apu PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_apu PRIVATE qnemu_warnings)
 
-# Cartridge header parsing and the MBC implementations are Qt-free; the
-# headless runner uses the same cartridge/MBC code as the GUI.
+# DIV/TIMA timer.
+qnemu_add_gb_library(gb_timer
+    ${CMAKE_CURRENT_SOURCE_DIR}/timer/GbTimer.cpp)
+
+# Cartridge header parsing and the MBC implementations.
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/cartridge/mbc CARTRIDGE_MBC_SRCS)
-add_library(gb_cartridge STATIC
+qnemu_add_gb_library(gb_cartridge
     ${CMAKE_CURRENT_SOURCE_DIR}/cartridge/GbCartridge.cpp
     ${CARTRIDGE_MBC_SRCS})
-set_target_properties(gb_cartridge PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
-target_include_directories(gb_cartridge PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb_cartridge PRIVATE qnemu_warnings)
 
-# C++
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/memory MEMORY_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/joypad JOYPAD_SRCS)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/mmu MMU_SRCS)
+# Internal RAM.
+qnemu_add_gb_library(gb_memory
+    ${CMAKE_CURRENT_SOURCE_DIR}/memory/GbHighRam.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/memory/GbWorkRam.cpp)
 
-# Interrupt, PPU and timer sources live in gb_ppu/gb_timer, which are linked
-# below; they must not be compiled into the gb object library again.
-add_library(
-    gb OBJECT
-    Gb.cpp
-    ${MEMORY_SRCS}
-    ${JOYPAD_SRCS}
-    ${MMU_SRCS}
-)
-target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer gb_cartridge save Qt6::Core Qt6::Gui)
+# FF00 joypad matrix.
+qnemu_add_gb_library(gb_joypad
+    ${CMAKE_CURRENT_SOURCE_DIR}/joypad/GbJoypad.cpp)
+
+# Bus address decoding and the CPU bus adapter.
+qnemu_add_gb_library(gb_mmu
+    ${CMAKE_CURRENT_SOURCE_DIR}/mmu/GbMmu.cpp)
+target_link_libraries(gb_mmu
+    PRIVATE
+        gb_apu
+        gb_joypad
+        gb_memory
+        gb_timer)
+
+# Complete GB system: owns the CPU/MMU/PPU/APU/timer/joypad/cartridge and the
+# host display/sound/save bindings.  Consumers link `gb` and get every device
+# library transitively; the Qt host bindings stay implementation details.
+qnemu_add_gb_library(gb
+    ${CMAKE_CURRENT_SOURCE_DIR}/Gb.cpp)
+target_link_libraries(gb
+    PUBLIC
+        gb_cpu
+        gb_interrupt
+        gb_ppu
+        gb_apu
+        gb_timer
+        gb_cartridge
+        gb_memory
+        gb_joypad
+        gb_mmu
+    PRIVATE
+        display
+        sound
+        save
+        Qt6::Gui)
