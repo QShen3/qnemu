@@ -6,7 +6,6 @@
 #include <memory>
 #include <utility>
 
-#include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
 #include "qnemu/gb/apu/GbApu.h"
 #include "qnemu/gb/apu/GbChannelInterface.h"
@@ -25,12 +24,17 @@
 #include "qnemu/gb/mmu/GbMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "qnemu/save/SaveManager.h"
-#include "qnemu/sound/DefaultSound.h"
 
 namespace qnemu
 {
 
-Gb::Gb(GbModel model) : model(model)
+Gb::Gb(GbModel model,
+        std::shared_ptr<DisplayInterface> displayInterface,
+        std::unique_ptr<SoundInterface> soundInterface,
+        std::shared_ptr<InputInterface> inputInterface) :
+    model(model),
+    display(std::move(displayInterface)),
+    input(std::move(inputInterface))
 {
     std::array<std::unique_ptr<GbChannelInterface>, 4> channels {
         std::make_unique<GbChannel1>(),
@@ -38,12 +42,10 @@ Gb::Gb(GbModel model) : model(model)
         std::make_unique<GbChannel3>(),
         std::make_unique<GbChannel4>(),
     };
-    auto sound = std::make_unique<DefaultSound>(GbApu::SampleRate, 2);
-    auto apu = std::make_unique<GbApu>(std::move(sound), std::move(channels),
+    auto apu = std::make_unique<GbApu>(std::move(soundInterface), std::move(channels),
         model == GbModel::cgb, GbApu::DefaultFadeInFrames);
 
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
-    auto rasterDisplay = std::make_shared<RasterDisplay>();
     auto interruptHandler = std::make_shared<GbInterruptHandler>();
 
     auto workRam = std::make_unique<GbWorkRam>();
@@ -51,16 +53,18 @@ Gb::Gb(GbModel model) : model(model)
     auto timer = std::make_unique<GbTimer>(interruptHandler);
 
     auto joypad = std::make_unique<GbJoypad>(interruptHandler);
-    auto* joypadPointer = joypad.get();
-    rasterDisplay->setButtonPressCallback([joypadPointer](GbButton button) {
-        joypadPointer->setButtonState(button, true);
-    });
-    rasterDisplay->setButtonReleaseCallback([joypadPointer](GbButton button) {
-        joypadPointer->setButtonState(button, false);
-    });
+    if (input) {
+        auto* joypadPointer = joypad.get();
+        input->setButtonPressCallback([joypadPointer](GbButton button) {
+            joypadPointer->setButtonState(button, true);
+        });
+        input->setButtonReleaseCallback([joypadPointer](GbButton button) {
+            joypadPointer->setButtonState(button, false);
+        });
+    }
 
     auto ppuInstance = std::make_unique<GbPpu>(
-        model == GbModel::cgb && cartridge->isGbcCartridge(), rasterDisplay, interruptHandler);
+        model == GbModel::cgb && cartridge->isGbcCartridge(), display, interruptHandler);
     ppu = ppuInstance.get();
 
     mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppuInstance), std::move(highRam),
@@ -71,8 +75,6 @@ Gb::Gb(GbModel model) : model(model)
     bus = std::make_unique<GbCpuBus>(
         *mmu, model == GbModel::cgb && cartridge->isGbcCartridge());
     cpu = std::make_unique<GbCpu>(*bus);
-
-    display = rasterDisplay;
 }
 
 Gb::~Gb()
@@ -83,11 +85,11 @@ Gb::~Gb()
     }
     saveManager.reset();
 
-    if (display) {
+    if (input) {
         // The input callbacks capture the joypad's address; drop them before
         // the MMU (which owns the joypad) is destroyed.
-        display->setButtonPressCallback({});
-        display->setButtonReleaseCallback({});
+        input->setButtonPressCallback({});
+        input->setButtonReleaseCallback({});
     }
 }
 
@@ -138,19 +140,16 @@ void Gb::run()
         cpu->step();
 
         const bool stopped = cpu->isStopped();
-        if (stopped && displayEnabled) {
-            display->disable();
-            displayEnabled = false;
-        } else if (!stopped && !displayEnabled) {
-            display->enable();
-            displayEnabled = true;
+        if (display) {
+            if (stopped && displayEnabled) {
+                display->disable();
+                displayEnabled = false;
+            } else if (!stopped && !displayEnabled) {
+                display->enable();
+                displayEnabled = true;
+            }
         }
     }
-}
-
-std::shared_ptr<QWindow> Gb::getDisplay()
-{
-    return display;
 }
 
 }  // namespace qnemu

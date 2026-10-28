@@ -14,6 +14,8 @@
 namespace qnemu
 {
 
+class RasterDisplay;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -27,6 +29,7 @@ public:
 private:
     QSettings settings;
     GbModel model;
+    std::shared_ptr<RasterDisplay> display;
     std::unique_ptr<Gb> gb;
 };
 

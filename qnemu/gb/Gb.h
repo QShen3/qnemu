@@ -8,10 +8,11 @@
 #include <memory>
 #include <thread>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
-
-class QWindow;
+#include "qnemu/input/InputInterface.h"
+#include "qnemu/sound/SoundInterface.h"
 
 namespace qnemu
 {
@@ -27,20 +28,29 @@ class GbCpu;
 class GbCpuBus;
 class GbMmu;
 class GbPpu;
-class RasterDisplay;
 class SaveManager;
 
+/**
+ * Complete Game Boy system.
+ *
+ * The host supplies the display, audio sink and optional input backend, so
+ * this class and the `gb` library stay independent of Qt.  The display is
+ * shared because the GUI keeps ownership of the window while the emulation
+ * thread renders into it.
+ */
 class Gb
 {
 public:
-    explicit Gb(GbModel model = GbModel::cgb);
+    Gb(GbModel model,
+        std::shared_ptr<DisplayInterface> display,
+        std::unique_ptr<SoundInterface> sound,
+        std::shared_ptr<InputInterface> input = nullptr);
     ~Gb();
 
     Gb(const Gb&) = delete;
     Gb& operator=(const Gb&) = delete;
 
     void loadCartridge(const char* filePath);
-    std::shared_ptr<QWindow> getDisplay();
     void stop();
 
 private:
@@ -54,7 +64,8 @@ private:
     std::unique_ptr<GbCpu> cpu;
     GbPpu* ppu = nullptr;
     const GbMbcFactory mbcFactory;
-    std::shared_ptr<RasterDisplay> display;
+    std::shared_ptr<DisplayInterface> display;
+    std::shared_ptr<InputInterface> input;
     std::unique_ptr<SaveManager> saveManager;
     std::thread work;
     std::atomic_bool running{false};

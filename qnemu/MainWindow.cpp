@@ -15,6 +15,7 @@
 #include "qnemu/MainWindow.h"
 #include "qnemu/display/RasterDisplay.h"
 #include "qnemu/gb/Gb.h"
+#include "qnemu/sound/DefaultSound.h"
 
 namespace qnemu
 {
@@ -43,8 +44,8 @@ MainWindow::MainWindow(GbModel model, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    if (gb) {
-        gb->getDisplay()->setParent(nullptr);
+    if (display) {
+        display->setParent(nullptr);
     }
     setCentralWidget(nullptr);
 }
@@ -58,8 +59,10 @@ void MainWindow::openFile()
     resize(320, 288 + menuBar()->height());
 
     if (!gb) {
-        gb = std::make_unique<Gb>(model);
-        QWidget* displayWidgets = QWidget::createWindowContainer(gb->getDisplay().get(), this);
+        display = std::make_shared<RasterDisplay>();
+        gb = std::make_unique<Gb>(model, display,
+            std::make_unique<DefaultSound>(), display);
+        QWidget* displayWidgets = QWidget::createWindowContainer(display.get(), this);
         setCentralWidget(displayWidgets);
     }
     gb->loadCartridge(fileName.toStdString().c_str());

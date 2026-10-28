@@ -13,4 +13,6 @@ target_link_libraries(
     PRIVATE
     qnemu_warnings
     gb
+    display
+    sound
     Qt6::Widgets)

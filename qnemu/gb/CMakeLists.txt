@@ -64,9 +64,10 @@ target_link_libraries(gb_mmu
         gb_memory
         gb_timer)
 
-# Complete GB system: owns the CPU/MMU/PPU/APU/timer/joypad/cartridge and the
-# host display/sound/save bindings.  Consumers link `gb` and get every device
-# library transitively; the Qt host bindings stay implementation details.
+# Complete GB system: owns the CPU/MMU/PPU/APU/timer/joypad/cartridge.  The
+# host display, audio sink and input backend are injected by the executable,
+# so this library stays independent of Qt Widgets/Multimedia (only the save
+# service pulls in Qt Core).
 qnemu_add_gb_library(gb
     ${CMAKE_CURRENT_SOURCE_DIR}/Gb.cpp)
 target_link_libraries(gb
@@ -81,7 +82,4 @@ target_link_libraries(gb
         gb_joypad
         gb_mmu
     PRIVATE
-        display
-        sound
-        save
-        Qt6::Gui)
+        save)

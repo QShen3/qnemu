@@ -9,6 +9,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/apu GB_APUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/joypad GB_JOYPADTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/timer GB_TIMERTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/gpu GB_GPUTEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/system GB_SYSTEMTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/save SAVE_TEST_SRCS)
 
 # Executable
@@ -24,6 +25,7 @@ add_executable(
     ${GB_JOYPADTEST_SRCS}
     ${GB_TIMERTEST_SRCS}
     ${GB_GPUTEST_SRCS}
+    ${GB_SYSTEMTEST_SRCS}
     ${SAVE_TEST_SRCS}
 )
 set_target_properties(qnemu_test PROPERTIES
