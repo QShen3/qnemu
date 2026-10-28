@@ -82,9 +82,34 @@ void GbMbc2::write(uint16_t address, const uint8_t value)
 
 void GbMbc2::reset()
 {
-    (void)type;
     ramEnabled = false;
     romBankNumber = 1;
+}
+
+bool GbMbc2::hasBattery() const
+{
+    return type == 0x06;
+}
+
+std::size_t GbMbc2::ramSize() const
+{
+    return ram.size();
+}
+
+std::vector<uint8_t> GbMbc2::dumpRam() const
+{
+    std::vector<uint8_t> data(ram.size(), 0);
+    for (std::size_t i = 0; i < ram.size(); ++i) {
+        data.at(i) = static_cast<uint8_t>(ram.at(i) & 0x0F);
+    }
+    return data;
+}
+
+void GbMbc2::loadRam(const std::vector<uint8_t>& data)
+{
+    for (std::size_t i = 0; i < ram.size(); ++i) {
+        ram.at(i) = i < data.size() ? static_cast<uint8_t>(data.at(i) & 0x0F) : 0;
+    }
 }
 
 }  // namespace qnemu

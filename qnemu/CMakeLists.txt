@@ -1,5 +1,6 @@
 add_subdirectory(display)
 add_subdirectory(sound)
+add_subdirectory(save)
 add_subdirectory(gb)
 
 add_executable(
@@ -18,6 +19,7 @@ target_link_libraries(
     gb_apu
     gb_timer
     gb_cartridge
+    save
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets)

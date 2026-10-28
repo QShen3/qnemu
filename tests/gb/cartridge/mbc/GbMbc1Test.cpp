@@ -182,6 +182,34 @@ TEST(GbMbc1Test, ReadWhenRamDisabled)
 // }
 #endif
 
+TEST(GbMbc1Test, SaveRamAndBatteryFlag)
+{
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(4);
+    for (std::size_t bank = 0; bank < ramBanks.size(); ++bank) {
+        ramBanks.at(bank).fill(static_cast<uint8_t>(bank + 1));
+    }
+
+    qnemu::GbMbc1 mbc(std::move(romBanks), std::move(ramBanks), 0x03);
+    EXPECT_TRUE(mbc.hasBattery());
+    const std::vector<uint8_t> dump = mbc.dumpRam();
+    EXPECT_EQ(dump.size(), 4 * qnemu::RamBankSize);
+    EXPECT_EQ(dump.at(0), 1);
+    EXPECT_EQ(dump.at(qnemu::RamBankSize), 2);
+
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> otherRomBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> otherRamBanks(4);
+    qnemu::GbMbc1 other(std::move(otherRomBanks), std::move(otherRamBanks), 0x03);
+    other.loadRam(dump);
+    EXPECT_EQ(other.dumpRam(), dump);
+
+    std::vector<std::array<uint8_t, qnemu::RomBankSize>> noBatteryRomBanks(2);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> noBatteryRamBanks(1);
+    qnemu::GbMbc1 noBattery(std::move(noBatteryRomBanks),
+        std::move(noBatteryRamBanks), 0x02);
+    EXPECT_FALSE(noBattery.hasBattery());
+}
+
 TEST(GbMbc1Test, ReadFromRam)
 {
     std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramDataBanks(4);

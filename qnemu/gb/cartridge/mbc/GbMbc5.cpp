@@ -82,6 +82,36 @@ void GbMbc5::reset()
     ramBankNumber = 0;
 }
 
+bool GbMbc5::hasBattery() const
+{
+    return type == 0x1B || type == 0x1E;
+}
+
+std::size_t GbMbc5::ramSize() const
+{
+    return ramBanks.size() * RamBankSize;
+}
+
+std::vector<uint8_t> GbMbc5::dumpRam() const
+{
+    std::vector<uint8_t> data;
+    data.reserve(ramSize());
+    for (const auto& bank : ramBanks) {
+        data.insert(data.end(), bank.begin(), bank.end());
+    }
+    return data;
+}
+
+void GbMbc5::loadRam(const std::vector<uint8_t>& data)
+{
+    std::size_t offset = 0;
+    for (auto& bank : ramBanks) {
+        for (auto& byte : bank) {
+            byte = offset < data.size() ? data.at(offset++) : 0xFF;
+        }
+    }
+}
+
 bool GbMbc5::isRumble() const
 {
     return type >= 0x1C && type <= 0x1E;

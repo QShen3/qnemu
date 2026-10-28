@@ -56,6 +56,32 @@ TEST(GbMbc5Test, RomAndRamBanking)
     EXPECT_EQ(mbc.read(0xA000), 0x00);
 }
 
+TEST(GbMbc5Test, SaveRamAndBatteryFlag)
+{
+    auto romBanks = makeRomBanks(4);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(4);
+    for (std::size_t bank = 0; bank < ramBanks.size(); ++bank) {
+        ramBanks.at(bank).fill(static_cast<uint8_t>(bank + 1));
+    }
+    qnemu::GbMbc5 mbc(std::move(romBanks), std::move(ramBanks), 0x1B);
+
+    EXPECT_TRUE(mbc.hasBattery());
+    const std::vector<uint8_t> dump = mbc.dumpRam();
+    EXPECT_EQ(dump.size(), 4 * qnemu::RamBankSize);
+
+    auto otherRomBanks = makeRomBanks(4);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> otherRamBanks(4);
+    qnemu::GbMbc5 other(std::move(otherRomBanks), std::move(otherRamBanks), 0x1B);
+    other.loadRam(dump);
+    EXPECT_EQ(other.dumpRam(), dump);
+
+    auto noBatteryRomBanks = makeRomBanks(4);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> noBatteryRamBanks(1);
+    qnemu::GbMbc5 noBattery(std::move(noBatteryRomBanks),
+        std::move(noBatteryRamBanks), 0x1A);
+    EXPECT_FALSE(noBattery.hasBattery());
+}
+
 TEST(GbMbc5Test, RumbleBitIsNotPartOfRamBank)
 {
     auto romBanks = makeRomBanks(64);

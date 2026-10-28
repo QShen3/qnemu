@@ -160,6 +160,90 @@ void GbMbc3::reset()
     latchedRtc = rtc;
 }
 
+bool GbMbc3::hasBattery() const
+{
+    return type == 0x0F || type == 0x10 || type == 0x13;
+}
+
+std::size_t GbMbc3::ramSize() const
+{
+    return ramBanks.size() * RamBankSize;
+}
+
+std::vector<uint8_t> GbMbc3::dumpRam() const
+{
+    std::vector<uint8_t> data;
+    data.reserve(ramSize());
+    for (const auto& bank : ramBanks) {
+        data.insert(data.end(), bank.begin(), bank.end());
+    }
+    return data;
+}
+
+void GbMbc3::loadRam(const std::vector<uint8_t>& data)
+{
+    std::size_t offset = 0;
+    for (auto& bank : ramBanks) {
+        for (auto& byte : bank) {
+            byte = offset < data.size() ? data.at(offset++) : 0xFF;
+        }
+    }
+}
+
+bool GbMbc3::hasRtc() const
+{
+    return type == 0x0F || type == 0x10;
+}
+
+std::vector<uint8_t> GbMbc3::dumpRtc()
+{
+    updateRtcRegisterBytes();
+    return {rtc.begin(), rtc.end()};
+}
+
+void GbMbc3::loadRtc(const std::vector<uint8_t>& data)
+{
+    if (data.size() < 5) {
+        return;
+    }
+
+    rtcSeconds = static_cast<uint8_t>(data.at(0) & 0x3F);
+    rtcMinutes = static_cast<uint8_t>(data.at(1) & 0x3F);
+    rtcHours = static_cast<uint8_t>(data.at(2) & 0x1F);
+    rtcDays = static_cast<uint16_t>(((data.at(4) & 0x01) << 8) | data.at(3));
+    rtcHalted = (data.at(4) & 0x40) != 0;
+    rtcCarry = (data.at(4) & 0x80) != 0;
+    updateRtcRegisterBytes();
+    latchedRtc = rtc;
+}
+
+void GbMbc3::advanceRtc(uint64_t seconds)
+{
+    if (!hasRtc() || rtcHalted) {
+        return;
+    }
+
+    uint64_t total = rtcSeconds + seconds;
+    rtcSeconds = static_cast<uint8_t>(total % 60);
+    total /= 60;
+
+    total += rtcMinutes;
+    rtcMinutes = static_cast<uint8_t>(total % 60);
+    total /= 60;
+
+    total += rtcHours;
+    rtcHours = static_cast<uint8_t>(total % 24);
+    total /= 24;
+
+    total += rtcDays;
+    if (total > 0x1FF) {
+        rtcCarry = true;
+        total %= 0x200;
+    }
+    rtcDays = static_cast<uint16_t>(total);
+    updateRtcRegisterBytes();
+}
+
 void GbMbc3::latchClock()
 {
     updateRtcRegisterBytes();

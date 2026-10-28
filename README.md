@@ -187,7 +187,7 @@ PPU for OAM DMA, VRAM/OAM blocking, STAT/LYC and rendering.
 
 ### Passing ROM tests
 
-The curated CTest set is currently 310/310, including 128 ROM tests
+The curated CTest set is currently 318/318, including 128 ROM tests
 (labels in parentheses):
 
 Blargg (`-L blargg`):
@@ -281,7 +281,6 @@ Known failures at the moment are concentrated in:
   (wave-RAM accesses while CH3 is active need cycle-exact CPU/APU bus
   alignment; the other sound tests pass)
 - `boot_*` (no boot ROM)
-- MBC3 RTC time is not battery-persisted yet
 - `emulator-only` MBC6/MBC7 and other rare mapper suites are not implemented
 
 ## Play
@@ -339,6 +338,23 @@ with `ctest --preset debug -L sound`.  Wave-RAM accesses while CH3 is actively
 playing (tests 09/10/12) still depend on cycle-exact bus alignment and are not
 part of the curated set.
 
+### Saves
+
+Battery-backed cartridges are saved as raw cartridge RAM, without interpreting
+the game's save format:
+
+    <ApplicationData>/saves/<ROM stem>.sav   raw SRAM
+    <ApplicationData>/saves/<ROM stem>.rtc   MBC3 RTC registers + timestamp
+
+On macOS the default directory is
+`~/Library/Application Support/QNEmu/saves`; Qt's `AppDataLocation` is used on
+the other platforms.  `.sav` files are written for battery-backed MBC1/MBC2/
+MBC3/MBC5 and no-MBC carts.  MBC3 RTC carts additionally get an `.rtc` file;
+when the ROM is loaded again, the elapsed wall-clock time is applied unless
+the RTC was halted.  Saves are written when a ROM is switched or the emulator
+is closed.  The directory is not configurable in the UI yet; a settings page
+will expose it later.
+
 ### Input
 
 Host input is separate from rendering.  `RasterDisplay` implements
@@ -378,9 +394,9 @@ without touching the renderer.
 | MBC3      | ✅       | unit |
 | MBC5      | ✅       | unit + Mooneye MBC |
 
-MBC3's RTC register/latch protocol and 1 Hz ticking are implemented; RTC time
-is not persisted across emulator restarts yet.  MBC1M multi-cart wiring is
-detected from the extra header in bank $10 and is supported.
+MBC3's RTC register/latch protocol, 1 Hz ticking and persistence via a
+timestamped `.rtc` file are implemented.  MBC1M multi-cart wiring is detected
+from the extra header in bank $10 and is supported.
 | MBC6      | ❌       | ❌    |
 | MBC7      | ❌       | ❌    |
 | HuC1      | ❌       | ❌    |
@@ -390,7 +406,8 @@ detected from the extra header in bank $10 and is supported.
 | --------------- | --------- | ---- |
 | model selection | ✅       | CLI  |
 | key remap       | ❌       | ❌   |
-| Save & Load     | ❌       | ❌   |
+| Battery saves   | ✅       | unit |
+| Save states     | ❌       | ❌   |
 | Filtering       | ❌       | ❌   |
 | Vulkan backend  | ❌       | ❌   |
 | DirectX backend | ❌       | ❌   |

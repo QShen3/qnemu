@@ -59,4 +59,26 @@ TEST(GbMbc2Test, RomAndRamBanking)
     EXPECT_EQ(mbc.read(qnemu::MemoryRomBank01Start), 1);
 }
 
+TEST(GbMbc2Test, SaveRamRoundTrip)
+{
+    auto romBanks = makeRomBanks(16);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks;
+    qnemu::GbMbc2 mbc(std::move(romBanks), std::move(ramBanks), 0x06);
+
+    mbc.write(0x0000, 0x0A);
+    mbc.write(0xA000, 0xAB);
+    EXPECT_TRUE(mbc.hasBattery());
+
+    const std::vector<uint8_t> dump = mbc.dumpRam();
+    ASSERT_EQ(dump.size(), 512U);
+    EXPECT_EQ(dump.at(0), 0x0B);
+
+    auto otherRomBanks = makeRomBanks(16);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> otherRamBanks;
+    qnemu::GbMbc2 other(std::move(otherRomBanks), std::move(otherRamBanks), 0x06);
+    other.loadRam(dump);
+    other.write(0x0000, 0x0A);
+    EXPECT_EQ(other.read(0xA000), 0xFB);
+}
+
 }  // namespace qnemuTest

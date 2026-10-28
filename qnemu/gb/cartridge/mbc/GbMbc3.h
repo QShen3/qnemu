@@ -42,6 +42,16 @@ public:
     void step() override;
     void reset() override;
 
+    bool hasBattery() const override;
+    std::size_t ramSize() const override;
+    std::vector<uint8_t> dumpRam() const override;
+    void loadRam(const std::vector<uint8_t>& data) override;
+
+    bool hasRtc() const override;
+    std::vector<uint8_t> dumpRtc() override;
+    void loadRtc(const std::vector<uint8_t>& data) override;
+    void advanceRtc(uint64_t seconds) override;
+
 private:
     void latchClock();
     void updateRtcRegisterBytes();

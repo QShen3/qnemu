@@ -28,6 +28,7 @@ class GbCpuBus;
 class GbMmu;
 class GbPpu;
 class RasterDisplay;
+class SaveManager;
 
 class Gb
 {
@@ -54,6 +55,7 @@ private:
     GbPpu* ppu = nullptr;
     const GbMbcFactory mbcFactory;
     std::shared_ptr<RasterDisplay> display;
+    std::unique_ptr<SaveManager> saveManager;
     std::thread work;
     std::atomic_bool running{false};
 };

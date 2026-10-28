@@ -59,6 +59,40 @@ TEST(GbMbc3Test, RomRamAndRtc)
     EXPECT_EQ(mbc.read(0xA000), 0xFF);
 }
 
+TEST(GbMbc3Test, SaveRamAndRtc)
+{
+    auto romBanks = makeRomBanks(4);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> ramBanks(4);
+    for (std::size_t bank = 0; bank < ramBanks.size(); ++bank) {
+        ramBanks.at(bank).fill(static_cast<uint8_t>(bank + 0x10));
+    }
+    qnemu::GbMbc3 mbc(std::move(romBanks), std::move(ramBanks), 0x10);
+
+    EXPECT_TRUE(mbc.hasBattery());
+    EXPECT_TRUE(mbc.hasRtc());
+    const std::vector<uint8_t> dump = mbc.dumpRam();
+    EXPECT_EQ(dump.size(), 4 * qnemu::RamBankSize);
+
+    auto otherRomBanks = makeRomBanks(4);
+    std::vector<std::array<uint8_t, qnemu::RamBankSize>> otherRamBanks(4);
+    qnemu::GbMbc3 other(std::move(otherRomBanks), std::move(otherRamBanks), 0x10);
+    other.loadRam(dump);
+    EXPECT_EQ(other.dumpRam(), dump);
+
+    mbc.loadRtc({0x12, 0x34, 0x05, 0x10, 0x01});
+    mbc.advanceRtc(3661);
+    const std::vector<uint8_t> rtc = mbc.dumpRtc();
+    EXPECT_EQ(rtc.at(0), 0x13);
+    EXPECT_EQ(rtc.at(1), 0x35);
+    EXPECT_EQ(rtc.at(2), 0x06);
+    EXPECT_EQ(rtc.at(3), 0x10);
+    EXPECT_EQ(rtc.at(4), 0x01);
+
+    mbc.loadRtc({0, 0, 0, 0, 0x40});  // halted
+    mbc.advanceRtc(100);
+    EXPECT_EQ(mbc.dumpRtc().at(0), 0);
+}
+
 TEST(GbMbc3Test, RtcTicksAndHalts)
 {
     auto romBanks = makeRomBanks(4);

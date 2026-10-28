@@ -78,6 +78,36 @@ void GbMbc1::reset()
     std::memset(&registers, 0, sizeof(registers));
 }
 
+bool GbMbc1::hasBattery() const
+{
+    return type == 0x03;
+}
+
+std::size_t GbMbc1::ramSize() const
+{
+    return ramBanks.size() * RamBankSize;
+}
+
+std::vector<uint8_t> GbMbc1::dumpRam() const
+{
+    std::vector<uint8_t> data;
+    data.reserve(ramSize());
+    for (const auto& bank : ramBanks) {
+        data.insert(data.end(), bank.begin(), bank.end());
+    }
+    return data;
+}
+
+void GbMbc1::loadRam(const std::vector<uint8_t>& data)
+{
+    std::size_t offset = 0;
+    for (auto& bank : ramBanks) {
+        for (auto& byte : bank) {
+            byte = offset < data.size() ? data.at(offset++) : 0xFF;
+        }
+    }
+}
+
 uint8_t GbMbc1::getRomBankNumberForAddress(uint16_t address) const
 {
     uint8_t bankNumber = 0;

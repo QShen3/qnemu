@@ -76,4 +76,4 @@ add_library(
     ${MMU_SRCS}
 )
 target_include_directories(gb PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer gb_cartridge Qt6::Core Qt6::Gui)
+target_link_libraries(gb PRIVATE qnemu_warnings gb_cpu gb_ppu gb_apu gb_timer gb_cartridge save Qt6::Core Qt6::Gui)

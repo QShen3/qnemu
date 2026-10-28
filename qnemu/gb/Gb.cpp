@@ -24,6 +24,7 @@
 #include "qnemu/gb/mmu/GbCpuBus.h"
 #include "qnemu/gb/mmu/GbMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
+#include "qnemu/save/SaveManager.h"
 #include "qnemu/sound/DefaultSound.h"
 
 namespace qnemu
@@ -77,6 +78,11 @@ Gb::Gb(GbModel model) : model(model)
 Gb::~Gb()
 {
     stop();
+    if (saveManager && cartridge) {
+        saveManager->save(*cartridge);
+    }
+    saveManager.reset();
+
     if (display) {
         // The input callbacks capture the joypad's address; drop them before
         // the MMU (which owns the joypad) is destroyed.
@@ -88,6 +94,11 @@ Gb::~Gb()
 void Gb::loadCartridge(const char* filePath)
 {
     stop();
+    if (saveManager && cartridge) {
+        saveManager->save(*cartridge);
+    }
+    saveManager.reset();
+
     cartridge->load(filePath);
     // CGB hardware only enters CGB mode for a CGB cartridge. DMG/SGB models
     // always use the DMG-compatible PPU/CPU state.
@@ -96,6 +107,11 @@ void Gb::loadCartridge(const char* filePath)
     ppu->setCgb(cgb);
     mmu->reset();
     cpu->reset(cgb);
+
+    saveManager = std::make_unique<SaveManager>(
+        SaveManager::defaultDirectory(), filePath);
+    saveManager->load(*cartridge);
+
     start();
 }
 

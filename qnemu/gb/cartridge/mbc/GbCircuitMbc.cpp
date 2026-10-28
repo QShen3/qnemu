@@ -28,10 +28,9 @@ uint8_t GbCircuitMbc::read(uint16_t address) const
         return romBanks.at(1).at(address - MemoryRomBank01Start);
     }
     if (address >= ExternalRamStart && address <= ExternalRamEnd) {
-        if (type != 0) {
+        if (type != 0 && !ramBanks.empty()) {
             return ramBanks.at(0).at(address - ExternalRamStart);
         }
-        assert(false && "No Ram available");
         return 0xFF;
     }
     assert(false && "Wrong address");
@@ -41,17 +40,46 @@ uint8_t GbCircuitMbc::read(uint16_t address) const
 void GbCircuitMbc::write(uint16_t address, const uint8_t value)
 {
     if (address >= ExternalRamStart && address <= ExternalRamEnd) {
-        if (type != 0) {
+        if (type != 0 && !ramBanks.empty()) {
             ramBanks.at(0).at(address - ExternalRamStart) = value;
-            return;
         }
-        // assert(false && "No Ram available");
+        return;
     }
     // assert(false && "Wrong address");
 }
 
 void GbCircuitMbc::reset()
 {
+}
+
+bool GbCircuitMbc::hasBattery() const
+{
+    return type == 0x09;
+}
+
+std::size_t GbCircuitMbc::ramSize() const
+{
+    return ramBanks.size() * RamBankSize;
+}
+
+std::vector<uint8_t> GbCircuitMbc::dumpRam() const
+{
+    std::vector<uint8_t> data;
+    data.reserve(ramSize());
+    for (const auto& bank : ramBanks) {
+        data.insert(data.end(), bank.begin(), bank.end());
+    }
+    return data;
+}
+
+void GbCircuitMbc::loadRam(const std::vector<uint8_t>& data)
+{
+    std::size_t offset = 0;
+    for (auto& bank : ramBanks) {
+        for (auto& byte : bank) {
+            byte = offset < data.size() ? data.at(offset++) : 0xFF;
+        }
+    }
 }
 
 }  // namespace qnemu

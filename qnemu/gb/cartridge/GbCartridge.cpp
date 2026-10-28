@@ -92,7 +92,7 @@ GbCartridge::GbCartridge(const GbMbcFactoryInterface& gbMbcFactory) :
     gbcCartridge(false),
     japanCartridge(false),
     loaded(false),
-    ramSize(0),
+    ramSizeBytes(0),
     romSize(0),
     type(0)
 {
@@ -164,8 +164,8 @@ void GbCartridge::load(const char* filePath)
     title = std::string(gameTitle);
     publisher = getPublisherFromCartridge(buffer);
 
-    ramSize = getRamSizeFromCartridge(buffer.at(0x149));
-    const size_t ramBankCounts = ramSize == 0x800 ? 1 : ramSize / RamBankSize;
+    ramSizeBytes = getRamSizeFromCartridge(buffer.at(0x149));
+    const size_t ramBankCounts = ramSizeBytes == 0x800 ? 1 : ramSizeBytes / RamBankSize;
 
     type = buffer.at(0x147);
     japanCartridge = buffer.at(0x14A) == 0 ? true : false;
@@ -186,6 +186,52 @@ void GbCartridge::load(const char* filePath)
 bool GbCartridge::isGbcCartridge() const
 {
     return gbcCartridge;
+}
+
+bool GbCartridge::hasBattery() const
+{
+    return mbc && mbc->hasBattery();
+}
+
+std::size_t GbCartridge::ramSize() const
+{
+    return mbc ? mbc->ramSize() : 0;
+}
+
+std::vector<uint8_t> GbCartridge::dumpRam() const
+{
+    return mbc ? mbc->dumpRam() : std::vector<uint8_t> {};
+}
+
+void GbCartridge::loadRam(const std::vector<uint8_t>& data)
+{
+    if (mbc) {
+        mbc->loadRam(data);
+    }
+}
+
+bool GbCartridge::hasRtc() const
+{
+    return mbc && mbc->hasRtc();
+}
+
+std::vector<uint8_t> GbCartridge::dumpRtc()
+{
+    return mbc ? mbc->dumpRtc() : std::vector<uint8_t> {};
+}
+
+void GbCartridge::loadRtc(const std::vector<uint8_t>& data)
+{
+    if (mbc) {
+        mbc->loadRtc(data);
+    }
+}
+
+void GbCartridge::advanceRtc(uint64_t seconds)
+{
+    if (mbc) {
+        mbc->advanceRtc(seconds);
+    }
 }
 
 std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& buffer)

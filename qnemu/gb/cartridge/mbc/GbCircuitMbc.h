@@ -26,6 +26,11 @@ public:
     void write(uint16_t address, const uint8_t value) override;
     void reset() override;
 
+    bool hasBattery() const override;
+    std::size_t ramSize() const override;
+    std::vector<uint8_t> dumpRam() const override;
+    void loadRam(const std::vector<uint8_t>& data) override;
+
 private:
     std::vector<std::array<uint8_t, RomBankSize>> romBanks;
     std::vector<std::array<uint8_t, RamBankSize>> ramBanks;
