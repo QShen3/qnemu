@@ -70,6 +70,10 @@ int main(int argc, char* argv[])
 #endif
 
     qmlRegisterType<qnemu::EmulatorItem>("QNEmu", 1, 0, "EmulatorItem");
+    qmlRegisterUncreatableType<qnemu::AppSettings>("QNEmu", 1, 0, "AppSettings",
+        QStringLiteral("AppSettings is owned by AppController"));
+    qmlRegisterUncreatableType<qnemu::GameLibrary>("QNEmu", 1, 0, "GameLibrary",
+        QStringLiteral("GameLibrary is owned by AppController"));
 
     qnemu::AppController controller(model);
     QQmlApplicationEngine engine;

@@ -80,7 +80,7 @@ if(QNEMU_ENABLE_COVERAGE AND NOT MSVC)
     add_link_options(--coverage)
 endif()
 
-find_package(Qt6 6.2 COMPONENTS
+find_package(Qt6 6.3 COMPONENTS
     Core Gui Multimedia
     Qml Quick QuickControls2 QuickDialogs2
     REQUIRED)

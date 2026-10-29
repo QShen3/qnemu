@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 341 CTest cases, including 131 curated test ROMs.
+- 342 CTest cases, including 131 curated test ROMs.
 
 ## Build
 
@@ -29,7 +29,7 @@ goal is to support more consoles and handhelds with the same host layer.
 
 - A C++20 compiler (GCC >= 9, Clang >= 12, or MSVC 2019+)
 - CMake >= 3.16 (>= 3.20 for the bundled presets)
-- Qt >= 6.2 with Core, Gui, Multimedia, Qml, Quick, QuickControls2 and
+- Qt >= 6.3 with Core, Gui, Multimedia, Qml, Quick, QuickControls2 and
   QuickDialogs2
 - Google Test >= 1.10 (only when building the tests)
 
@@ -113,9 +113,29 @@ runs in CGB mode and a DMG cartridge runs in DMG compatibility mode. `dmg` and
 command protocol, palettes) are not implemented yet, so `sgb` currently
 behaves like the DMG baseline.
 
-Open a ROM from **File → Open...**.
+The home page is a per-platform library:
 
-### Key bindings
+- **Open ROM...** plays a ROM immediately. ROMs outside the configured
+  library folders are added to the library as references; the original file
+  is never copied or moved.
+- **Add Game...** adds a ROM to the library without starting it.
+- Click a library row to run it. The row menu can remove it from the library
+  without deleting the file.
+- **Settings...** opens the settings window with library paths, save path,
+  screenshots, display scale, audio and key profiles.
+- **Screenshot** saves the current 160×144 frame using the configured output
+  folder and format.
+- **View → Library / Game** switches between the library and the running game.
+
+The settings window has four pages:
+
+- **General**: 100/150/200% window scale, audio enable, save folder, screenshot
+  folder and format (the format list comes from Qt's image writers).
+- **GB / GBC**: the ROM folder scanned for each platform's library.
+- **Controls**: named key profiles, profile creation/deletion, and click-to-capture
+  key bindings. Changes apply immediately.
+
+Default key bindings (each profile can be changed in **Settings → Controls**):
 
 | Joypad | Key |
 | ------ | --- |
@@ -134,24 +154,28 @@ The host layer and the console implementation are deliberately separate:
 
 ```text
 qnemu/
-├── main.cpp          QGuiApplication + QML engine setup
-├── Main.qml          application window, menu, file dialog
-├── AppController.*   QML-facing C++ controller
-├── EmulatorItem.*    QQuickItem frame upload and key mapping
-├── display/          DisplayInterface and FrameBuffer headers
-├── sound/            Qt Multimedia audio output (shared host service)
-├── save/             battery-save and RTC persistence (shared service)
-└── gb/               Game Boy implementation
-    ├── cpu/          SM83 core
-    ├── interrupt/    IF/IE and interrupt priority
-    ├── gpu/          PPU, pixel FIFO, VRAM/OAM/palettes
-    ├── apu/          APU and four channels
-    ├── timer/        DIV/TIMA timer
-    ├── cartridge/    cartridge header, MBCs
-    ├── memory/       work RAM and high RAM
-    ├── joypad/       FF00 joypad matrix
-    ├── mmu/          address decoding and CPU bus adapter
-    └── Gb.cpp        complete GB system
+├── main.cpp            QGuiApplication + QML engine setup
+├── Main.qml            application window, menu, dialogs
+├── LibraryPage.qml     per-platform game library tabs and list
+├── SettingsDialog.qml  independent settings window
+├── AppController.*     QML-facing C++ controller
+├── AppSettings.*       persistent global/platform settings
+├── GameLibrary.*       ROM scan, metadata and library models
+├── EmulatorItem.*      QQuickPaintedItem frame view and key mapping
+├── display/            DisplayInterface and FrameBuffer headers
+├── sound/              Qt Multimedia audio output (shared host service)
+├── save/               battery-save and RTC persistence (shared service)
+└── gb/                 Game Boy implementation
+    ├── cpu/            SM83 core
+    ├── interrupt/      IF/IE and interrupt priority
+    ├── gpu/            PPU, pixel FIFO, VRAM/OAM/palettes
+    ├── apu/            APU and four channels
+    ├── timer/          DIV/TIMA timer
+    ├── cartridge/      cartridge header, MBCs
+    ├── memory/         work RAM and high RAM
+    ├── joypad/         FF00 joypad matrix
+    ├── mmu/            address decoding and CPU bus adapter
+    └── Gb.cpp          complete GB system
 ```
 
 Each hardware block is a separate Qt-free static library:
@@ -184,6 +208,13 @@ fallback. Native Quick Controls styles require a recent Qt (`macOS` in 6.7+,
 `FluentWinUI3` in 6.8+); older Qt versions use Fusion. ROM selection uses the
 native `FileDialog`; the menu bar is currently the in-window Quick Controls
 menu (a global native menu bar can be added later with a platform bridge).
+
+`GameLibrary` scans the configured GB/GBC folders and reads cartridge headers
+for title, publisher and region. ROMs opened from other folders are stored as
+references, so the original collection is never copied or reorganized. The
+settings window persists paths, the 100/150/200% window scale, audio enable,
+screenshot folder/format and key profiles through `QSettings`; key bindings are
+applied to `EmulatorItem` immediately.
 
 ## Emulation notes
 
@@ -434,7 +465,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **341/341 CTest cases**, including 131 ROM tests.
+The current set is **342/342 CTest cases**, including 131 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -560,11 +591,16 @@ CGB (`--model cgb`):
 - No boot ROM is implemented, so `boot_*` tests are not run.
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
 - SGB border, command protocol and palettes are not implemented.
-- The QML shell is intentionally minimal: ROM open, game view and keyboard
-  input. Settings, overlays, a global native menu bar and save-state UI are
-  future work.
-- Save states, key remapping, filters, Vulkan/DirectX backends and a speed
-  setting are not implemented yet.
+- The library uses references to the original ROM files. Copy/import into a
+  managed folder and deleting the ROM file from the UI are not implemented yet;
+  the row menu only removes the library entry.
+- Cover art / a game image database is not implemented yet. The library shows
+  cartridge title, publisher and region.
+- Library paths are per platform; the save path is global for now, and key
+  profiles are global. A global native menu bar and richer overlays are future
+  work.
+- Save states, speed settings, video filters, Vulkan/DirectX backends and a
+  global shortcut remapping editor are not implemented yet.
 
 ## Feature matrix
 
@@ -584,11 +620,14 @@ CGB (`--model cgb`):
 | MBC5             | ✅          | unit + Mooneye |
 | HuC1             | ✅          | unit (IR not emulated) |
 | QML UI           | ✅          | manual smoke test |
+| Game library     | ✅          | manual smoke test |
+| Settings         | ✅          | manual smoke test |
+| Screenshots      | ✅          | manual smoke test |
+| Key profiles     | ✅          | manual smoke test |
 | Model selection  | ✅          | CLI |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |
 | Save states      | ❌          | — |
-| Key remapping    | ❌          | — |
 | Speed setting    | ❌          | — |
 | Video filtering  | ❌          | — |
 | Vulkan backend   | ❌          | — |

@@ -45,6 +45,7 @@ Gb::Gb(GbModel model,
         std::make_unique<GbChannel3>(),
         std::make_unique<GbChannel4>(),
     };
+    sound = soundInterface.get();
     auto apu = std::make_unique<GbApu>(std::move(soundInterface), std::move(channels),
         model == GbModel::cgb, GbApu::DefaultFadeInFrames);
 
@@ -115,7 +116,7 @@ void Gb::loadCartridge(const char* filePath)
     cpu->reset(cgb);
 
     saveManager = std::make_unique<SaveManager>(
-        SaveManager::defaultDirectory(), filePath);
+        saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, filePath);
     saveManager->load(*cartridge);
 
     start();
@@ -134,6 +135,23 @@ void Gb::stop()
     if (work.joinable()) {
         work.join();
     }
+}
+
+void Gb::setSoundEnabled(bool enabled)
+{
+    if (!sound) {
+        return;
+    }
+    if (enabled) {
+        sound->enable();
+    } else {
+        sound->disable();
+    }
+}
+
+const FrameBuffer& Gb::frameBuffer() const
+{
+    return ppu->frameBuffer();
 }
 
 void Gb::run()

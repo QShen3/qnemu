@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <string>
 #include <vector>
 
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
@@ -15,6 +16,15 @@
 
 namespace qnemu
 {
+
+struct GbCartridgeHeader
+{
+    std::string title;
+    std::string publisher;
+    std::string region;
+    bool cgb = false;
+    uint8_t type = 0;
+};
 
 class GbCartridge : public GbCartridgeInterface
 {
@@ -31,6 +41,9 @@ public:
 
     void load(const char* filePath) override;
     bool isGbcCartridge() const override;
+
+    /// Lightweight header read for the game library; does not build an MBC.
+    static GbCartridgeHeader readHeader(const std::string& filePath);
 
     bool hasBattery() const override;
     std::size_t ramSize() const override;

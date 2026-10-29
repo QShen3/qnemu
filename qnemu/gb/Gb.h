@@ -6,9 +6,12 @@
 
 #include <atomic>
 #include <memory>
+#include <string>
 #include <thread>
+#include <utility>
 
 #include "qnemu/display/DisplayInterface.h"
+#include "qnemu/display/FrameBuffer.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/input/InputInterface.h"
@@ -53,6 +56,11 @@ public:
     void loadCartridge(const char* filePath);
     void stop();
 
+    void setSaveDirectory(std::string directory) { saveDirectory = std::move(directory); }
+    void setSoundEnabled(bool enabled);
+
+    const FrameBuffer& frameBuffer() const;
+
 private:
     void start();
     void run();
@@ -63,10 +71,12 @@ private:
     std::unique_ptr<GbCpuBus> bus;
     std::unique_ptr<GbCpu> cpu;
     GbPpu* ppu = nullptr;
+    SoundInterface* sound = nullptr;
     const GbMbcFactory mbcFactory;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<InputInterface> input;
     std::unique_ptr<SaveManager> saveManager;
+    std::string saveDirectory;
     std::thread work;
     std::atomic_bool running{false};
 };

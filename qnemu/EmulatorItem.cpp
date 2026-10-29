@@ -26,6 +26,17 @@ EmulatorItem::EmulatorItem(QQuickItem* parent) : QQuickPaintedItem(parent)
         updatePending.store(false);
         update();
     }, Qt::QueuedConnection);
+
+    setKeyBindings({
+        {QStringLiteral("up"), static_cast<int>(Qt::Key_W)},
+        {QStringLiteral("down"), static_cast<int>(Qt::Key_S)},
+        {QStringLiteral("left"), static_cast<int>(Qt::Key_A)},
+        {QStringLiteral("right"), static_cast<int>(Qt::Key_D)},
+        {QStringLiteral("a"), static_cast<int>(Qt::Key_J)},
+        {QStringLiteral("b"), static_cast<int>(Qt::Key_K)},
+        {QStringLiteral("select"), static_cast<int>(Qt::Key_2)},
+        {QStringLiteral("start"), static_cast<int>(Qt::Key_3)},
+    });
 }
 
 void EmulatorItem::presentFrame(const FrameBuffer& frame)
@@ -74,6 +85,30 @@ void EmulatorItem::setButtonReleaseCallback(std::function<void(GbButton)> callba
     buttonReleaseCallback = std::move(callback);
 }
 
+QImage EmulatorItem::snapshot() const
+{
+    const std::lock_guard lock(frameMutex);
+    return frameImage;
+}
+
+void EmulatorItem::setKeyBindings(const QVariantMap& bindings)
+{    keyBindings.clear();
+    const auto add = [this, &bindings](const QString& name, GbButton button) {
+        const int key = bindings.value(name).toInt();
+        if (key != 0) {
+            keyBindings.insert(key, button);
+        }
+    };
+    add(QStringLiteral("up"), GbButton::up);
+    add(QStringLiteral("down"), GbButton::down);
+    add(QStringLiteral("left"), GbButton::left);
+    add(QStringLiteral("right"), GbButton::right);
+    add(QStringLiteral("a"), GbButton::a);
+    add(QStringLiteral("b"), GbButton::b);
+    add(QStringLiteral("select"), GbButton::select);
+    add(QStringLiteral("start"), GbButton::start);
+}
+
 void EmulatorItem::paint(QPainter* painter)
 {
     QImage image;
@@ -111,28 +146,13 @@ void EmulatorItem::keyReleaseEvent(QKeyEvent* event)
     QQuickItem::keyReleaseEvent(event);
 }
 
-std::optional<GbButton> EmulatorItem::buttonForQtKey(int key)
+std::optional<GbButton> EmulatorItem::buttonForQtKey(int key) const
 {
-    switch (key) {
-    case Qt::Key_W:
-        return GbButton::up;
-    case Qt::Key_S:
-        return GbButton::down;
-    case Qt::Key_A:
-        return GbButton::left;
-    case Qt::Key_D:
-        return GbButton::right;
-    case Qt::Key_J:
-        return GbButton::a;
-    case Qt::Key_K:
-        return GbButton::b;
-    case Qt::Key_2:
-        return GbButton::select;
-    case Qt::Key_3:
-        return GbButton::start;
-    default:
+    const auto it = keyBindings.constFind(key);
+    if (it == keyBindings.constEnd()) {
         return std::nullopt;
     }
+    return it.value();
 }
 
 }  // namespace qnemu

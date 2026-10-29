@@ -9,7 +9,9 @@
 #include <mutex>
 #include <optional>
 
+#include <QtCore/QHash>
 #include <QtCore/QObject>
+#include <QtCore/QVariantMap>
 #include <QtGui/QImage>
 #include <QtGui/QKeyEvent>
 #include <QtQuick/QQuickPaintedItem>
@@ -42,6 +44,12 @@ public:
     void setButtonPressCallback(std::function<void(GbButton)> callback) override;
     void setButtonReleaseCallback(std::function<void(GbButton)> callback) override;
 
+    /// Replaces the host-key to Game Boy button mapping.
+    void setKeyBindings(const QVariantMap& bindings);
+
+    /// Returns a copy of the latest presented frame (thread-safe).
+    QImage snapshot() const;
+
 signals:
     void frameReady();
 
@@ -52,13 +60,14 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
-    static std::optional<GbButton> buttonForQtKey(int key);
+    std::optional<GbButton> buttonForQtKey(int key) const;
 
-    std::mutex frameMutex;
+    mutable std::mutex frameMutex;
     QImage frameImage;
     bool hasFrame = false;
     std::atomic_bool enabled {true};
     std::atomic_bool updatePending {false};
+    QHash<int, GbButton> keyBindings;
 
     std::function<void(GbButton)> buttonPressCallback;
     std::function<void(GbButton)> buttonReleaseCallback;

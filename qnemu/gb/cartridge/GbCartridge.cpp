@@ -234,6 +234,44 @@ void GbCartridge::advanceRtc(uint64_t seconds)
     }
 }
 
+GbCartridgeHeader GbCartridge::readHeader(const std::string& filePath)
+{
+    std::ifstream input(filePath, std::ios::in | std::ios::binary);
+    if (!input.is_open()) {
+        throw std::runtime_error("Load cartridge file failed!");
+    }
+
+    std::array<uint8_t, 0x150> headerBytes {};
+    input.read(reinterpret_cast<char*>(headerBytes.data()),
+        static_cast<std::streamsize>(headerBytes.size()));
+    if (input.gcount() != static_cast<std::streamsize>(headerBytes.size())) {
+        throw std::runtime_error("Cartridge file is not correct!");
+    }
+
+    const std::vector<uint8_t> buffer(headerBytes.begin(), headerBytes.end());
+    GbCartridgeHeader header;
+    header.cgb = (buffer.at(0x143) & 0x80) != 0;
+    header.type = buffer.at(0x147);
+    header.publisher = getPublisherFromCartridge(buffer);
+    header.region = buffer.at(0x14A) == 0 ? "Japan" : "World";
+
+    for (std::size_t i = 0x134; i <= 0x142; ++i) {
+        const char character = static_cast<char>(buffer.at(i));
+        if (character == '\0') {
+            break;
+        }
+        header.title.push_back(character >= 0x20 && character < 0x7F ? character : '.');
+    }
+    while (!header.title.empty()
+        && (header.title.back() == ' ' || header.title.back() == '.')) {
+        header.title.pop_back();
+    }
+    if (header.title.empty()) {
+        header.title = "Unknown";
+    }
+    return header;
+}
+
 std::string GbCartridge::getPublisherFromCartridge(const std::vector<uint8_t>& buffer)
 {
     std::string cartridgePublisher;
