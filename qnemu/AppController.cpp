@@ -25,6 +25,17 @@ AppController::AppController(GbModel model, QObject* parent) :
 {
 }
 
+AppController::~AppController()
+{
+    shutdown();
+}
+
+void AppController::shutdown()
+{
+    gb.reset();
+    displayItem = nullptr;
+}
+
 void AppController::attachDisplay(QObject* item)
 {
     displayItem = qobject_cast<EmulatorItem*>(item);

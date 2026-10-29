@@ -14,6 +14,18 @@ ApplicationWindow {
     title: appController.windowTitle
     color: "black"
 
+    onActiveChanged: {
+        if (active) {
+            emulator.forceActiveFocus()
+        }
+    }
+
+    Component.onCompleted: {
+        Qt.callLater(function() {
+            emulator.forceActiveFocus()
+        })
+    }
+
     menuBar: MenuBar {
         Menu {
             title: qsTr("&File")
@@ -81,6 +93,16 @@ ApplicationWindow {
             qsTr("Game Boy ROMs (*.gb *.gbc *.sgb)"),
             qsTr("All files (*)")
         ]
-        onAccepted: appController.openRom(selectedFile)
+        onAccepted: {
+            appController.openRom(selectedFile)
+            Qt.callLater(function() {
+                emulator.forceActiveFocus()
+            })
+        }
+        onRejected: {
+            Qt.callLater(function() {
+                emulator.forceActiveFocus()
+            })
+        }
     }
 }

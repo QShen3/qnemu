@@ -71,8 +71,8 @@ int main(int argc, char* argv[])
 
     qmlRegisterType<qnemu::EmulatorItem>("QNEmu", 1, 0, "EmulatorItem");
 
-    QQmlApplicationEngine engine;
     qnemu::AppController controller(model);
+    QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appController"), &controller);
 
     engine.load(QUrl(QStringLiteral("qrc:/qml/Main.qml")));
@@ -84,5 +84,7 @@ int main(int argc, char* argv[])
         controller.openRom(QUrl::fromLocalFile(parser.value(romOption)));
     }
 
-    return app.exec();
+    const int result = app.exec();
+    controller.shutdown();
+    return result;
 }

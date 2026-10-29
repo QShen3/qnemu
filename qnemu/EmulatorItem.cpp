@@ -20,6 +20,7 @@ namespace qnemu
 
 EmulatorItem::EmulatorItem(QQuickItem* parent) : QQuickItem(parent)
 {
+    setFlag(QQuickItem::ItemHasContents, true);
     setFlag(QQuickItem::ItemIsFocusScope, true);
     setAcceptedMouseButtons(Qt::NoButton);
     connect(this, &EmulatorItem::frameReady, this, [this]() {

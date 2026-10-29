@@ -32,13 +32,16 @@ class AppController : public QObject
 
 public:
     explicit AppController(GbModel model, QObject* parent = nullptr);
-    ~AppController() override = default;
+    ~AppController() override;
 
     QString windowTitle() const { return title; }
     bool hasGame() const { return gb != nullptr; }
 
     Q_INVOKABLE void attachDisplay(QObject* item);
     Q_INVOKABLE void openRom(const QUrl& url);
+
+    /// Stops emulation before the QML scene and its display item are destroyed.
+    void shutdown();
 
 signals:
     void windowTitleChanged();

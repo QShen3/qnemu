@@ -57,7 +57,8 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
 
     if (enablePpu) {
         display = std::make_shared<MemoryDisplay>();
-        ppu = std::make_unique<qnemu::GbPpu>(cgb, display, interruptHandler);
+        const bool ppuCgb = cgb && cartridge->isGbcCartridge();
+        ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
         ppu->setExternalRead([this](uint16_t address) {
             return read(address);
         });
