@@ -177,8 +177,8 @@ libraries it needs without pulling in Qt Multimedia or the GUI.
 
 The application shell is QML. `AppController` owns the `Gb` instance and exposes
 only a small property/action surface, while `EmulatorItem` implements
-`DisplayInterface` and `InputInterface` and uploads the 160×144 frame as a
-scene-graph texture. The Quick Controls style is platform-selected: `macOS` on
+`DisplayInterface` and `InputInterface` and paints the 160×144 frame through a
+`QQuickPaintedItem`. The Quick Controls style is platform-selected: `macOS` on
 macOS, `FluentWinUI3` on Windows, `iOS` on iOS, and `Fusion` as the portable
 fallback. Native Quick Controls styles require a recent Qt (`macOS` in 6.7+,
 `FluentWinUI3` in 6.8+); older Qt versions use Fusion. ROM selection uses the
@@ -232,8 +232,7 @@ share one alignment cost derived from `OAM X & 7`.
 The PPU never touches Qt or `GbCartridgeInterface`. External memory needed by
 OAM DMA/HDMA is supplied through a callback, and finished frames are pushed to
 `DisplayInterface` as a plain 160×144 `FrameBuffer`. The QML `EmulatorItem`
-uploads that buffer as a scene-graph texture without blocking the emulation
-thread.
+paints that buffer into the scene without blocking the emulation thread.
 
 PPU tests live in `tests/gb/gpu/` and cover background/window addressing,
 signed tile indexes, DMG/CGB palettes, sprite priority, OAM DMA/HDMA, mode
@@ -266,6 +265,10 @@ audio buffer so the previous game cannot leak into the next one.
 Unit tests are in `tests/gb/apu/`. The headless runner can attach the APU with
 `--apu`; curated `dmg_sound` / `cgb_sound` tests run with
 `ctest --preset debug -L sound`.
+
+The emulation thread is paced to the Game Boy's ~59.7 fps frame rate. The audio
+ring drops new samples if the sink stalls instead of blocking the emulator, so
+a slow or missing audio device cannot freeze the game.
 
 ### Memory and MMU
 

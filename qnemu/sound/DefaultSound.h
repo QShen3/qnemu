@@ -5,7 +5,6 @@
 #pragma once
 
 #include <atomic>
-#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -25,9 +24,10 @@ namespace qnemu
  * Qt Multimedia audio output.
  *
  * A small thread-safe ring buffer sits between the emulation thread and
- * QAudioSink.  The sink pulls frames in real time; when the ring is full the
- * emulation thread blocks, which doubles as the emulator's speed limiter.
- * Underruns are filled with silence instead of stopping the sink.
+ * QAudioSink.  The sink pulls frames in real time; if the ring stays full, new
+ * samples are dropped after a short wait so a stalled audio device cannot
+ * freeze emulation.  Underruns are filled with silence instead of stopping the
+ * sink.
  */
 class DefaultSound : public SoundInterface
 {

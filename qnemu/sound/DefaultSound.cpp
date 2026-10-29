@@ -3,7 +3,6 @@
  */
 
 #include <algorithm>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -34,35 +33,28 @@ public:
 
     void writeFrames(const int16_t* samples, std::size_t frameCount)
     {
-        std::unique_lock lock(mutex);
-        const int16_t* source = samples;
-        std::size_t remaining = frameCount;
-
-        while (remaining > 0 && !stopped) {
-            const bool ready = spaceAvailable.wait_for(lock, std::chrono::milliseconds(100), [this]() {
-                return stopped || sizeFrames < capacityFrames;
-            });
-            if (!ready || stopped) {
-                return;
-            }
-
-            const std::size_t freeFrames = capacityFrames - sizeFrames;
-            const std::size_t count = std::min(freeFrames, remaining);
-            const std::size_t first = std::min(count, capacityFrames - writeFrame);
-
-            std::memcpy(&ring[writeFrame * static_cast<std::size_t>(channels)], source,
-                first * static_cast<std::size_t>(channels) * sizeof(int16_t));
-            if (count > first) {
-                std::memcpy(&ring[0],
-                    source + first * static_cast<std::size_t>(channels),
-                    (count - first) * static_cast<std::size_t>(channels) * sizeof(int16_t));
-            }
-
-            writeFrame = (writeFrame + count) % capacityFrames;
-            sizeFrames += count;
-            source += count * static_cast<std::size_t>(channels);
-            remaining -= count;
+        const std::lock_guard lock(mutex);
+        if (stopped || frameCount == 0) {
+            return;
         }
+
+        const std::size_t freeFrames = capacityFrames - sizeFrames;
+        const std::size_t count = std::min(freeFrames, frameCount);
+        if (count == 0) {
+            return;
+        }
+
+        const std::size_t first = std::min(count, capacityFrames - writeFrame);
+        std::memcpy(&ring[writeFrame * static_cast<std::size_t>(channels)], samples,
+            first * static_cast<std::size_t>(channels) * sizeof(int16_t));
+        if (count > first) {
+            std::memcpy(&ring[0],
+                samples + first * static_cast<std::size_t>(channels),
+                (count - first) * static_cast<std::size_t>(channels) * sizeof(int16_t));
+        }
+
+        writeFrame = (writeFrame + count) % capacityFrames;
+        sizeFrames += count;
     }
 
     void clear()
@@ -71,14 +63,12 @@ public:
         readFrame = 0;
         writeFrame = 0;
         sizeFrames = 0;
-        spaceAvailable.notify_all();
     }
 
     void stop()
     {
         const std::lock_guard lock(mutex);
         stopped = true;
-        spaceAvailable.notify_all();
     }
 
     qint64 bytesAvailable() const override
@@ -132,7 +122,6 @@ protected:
             }
         }
 
-        spaceAvailable.notify_all();
         return maxSize;
     }
 
@@ -153,7 +142,6 @@ private:
     std::size_t sizeFrames = 0;
 
     mutable std::mutex mutex;
-    std::condition_variable spaceAvailable;
     bool stopped = false;
 };
 

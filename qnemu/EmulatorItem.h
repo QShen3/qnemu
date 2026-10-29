@@ -12,7 +12,7 @@
 #include <QtCore/QObject>
 #include <QtGui/QImage>
 #include <QtGui/QKeyEvent>
-#include <QtQuick/QQuickItem>
+#include <QtQuick/QQuickPaintedItem>
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/input/InputInterface.h"
@@ -25,10 +25,10 @@ namespace qnemu
  *
  * The PPU calls presentFrame() from the emulation thread.  The latest frame is
  * copied under a mutex and a queued signal asks the GUI thread to schedule a
- * scene-graph update.  Input events are translated to GbButton transitions and
- * forwarded to the joypad through InputInterface.
+ * repaint.  Input events are translated to GbButton transitions and forwarded
+ * to the joypad through InputInterface.
  */
-class EmulatorItem : public QQuickItem, public DisplayInterface, public InputInterface
+class EmulatorItem : public QQuickPaintedItem, public DisplayInterface, public InputInterface
 {
     Q_OBJECT
 public:
@@ -46,8 +46,7 @@ signals:
     void frameReady();
 
 protected:
-    QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
-    void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
+    void paint(QPainter* painter) override;
 
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;

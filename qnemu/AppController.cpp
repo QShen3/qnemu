@@ -59,8 +59,10 @@ void AppController::openRom(const QUrl& url)
         auto input = std::shared_ptr<InputInterface>(displayItem,
             [](InputInterface*) {});
 
+        auto sound = std::make_unique<DefaultSound>();
+
         auto system = std::make_unique<Gb>(model, display,
-            std::make_unique<DefaultSound>(), input);
+            std::move(sound), input);
         system->loadCartridge(path.toStdString().c_str());
 
         gb = std::move(system);

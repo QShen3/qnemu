@@ -9,20 +9,19 @@
 
 #include <QtCore/QSize>
 #include <QtGui/QKeyEvent>
-#include <QtQuick/QQuickWindow>
-#include <QtQuick/QSGSimpleTextureNode>
-#include <QtQuick/QSGTexture>
+#include <QtGui/QPainter>
 
 #include "qnemu/EmulatorItem.h"
 
 namespace qnemu
 {
 
-EmulatorItem::EmulatorItem(QQuickItem* parent) : QQuickItem(parent)
+EmulatorItem::EmulatorItem(QQuickItem* parent) : QQuickPaintedItem(parent)
 {
-    setFlag(QQuickItem::ItemHasContents, true);
     setFlag(QQuickItem::ItemIsFocusScope, true);
     setAcceptedMouseButtons(Qt::NoButton);
+    setOpaquePainting(true);
+    setFillColor(Qt::black);
     connect(this, &EmulatorItem::frameReady, this, [this]() {
         updatePending.store(false);
         update();
@@ -75,29 +74,19 @@ void EmulatorItem::setButtonReleaseCallback(std::function<void(GbButton)> callba
     buttonReleaseCallback = std::move(callback);
 }
 
-QSGNode* EmulatorItem::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*)
+void EmulatorItem::paint(QPainter* painter)
 {
     QImage image;
     {
         const std::lock_guard lock(frameMutex);
         if (!hasFrame) {
-            return oldNode;
+            return;
         }
         image = frameImage;
     }
 
-    auto* node = new QSGSimpleTextureNode;
-    node->setTexture(window()->createTextureFromImage(image));
-    node->setOwnsTexture(true);
-    node->setRect(boundingRect());
-    node->setFiltering(QSGTexture::Nearest);
-    return node;
-}
-
-void EmulatorItem::geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry)
-{
-    QQuickItem::geometryChange(newGeometry, oldGeometry);
-    update();
+    painter->setRenderHint(QPainter::SmoothPixmapTransform, false);
+    painter->drawImage(contentsBoundingRect(), image);
 }
 
 void EmulatorItem::keyPressEvent(QKeyEvent* event)

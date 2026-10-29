@@ -3,7 +3,10 @@
  */
 
 #include <array>
+#include <chrono>
+#include <cstdint>
 #include <memory>
+#include <thread>
 #include <utility>
 
 #include "qnemu/gb/Gb.h"
@@ -135,7 +138,13 @@ void Gb::stop()
 
 void Gb::run()
 {
+    using Clock = std::chrono::steady_clock;
+    constexpr auto frameInterval = std::chrono::microseconds(16743);
+
     bool displayEnabled = true;
+    uint64_t lastFrameCount = ppu ? ppu->frameCount() : 0;
+    auto nextFrame = Clock::now();
+
     while (running.load()) {
         cpu->step();
 
@@ -147,6 +156,19 @@ void Gb::run()
             } else if (!stopped && !displayEnabled) {
                 display->enable();
                 displayEnabled = true;
+            }
+        }
+
+        const uint64_t frameCount = ppu ? ppu->frameCount() : 0;
+        if (frameCount != lastFrameCount) {
+            lastFrameCount = frameCount;
+            nextFrame += frameInterval;
+            const auto now = Clock::now();
+            if (nextFrame < now) {
+                // Do not accumulate a large debt after a slow frame.
+                nextFrame = now;
+            } else {
+                std::this_thread::sleep_until(nextFrame);
             }
         }
     }
