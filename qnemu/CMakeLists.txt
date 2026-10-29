@@ -1,4 +1,3 @@
-add_subdirectory(display)
 add_subdirectory(sound)
 add_subdirectory(save)
 add_subdirectory(gb)
@@ -6,13 +5,19 @@ add_subdirectory(gb)
 add_executable(
     qnemu
     main.cpp
-    MainWindow.cpp)
+    AppController.cpp
+    EmulatorItem.cpp)
+qt_add_resources(qnemu "qml"
+    PREFIX "/qml"
+    FILES Main.qml)
 target_include_directories(qnemu PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
     qnemu
     PRIVATE
     qnemu_warnings
     gb
-    display
     sound
-    Qt6::Widgets)
+    Qt6::Qml
+    Qt6::Quick
+    Qt6::QuickControls2
+    Qt6::QuickDialogs2)

@@ -20,6 +20,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - Timer/divider, joypad and OAM DMA/HDMA.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
+- Qt Quick QML shell with platform-native Quick Controls styling.
 - 341 CTest cases, including 131 curated test ROMs.
 
 ## Build
@@ -28,7 +29,8 @@ goal is to support more consoles and handhelds with the same host layer.
 
 - A C++20 compiler (GCC >= 9, Clang >= 12, or MSVC 2019+)
 - CMake >= 3.16 (>= 3.20 for the bundled presets)
-- Qt >= 6.2 with Core, Gui, Widgets and Multimedia
+- Qt >= 6.2 with Core, Gui, Multimedia, Qml, Quick, QuickControls2 and
+  QuickDialogs2
 - Google Test >= 1.10 (only when building the tests)
 
 ### Commands
@@ -87,8 +89,12 @@ Debian/Ubuntu:
 
 ```bash
 sudo apt install cmake ninja-build qt6-base-dev qt6-multimedia-dev \
-    libgtest-dev libgmock-dev
+    qt6-declarative-dev libgtest-dev libgmock-dev
 ```
+
+The Qt Quick runtime QML modules (`QtQuick`, `QtQuick.Controls`,
+`QtQuick.Dialogs`) are needed to run the GUI; on distros that split them out,
+install the `qml6-module-qtquick*` packages for your Qt version.
 
 ## Usage
 
@@ -97,9 +103,11 @@ sudo apt install cmake ninja-build qt6-base-dev qt6-multimedia-dev \
 ./build/qnemu/qnemu --model cgb   # default
 ./build/qnemu/qnemu --model dmg
 ./build/qnemu/qnemu --model sgb
+./build/qnemu/qnemu --rom path/to/game.gb
 ```
 
-`-m` is accepted as a shorthand for `--model`. With `cgb`, a CGB cartridge
+`-m` is accepted as a shorthand for `--model`. `--rom` loads a ROM on
+startup; without it, use **File → Open...**. With `cgb`, a CGB cartridge
 runs in CGB mode and a DMG cartridge runs in DMG compatibility mode. `dmg` and
 `sgb` force the DMG-compatible CPU/PPU path. SGB-specific features (border,
 command protocol, palettes) are not implemented yet, so `sgb` currently
@@ -126,7 +134,11 @@ The host layer and the console implementation are deliberately separate:
 
 ```text
 qnemu/
-├── display/          Qt raster display (shared host service)
+├── main.cpp          QGuiApplication + QML engine setup
+├── Main.qml          application window, menu, file dialog
+├── AppController.*   QML-facing C++ controller
+├── EmulatorItem.*    QQuickItem frame upload and key mapping
+├── display/          DisplayInterface and FrameBuffer headers
 ├── sound/            Qt Multimedia audio output (shared host service)
 ├── save/             battery-save and RTC persistence (shared service)
 └── gb/               Game Boy implementation
@@ -157,9 +169,21 @@ Each hardware block is a separate Qt-free static library:
 `gb` is the complete GB system library. It links the device libraries
 publicly and only the save service privately. The host display, audio sink and
 optional input backend are injected by the executable, so `gb` itself does not
-depend on Qt Widgets or Multimedia. The GUI executable links `gb`, `display`
-and `sound`; the headless ROM runner links the device libraries it needs
-without pulling in Qt Multimedia or the GUI.
+depend on Qt Quick, Qt Widgets or Multimedia. The QML executable links `gb`,
+`sound` and the Qt Quick modules; the headless ROM runner links the device
+libraries it needs without pulling in Qt Multimedia or the GUI.
+
+### User interface
+
+The application shell is QML. `AppController` owns the `Gb` instance and exposes
+only a small property/action surface, while `EmulatorItem` implements
+`DisplayInterface` and `InputInterface` and uploads the 160×144 frame as a
+scene-graph texture. The Quick Controls style is platform-selected: `macOS` on
+macOS, `FluentWinUI3` on Windows, `iOS` on iOS, and `Fusion` as the portable
+fallback. Native Quick Controls styles require a recent Qt (`macOS` in 6.7+,
+`FluentWinUI3` in 6.8+); older Qt versions use Fusion. ROM selection uses the
+native `FileDialog`; the menu bar is currently the in-window Quick Controls
+menu (a global native menu bar can be added later with a platform bridge).
 
 ## Emulation notes
 
@@ -207,8 +231,8 @@ share one alignment cost derived from `OAM X & 7`.
 
 The PPU never touches Qt or `GbCartridgeInterface`. External memory needed by
 OAM DMA/HDMA is supplied through a callback, and finished frames are pushed to
-`DisplayInterface` as a plain 160×144 `FrameBuffer`. `RasterDisplay` converts
-that buffer to a `QImage` on the GUI side without blocking the emulation
+`DisplayInterface` as a plain 160×144 `FrameBuffer`. The QML `EmulatorItem`
+uploads that buffer as a scene-graph texture without blocking the emulation
 thread.
 
 PPU tests live in `tests/gb/gpu/` and cover background/window addressing,
@@ -305,7 +329,7 @@ later.
 
 ### Input
 
-Host input is separate from rendering. `RasterDisplay` implements
+Host input is separate from rendering. `EmulatorItem` implements
 `InputInterface` and maps Qt keys to `GbButton` values; `GbJoypad` only models
 the `FF00/P1` matrix and its edge-triggered interrupt. The joypad is therefore
 Qt-free, and a future gamepad, replay or network backend can feed it without
@@ -533,6 +557,9 @@ CGB (`--model cgb`):
 - No boot ROM is implemented, so `boot_*` tests are not run.
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
 - SGB border, command protocol and palettes are not implemented.
+- The QML shell is intentionally minimal: ROM open, game view and keyboard
+  input. Settings, overlays, a global native menu bar and save-state UI are
+  future work.
 - Save states, key remapping, filters, Vulkan/DirectX backends and a speed
   setting are not implemented yet.
 
@@ -553,6 +580,7 @@ CGB (`--model cgb`):
 | MBC3 / MBC30     | ✅          | unit + RTC tests |
 | MBC5             | ✅          | unit + Mooneye |
 | HuC1             | ✅          | unit (IR not emulated) |
+| QML UI           | ✅          | manual smoke test |
 | Model selection  | ✅          | CLI |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |
