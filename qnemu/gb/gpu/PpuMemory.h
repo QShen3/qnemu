@@ -45,6 +45,11 @@ public:
     uint32_t dmgColor(uint8_t palette, uint8_t colorIndex) const;
     uint32_t cgbColor(bool object, uint8_t palette, uint8_t colorIndex) const;
 
+    /// Enables the CGB compatibility palette for DMG cartridges.  The four
+    /// monochrome shades then map to fixed colors instead of grey levels.
+    void setDmgColorization(bool enabled) { dmgColorization_ = enabled; }
+    bool dmgColorization() const { return dmgColorization_; }
+
 private:
     std::array<std::array<uint8_t, VideoRamBankSize>, 2> videoRam_{};
     std::array<uint8_t, OamSize> oam_{};
@@ -53,6 +58,7 @@ private:
     uint8_t vramBank_ = 0x00;
     uint8_t backgroundPaletteSpec_ = 0x00;
     uint8_t objectPaletteSpec_ = 0x00;
+    bool dmgColorization_ = false;
 };
 
 }  // namespace qnemu

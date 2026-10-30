@@ -2,6 +2,8 @@
  *  Copyright [2020] <qazxdrcssc2006@163.com>
  */
 
+#include <optional>
+
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QDebug>
@@ -31,9 +33,8 @@ int main(int argc, char* argv[])
     parser.addVersionOption();
     const QCommandLineOption modelOption(
         QStringList {"m", "model"},
-        "Hardware model: cgb (default), dmg or sgb.",
-        "model",
-        "cgb");
+        "Override the launch model setting for this run: cgb, dmg or sgb.",
+        "model");
     parser.addOption(modelOption);
     const QCommandLineOption romOption(
         QStringList {"r", "rom"},
@@ -42,18 +43,20 @@ int main(int argc, char* argv[])
     parser.addOption(romOption);
     parser.process(app);
 
-    const QString modelName = parser.value(modelOption).toLower();
-    qnemu::GbModel model;
-    if (modelName == "cgb") {
-        model = qnemu::GbModel::cgb;
-    } else if (modelName == "dmg") {
-        model = qnemu::GbModel::dmg;
-    } else if (modelName == "sgb") {
-        model = qnemu::GbModel::sgb;
-    } else {
-        qCritical().noquote() << "Unknown model:" << modelName
-                              << "(expected cgb, dmg or sgb)";
-        return 1;
+    std::optional<qnemu::GbModel> modelOverride;
+    if (parser.isSet(modelOption)) {
+        const QString modelName = parser.value(modelOption).toLower();
+        if (modelName == "cgb") {
+            modelOverride = qnemu::GbModel::cgb;
+        } else if (modelName == "dmg") {
+            modelOverride = qnemu::GbModel::dmg;
+        } else if (modelName == "sgb") {
+            modelOverride = qnemu::GbModel::sgb;
+        } else {
+            qCritical().noquote() << "Unknown model:" << modelName
+                                  << "(expected cgb, dmg or sgb)";
+            return 1;
+        }
     }
 
     // Prefer the platform-native Quick Controls style.  The fallback keeps
@@ -75,7 +78,7 @@ int main(int argc, char* argv[])
     qmlRegisterUncreatableType<qnemu::GameLibrary>("QNEmu", 1, 0, "GameLibrary",
         QStringLiteral("GameLibrary is owned by AppController"));
 
-    qnemu::AppController controller(model);
+    qnemu::AppController controller(modelOverride);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appController"), &controller);
 

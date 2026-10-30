@@ -29,6 +29,20 @@ ApplicationWindow {
             subtitle: qsTr("Profiles and key bindings")
         }
     ]
+    readonly property var launchModels: [
+        {
+            value: "cgb",
+            label: qsTr("CGB (color)")
+        },
+        {
+            value: "dmg",
+            label: qsTr("DMG (monochrome)")
+        },
+        {
+            value: "sgb",
+            label: qsTr("SGB (DMG fallback)")
+        }
+    ]
     readonly property var keyActions: [
         {
             name: "up",
@@ -71,23 +85,46 @@ ApplicationWindow {
 
     title: qsTr("QNEmu Settings")
     width: 760
-    height: 580
+    height: 720
     minimumWidth: 680
-    minimumHeight: 500
+    minimumHeight: 560
     visible: false
     modality: Qt.ApplicationModal
     flags: Qt.Dialog
     transientParent: parentWindow
-    x: parentWindow ? parentWindow.x + (parentWindow.width - width) / 2 : 0
-    y: parentWindow ? parentWindow.y + (parentWindow.height - height) / 2 : 0
 
-    function showPage(index) {
+    function positionOn(anchor) {
+        const target = anchor || parentWindow;
+        if (!target) {
+            return;
+        }
+        x = Math.round(target.x + (target.width - width) / 2);
+        y = Math.round(target.y + (target.height - height) / 2);
+    }
+
+    function showPage(index, anchor) {
         if (index >= 0 && index < navItems.length) {
             currentPage = index;
+        }
+        if (!visible) {
+            const target = anchor || parentWindow;
+            if (target) {
+                transientParent = target;
+                positionOn(target);
+            }
         }
         show();
         raise();
         requestActivate();
+    }
+
+    function launchModelIndex(value) {
+        for (let i = 0; i < launchModels.length; ++i) {
+            if (launchModels[i].value === value) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     function buttonLabel(name) {
@@ -252,6 +289,43 @@ ApplicationWindow {
 
                         SettingsCard {
                             theme: uiTheme
+                            title: qsTr("Emulation")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Launch model")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Used when a ROM is opened. CGB colorizes monochrome games with a compatibility palette; SGB currently falls back to DMG.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 180
+                                    model: settingsWindow.launchModels
+                                    textRole: "label"
+                                    currentIndex: settingsWindow.launchModelIndex(settings.launchModel)
+                                    onActivated: settings.launchModel = settingsWindow.launchModels[currentIndex].value
+                                }
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
                             title: qsTr("Display")
 
                             RowLayout {
@@ -263,14 +337,14 @@ ApplicationWindow {
                                     spacing: 2
 
                                     Label {
-                                        text: qsTr("Window scale")
+                                        text: qsTr("Game window scale")
                                         color: uiTheme.windowText
                                         font.pixelSize: 12
                                     }
 
                                     Label {
                                         Layout.fillWidth: true
-                                        text: qsTr("100% is 320×288; 200% is 640×576.")
+                                        text: qsTr("Only the game window: 100% is 320×288; 200% is 640×576. The library window is independent.")
                                         color: uiTheme.mutedText
                                         font.pixelSize: 11
                                         wrapMode: Text.WordWrap

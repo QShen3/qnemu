@@ -11,7 +11,9 @@
 
 #include <QtCore/QHash>
 #include <QtCore/QObject>
+#include <QtCore/QSet>
 #include <QtCore/QVariantMap>
+#include <QtGui/QFocusEvent>
 #include <QtGui/QImage>
 #include <QtGui/QKeyEvent>
 #include <QtQuick/QQuickPaintedItem>
@@ -47,6 +49,9 @@ public:
     /// Replaces the host-key to Game Boy button mapping.
     void setKeyBindings(const QVariantMap& bindings);
 
+    /// Releases every key currently held in this view (window deactivation).
+    Q_INVOKABLE void releaseAllButtons();
+
     /// Returns a copy of the latest presented frame (thread-safe).
     QImage snapshot() const;
 
@@ -58,6 +63,7 @@ protected:
 
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 
 private:
     std::optional<GbButton> buttonForQtKey(int key) const;
@@ -68,6 +74,7 @@ private:
     std::atomic_bool enabled {true};
     std::atomic_bool updatePending {false};
     QHash<int, GbButton> keyBindings;
+    QSet<int> pressedKeys;
 
     std::function<void(GbButton)> buttonPressCallback;
     std::function<void(GbButton)> buttonReleaseCallback;

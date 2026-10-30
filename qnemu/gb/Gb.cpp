@@ -112,6 +112,9 @@ void Gb::loadCartridge(const char* filePath)
     bus->setCgb(cgb);
     bus->reset();
     ppu->setCgb(cgb);
+    // DMG cartridges on CGB hardware keep the DMG PPU path but use the CGB
+    // compatibility palette, matching the colorization of a real GBC.
+    ppu->setDmgColorization(model == GbModel::cgb && !cartridge->isGbcCartridge());
     mmu->reset();
     cpu->reset(cgb);
 

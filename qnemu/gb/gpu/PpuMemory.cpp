@@ -10,6 +10,21 @@
 namespace qnemu
 {
 
+namespace
+{
+
+// Fixed fallback used when a DMG cartridge runs on CGB hardware.  The real
+// CGB boot ROM picks per-game palettes; a single DMG-green palette keeps the
+// compatibility mode useful until the boot ROM palette table is implemented.
+constexpr std::array<uint32_t, 4> DmgColorizationPalette = {
+    rgb(255, 255, 255),
+    rgb(139, 172, 15),
+    rgb(48, 98, 48),
+    rgb(15, 56, 15),
+};
+
+}  // namespace
+
 PpuMemory::PpuMemory()
 {
     reset();
@@ -105,6 +120,9 @@ void PpuMemory::writePaletteData(bool object, uint8_t value)
 uint32_t PpuMemory::dmgColor(uint8_t palette, uint8_t colorIndex) const
 {
     const uint8_t shade = static_cast<uint8_t>((palette >> (colorIndex * 2)) & 0x03);
+    if (dmgColorization_) {
+        return DmgColorizationPalette.at(shade);
+    }
     switch (shade) {
         case 0: return rgb(255, 255, 255);
         case 1: return rgb(170, 170, 170);

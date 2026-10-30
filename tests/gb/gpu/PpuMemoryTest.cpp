@@ -20,6 +20,20 @@ TEST(PpuMemoryTest, DmgShadeOrder)
     EXPECT_EQ(memory.dmgColor(0xE4, 3), qnemu::rgb(0, 0, 0));
 }
 
+TEST(PpuMemoryTest, DmgColorizationUsesCompatibilityPalette)
+{
+    qnemu::PpuMemory memory;
+    memory.setDmgColorization(true);
+
+    EXPECT_EQ(memory.dmgColor(0xE4, 0), qnemu::rgb(255, 255, 255));
+    EXPECT_EQ(memory.dmgColor(0xE4, 1), qnemu::rgb(139, 172, 15));
+    EXPECT_EQ(memory.dmgColor(0xE4, 2), qnemu::rgb(48, 98, 48));
+    EXPECT_EQ(memory.dmgColor(0xE4, 3), qnemu::rgb(15, 56, 15));
+
+    memory.setDmgColorization(false);
+    EXPECT_EQ(memory.dmgColor(0xE4, 1), qnemu::rgb(170, 170, 170));
+}
+
 TEST(PpuMemoryTest, CgbPaletteAutoIncrementAndColor)
 {
     qnemu::PpuMemory memory;

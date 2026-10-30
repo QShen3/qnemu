@@ -23,9 +23,9 @@
 namespace qnemu
 {
 
-AppController::AppController(GbModel model, QObject* parent) :
+AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* parent) :
     QObject(parent),
-    model(model)
+    modelOverride(cliModelOverride)
 {
     settingsValue = new AppSettings(this);
     libraryValue = new GameLibrary(this);
@@ -41,6 +41,11 @@ AppController::AppController(GbModel model, QObject* parent) :
     connect(settingsValue, &AppSettings::soundEnabledChanged, this, [this]() {
         if (gb) {
             gb->setSoundEnabled(settingsValue->soundEnabled());
+        }
+    });
+    connect(settingsValue, &AppSettings::launchModelChanged, this, [this]() {
+        if (gb) {
+            setStatusText(QStringLiteral("Launch model changed; reopen the ROM to apply."));
         }
     });
     connect(settingsValue, &AppSettings::activeKeyBindingsChanged, this, &AppController::applyKeyBindings);
@@ -74,6 +79,21 @@ void AppController::attachDisplay(QObject* item)
     applyKeyBindings();
 }
 
+GbModel AppController::launchModel() const
+{
+    if (modelOverride) {
+        return *modelOverride;
+    }
+    const QString model = settingsValue->launchModel();
+    if (model == QStringLiteral("dmg")) {
+        return GbModel::dmg;
+    }
+    if (model == QStringLiteral("sgb")) {
+        return GbModel::sgb;
+    }
+    return GbModel::cgb;
+}
+
 void AppController::openRom(const QUrl& url)
 {
     if (!displayItem || !url.isLocalFile()) {
@@ -91,7 +111,7 @@ void AppController::openRom(const QUrl& url)
             [](InputInterface*) {});
 
         auto sound = std::make_unique<DefaultSound>();
-        auto system = std::make_unique<Gb>(model, display, std::move(sound), input);
+        auto system = std::make_unique<Gb>(launchModel(), display, std::move(sound), input);
         system->setSaveDirectory(settingsValue->savePath().toStdString());
         system->setSoundEnabled(settingsValue->soundEnabled());
         system->loadCartridge(path.toStdString().c_str());

@@ -92,7 +92,9 @@ QImage EmulatorItem::snapshot() const
 }
 
 void EmulatorItem::setKeyBindings(const QVariantMap& bindings)
-{    keyBindings.clear();
+{
+    releaseAllButtons();
+    keyBindings.clear();
     const auto add = [this, &bindings](const QString& name, GbButton button) {
         const int key = bindings.value(name).toInt();
         if (key != 0) {
@@ -124,11 +126,25 @@ void EmulatorItem::paint(QPainter* painter)
     painter->drawImage(contentsBoundingRect(), image);
 }
 
+void EmulatorItem::releaseAllButtons()
+{
+    for (int key : std::as_const(pressedKeys)) {
+        const auto button = buttonForQtKey(key);
+        if (button && buttonReleaseCallback) {
+            buttonReleaseCallback(*button);
+        }
+    }
+    pressedKeys.clear();
+}
+
 void EmulatorItem::keyPressEvent(QKeyEvent* event)
 {
     const auto button = buttonForQtKey(event->key());
-    if (button && buttonPressCallback) {
-        buttonPressCallback(*button);
+    if (button) {
+        pressedKeys.insert(event->key());
+        if (buttonPressCallback) {
+            buttonPressCallback(*button);
+        }
         event->accept();
         return;
     }
@@ -138,12 +154,21 @@ void EmulatorItem::keyPressEvent(QKeyEvent* event)
 void EmulatorItem::keyReleaseEvent(QKeyEvent* event)
 {
     const auto button = buttonForQtKey(event->key());
-    if (button && buttonReleaseCallback) {
-        buttonReleaseCallback(*button);
+    if (button) {
+        pressedKeys.remove(event->key());
+        if (buttonReleaseCallback) {
+            buttonReleaseCallback(*button);
+        }
         event->accept();
         return;
     }
     QQuickItem::keyReleaseEvent(event);
+}
+
+void EmulatorItem::focusOutEvent(QFocusEvent* event)
+{
+    releaseAllButtons();
+    QQuickItem::focusOutEvent(event);
 }
 
 std::optional<GbButton> EmulatorItem::buttonForQtKey(int key) const

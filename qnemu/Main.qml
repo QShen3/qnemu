@@ -1,18 +1,17 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
-import QtQuick.Layouts
 import QNEmu 1.0
 
 ApplicationWindow {
     id: window
 
-    width: 320
-    height: 288
-    minimumWidth: 300
-    minimumHeight: 280
+    width: 720
+    height: 520
+    minimumWidth: 560
+    minimumHeight: 420
     visible: true
-    title: appController.windowTitle
+    title: qsTr("QNEmu Library")
     color: palette.window
 
     Theme {
@@ -20,27 +19,7 @@ ApplicationWindow {
         palette: window.palette
     }
 
-    function applyScale() {
-        const factor = appController.scaleFactor;
-        width = Math.round(320 * factor);
-        height = Math.round(288 * factor) + (menuBar ? menuBar.height : 0);
-    }
-
-    Component.onCompleted: {
-        appController.attachDisplay(emulator);
-        Qt.callLater(function () {
-            window.applyScale();
-            if (appController.showingGame) {
-                emulator.forceActiveFocus();
-            }
-        });
-    }
-
-    onActiveChanged: {
-        if (active && appController.showingGame) {
-            emulator.forceActiveFocus();
-        }
-    }
+    onClosing: Qt.quit()
 
     menuBar: MenuBar {
         Menu {
@@ -83,7 +62,7 @@ ApplicationWindow {
                 action: Action {
                     text: qsTr("&Settings...")
                     shortcut: "Ctrl+,"
-                    onTriggered: settingsDialog.showPage(settingsDialog.currentPage)
+                    onTriggered: settingsDialog.showPage(settingsDialog.currentPage, window)
                 }
             }
 
@@ -109,7 +88,11 @@ ApplicationWindow {
                     text: qsTr("&Library")
                     shortcut: "Ctrl+L"
                     enabled: appController.hasGame
-                    onTriggered: appController.showLibrary()
+                    onTriggered: {
+                        appController.showLibrary();
+                        window.raise();
+                        window.requestActivate();
+                    }
                 }
             }
 
@@ -120,90 +103,37 @@ ApplicationWindow {
                     text: qsTr("&Game")
                     shortcut: "Ctrl+G"
                     enabled: appController.hasGame
-                    onTriggered: appController.showGame()
-                }
-            }
-        }
-    }
-
-    StackLayout {
-        anchors.fill: parent
-        currentIndex: appController.showingGame ? 1 : 0
-
-        LibraryPage {
-            id: libraryPage
-            theme: uiTheme
-            onAddGameRequested: addGameDialog.open()
-            onSettingsRequested: settingsDialog.showPage(1)
-        }
-
-        Rectangle {
-            id: gamePage
-            color: "black"
-
-            Item {
-                id: viewport
-                anchors.centerIn: parent
-                width: Math.min(parent.width, parent.height * 160 / 144)
-                height: width * 144 / 160
-
-                EmulatorItem {
-                    id: emulator
-                    anchors.fill: parent
-                    focus: true
-
-                    TapHandler {
-                        onTapped: emulator.forceActiveFocus()
+                    onTriggered: {
+                        appController.showGame();
+                        gameWindow.present();
                     }
                 }
             }
         }
     }
 
-    Rectangle {
-        id: statusToast
-        visible: statusLabel.text.length > 0
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 12
-        width: Math.min(parent.width - 24, statusLabel.implicitWidth + 24)
-        height: statusLabel.implicitHeight + 12
-        radius: 6
-        color: "#cc000000"
-
-        Label {
-            id: statusLabel
-            anchors.centerIn: parent
-            width: parent.width - 24
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
-            color: "white"
-        }
+    LibraryPage {
+        anchors.fill: parent
+        theme: uiTheme
+        onAddGameRequested: addGameDialog.open()
+        onSettingsRequested: settingsDialog.showPage(1, window)
     }
 
-    Timer {
-        id: statusTimer
-        interval: 4000
-        onTriggered: statusLabel.text = ""
+    StatusToast {
+        id: statusToast
     }
 
     Connections {
         target: appController
 
         function onStatusTextChanged() {
-            statusLabel.text = appController.statusText;
-            statusTimer.restart();
-        }
-
-        function onScaleFactorChanged() {
-            window.applyScale();
+            statusToast.show(appController.statusText);
         }
 
         function onShowingGameChanged() {
-            if (appController.showingGame) {
-                Qt.callLater(function () {
-                    emulator.forceActiveFocus();
-                });
+            if (!appController.showingGame) {
+                window.raise();
+                window.requestActivate();
             }
         }
     }
@@ -225,5 +155,10 @@ ApplicationWindow {
     SettingsDialog {
         id: settingsDialog
         parentWindow: window
+    }
+
+    GameWindow {
+        id: gameWindow
+        onSettingsRequested: settingsDialog.showPage(0, gameWindow)
     }
 }

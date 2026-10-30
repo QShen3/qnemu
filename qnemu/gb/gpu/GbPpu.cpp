@@ -304,6 +304,11 @@ void GbPpu::setCgb(bool cgb)
     fifo_.setCgb(cgb);
 }
 
+void GbPpu::setDmgColorization(bool enabled)
+{
+    memory_.setDmgColorization(enabled);
+}
+
 void GbPpu::stepOamDma()
 {
     if (oamDmaStartupTicks_ > 0) {

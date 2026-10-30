@@ -76,6 +76,13 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
     scalePercentValue = std::clamp(settings.value(QStringLiteral("ui/scalePercent"), 200).toInt(),
         100, 200);
     soundEnabledValue = settings.value(QStringLiteral("audio/enabled"), true).toBool();
+    launchModelValue = settings.value(QStringLiteral("emulator/launchModel"), QStringLiteral("cgb"))
+                           .toString()
+                           .toLower();
+    if (launchModelValue != QStringLiteral("cgb") && launchModelValue != QStringLiteral("dmg")
+        && launchModelValue != QStringLiteral("sgb")) {
+        launchModelValue = QStringLiteral("cgb");
+    }
 
     loadKeyProfiles();
 }
@@ -199,6 +206,21 @@ void AppSettings::setSoundEnabled(bool value)
     soundEnabledValue = value;
     settings.setValue(QStringLiteral("audio/enabled"), value);
     emit soundEnabledChanged();
+}
+
+void AppSettings::setLaunchModel(const QString& value)
+{
+    const QString model = value.toLower();
+    if (model != QStringLiteral("cgb") && model != QStringLiteral("dmg")
+        && model != QStringLiteral("sgb")) {
+        return;
+    }
+    if (model == launchModelValue) {
+        return;
+    }
+    launchModelValue = model;
+    settings.setValue(QStringLiteral("emulator/launchModel"), model);
+    emit launchModelChanged();
 }
 
 QString AppSettings::keyName(int key) const

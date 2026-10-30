@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 342 CTest cases, including 131 curated test ROMs.
+- 343 CTest cases, including 131 curated test ROMs.
 
 ## Build
 
@@ -100,37 +100,46 @@ install the `qml6-module-qtquick*` packages for your Qt version.
 
 ```bash
 ./build/qnemu/qnemu
-./build/qnemu/qnemu --model cgb   # default
+./build/qnemu/qnemu --model cgb   # override the launch model for this run
 ./build/qnemu/qnemu --model dmg
 ./build/qnemu/qnemu --model sgb
 ./build/qnemu/qnemu --rom path/to/game.gb
 ```
 
-`-m` is accepted as a shorthand for `--model`. `--rom` loads a ROM on
-startup; without it, use **File → Open...**. With `cgb`, a CGB cartridge
-runs in CGB mode and a DMG cartridge runs in DMG compatibility mode. `dmg` and
-`sgb` force the DMG-compatible CPU/PPU path. SGB-specific features (border,
-command protocol, palettes) are not implemented yet, so `sgb` currently
-behaves like the DMG baseline.
+`-m` is accepted as a shorthand for `--model`. `--rom` loads a ROM on startup;
+without it, use **File → Open...**. `--model` overrides the **Launch model**
+setting for the current run; when it is omitted, the stored setting is used
+(CGB by default). With `cgb`, a CGB cartridge runs in CGB mode and a DMG
+cartridge runs in DMG compatibility mode with the CGB compatibility palette, so
+monochrome games are colorized. `dmg` and `sgb` force the DMG-compatible
+CPU/PPU path. SGB-specific features (border, command protocol, palettes) are not
+implemented yet, so `sgb` currently behaves like the DMG baseline.
+
+The library and the game view are separate windows. The library window keeps a
+comfortable fixed layout independent of the game scale; the game window opens
+at the configured scale and can be resized or closed while the emulator keeps
+running in the background.
 
 The home page is a per-platform library:
 
-- **Open ROM...** plays a ROM immediately. ROMs outside the configured
-  library folders are added to the library as references; the original file
-  is never copied or moved.
+- **Open ROM...** plays a ROM immediately in the game window. ROMs outside the
+  configured library folders are added to the library as references; the
+  original file is never copied or moved.
 - **Add Game...** adds a ROM to the library without starting it.
 - Click a library row to run it. The row menu can remove it from the library
   without deleting the file.
-- **Settings...** opens the settings window with library paths, save path,
-  screenshots, display scale, audio and key profiles.
+- **Settings...** opens the settings window with the launch model, library
+  paths, save path, screenshots, game scale, audio and key profiles.
 - **Screenshot** saves the current 160×144 frame using the configured output
   folder and format.
-- **View → Library / Game** switches between the library and the running game.
+- **View → Library / Game** raises the library or game window.
 
 The settings window has four pages:
 
-- **General**: 100/150/200% window scale, audio enable, save folder, screenshot
-  folder and format (the format list comes from Qt's image writers).
+- **General**: launch model (CGB/DMG/SGB), game-window scale (100/150/200%),
+  audio enable, save folder, screenshot folder and format (the format list
+  comes from Qt's image writers). The library window is not affected by the
+  scale setting.
 - **GB / GBC**: the ROM folder scanned for each platform's library.
 - **Controls**: named key profiles, profile creation/deletion, and click-to-capture
   key bindings. Changes apply immediately.
@@ -155,11 +164,13 @@ The host layer and the console implementation are deliberately separate:
 ```text
 qnemu/
 ├── main.cpp            QGuiApplication + QML engine setup
-├── Main.qml            application window, menu, dialogs
+├── Main.qml            library window, menu, dialogs
+├── GameWindow.qml      game window and emulator view
 ├── LibraryPage.qml     per-platform game library cards
 ├── EmptyLibrary.qml    empty-library illustration and actions
 ├── SettingsDialog.qml  sidebar settings window
 ├── SettingsCard.qml    grouped settings container
+├── StatusToast.qml     transient status message
 ├── Theme.qml           palette-derived UI colors
 ├── AppController.*     QML-facing C++ controller
 ├── AppSettings.*       persistent global/platform settings
@@ -202,8 +213,10 @@ libraries it needs without pulling in Qt Multimedia or the GUI.
 
 ### User interface
 
-The application shell is QML. `AppController` owns the `Gb` instance and exposes
-only a small property/action surface, while `EmulatorItem` implements
+The application shell is QML and uses two top-level windows. `Main.qml` is the
+library/home window; `GameWindow.qml` hosts the `EmulatorItem` and opens only
+when a ROM is running. `AppController` owns the `Gb` instance and exposes only a
+small property/action surface, while `EmulatorItem` implements
 `DisplayInterface` and `InputInterface` and paints the 160×144 frame through a
 `QQuickPaintedItem`. The Quick Controls style is platform-selected: `macOS` on
 macOS, `FluentWinUI3` on Windows, `iOS` on iOS, and `Fusion` as the portable
@@ -212,6 +225,12 @@ fallback. Native Quick Controls styles require a recent Qt (`macOS` in 6.7+,
 native `FileDialog`; the File/View menus live in the `ApplicationWindow` menu
 bar, which maps to the system menu bar on macOS and appears in-window on other
 platforms.
+
+The library window has a fixed comfortable size and is not affected by the
+game scale. The game window is resized to the 100/150/200% preset and can be
+closed while the emulator keeps running; **View → Game** raises it again. The
+settings window is positioned once when it opens and stays put when the game
+window is resized.
 
 `GameLibrary` scans the configured GB/GBC folders and reads cartridge headers
 for title, publisher and region. ROMs opened from other folders are stored as
@@ -224,13 +243,20 @@ add a game or open the settings.
 The settings window is a sidebar layout with grouped cards instead of a flat
 form:
 
-- **General**: display scale, audio, screenshot folder/format and save folder.
+- **General**: launch model, game-window scale, audio, screenshot folder/format
+  and save folder.
 - **Game Boy / Game Boy Color**: each platform's library folder, a live count
   and a rescan button.
 - **Controls**: profile management and a two-column key binding grid.
 
 All paths, scale, audio, screenshot settings and key profiles persist through
 `QSettings`; key bindings apply to `EmulatorItem` immediately.
+
+When a DMG cartridge is launched with the CGB model, the PPU keeps the DMG
+tile/attribute path but maps the four shades to a fixed CGB compatibility
+palette. This is the same mechanism real GBC hardware uses, but the current
+implementation uses one DMG-green palette instead of the boot ROM's per-game
+palette table.
 
 Window backgrounds, controls and text follow the platform palette, so the UI
 adapts to light and dark appearance automatically. The game viewport keeps a
@@ -485,7 +511,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **342/342 CTest cases**, including 131 ROM tests.
+The current set is **343/343 CTest cases**, including 131 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -611,14 +637,16 @@ CGB (`--model cgb`):
 - No boot ROM is implemented, so `boot_*` tests are not run.
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
 - SGB border, command protocol and palettes are not implemented.
+- DMG games launched as CGB use one fixed DMG-green compatibility palette. The
+  CGB boot ROM's per-game palette table is not implemented yet.
 - The library uses references to the original ROM files. Copy/import into a
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
 - Cover art / a game image database is not implemented yet. The library shows
   cartridge title, publisher and region.
 - Library paths are per platform; the save path is global for now, and key
-  profiles are global. A global native menu bar and richer overlays are future
-  work.
+  profiles are global. Richer overlays and a persistent window layout are
+  future work.
 - Save states, speed settings, video filters, Vulkan/DirectX backends and a
   global shortcut remapping editor are not implemented yet.
 
@@ -644,7 +672,7 @@ CGB (`--model cgb`):
 | Settings         | ✅          | manual smoke test |
 | Screenshots      | ✅          | manual smoke test |
 | Key profiles     | ✅          | manual smoke test |
-| Model selection  | ✅          | CLI |
+| Model selection  | ✅          | CLI + settings |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |
 | Save states      | ❌          | — |

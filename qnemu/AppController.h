@@ -5,6 +5,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
@@ -37,7 +38,7 @@ class AppController : public QObject
     Q_PROPERTY(GameLibrary* library READ library CONSTANT)
 
 public:
-    explicit AppController(GbModel model, QObject* parent = nullptr);
+    explicit AppController(std::optional<GbModel> cliModelOverride, QObject* parent = nullptr);
     ~AppController() override;
 
     QString windowTitle() const { return title; }
@@ -73,8 +74,9 @@ private:
     void setWindowTitle(const QString& newTitle);
     void setStatusText(const QString& newStatus);
     void applyKeyBindings();
+    GbModel launchModel() const;
 
-    GbModel model;
+    std::optional<GbModel> modelOverride;
     AppSettings* settingsValue = nullptr;
     GameLibrary* libraryValue = nullptr;
     EmulatorItem* displayItem = nullptr;
