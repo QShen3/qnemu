@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 346 CTest cases, including 131 curated test ROMs.
+- 351 CTest cases, including 136 curated test ROMs.
 
 ## Build
 
@@ -512,7 +512,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **346/346 CTest cases**, including 131 ROM tests.
+The current set is **351/351 CTest cases**, including 136 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -540,7 +540,10 @@ DMG (`--model dmg`):
 - `06-overflow on trigger`
 - `07-len sweep period sync`
 - `08-len ctr during power`
+- `09-wave read while on`
+- `10-wave trigger while on`
 - `11-regs after power`
+- `12-wave write while on`
 
 CGB (`--model cgb`):
 
@@ -552,6 +555,7 @@ CGB (`--model cgb`):
 - `06-overflow on trigger`
 - `07-len sweep period sync`
 - `08-len ctr during power`
+- `09-wave read while on`
 - `10-wave trigger while on`
 - `11-regs after power`
 - `12-wave`
@@ -630,16 +634,12 @@ CGB (`--model cgb`):
 
 ### Known limitations
 
-The curated CTest set registers only passing ROMs; the current 131 registered
+The curated CTest set registers only passing ROMs; the current 136 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- Blargg sound: `dmg_sound/rom_singles/09-wave read while on`,
-  `10-wave trigger while on` and `12-wave write while on`; and
-  `cgb_sound/rom_singles/09-wave read while on`. These need cycle-exact CH3
-  wave-RAM access aligned with the CPU/APU bus.
 - Blargg `interrupt_time` (interrupt latency) and `oam_bug` (OAM corruption
-  behavior) fail. `halt_bug` passes but is not registered yet.
+  behavior) fail.
 - Mooneye `acceptance/oam_dma/sources-GS` fails at `$FE00`; OAM DMA source
   selection is not fully accurate.
 - Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do

@@ -114,7 +114,6 @@ void GbChannel3::trigger()
                 waveRam[i] = waveRam[base + i];
             }
         }
-        sampleBuffer = waveRam[0];
     }
 
     const bool lengthWasZero = lengthTimer.expired();
@@ -124,16 +123,13 @@ void GbChannel3::trigger()
     }
 
     enabled = isDacEnabled();
-    frequencyTimer = static_cast<uint16_t>((2048 - period()) * 2);
-
-    // The hardware resets the index, then reads sample 1 first (the lower
-    // nibble of FF30).  The previously played sample keeps being emitted
-    // until the first wave RAM read happens.
+    // The first sample is output immediately.  The first wave RAM fetch is
+    // delayed by three 2 MHz cycles (six T-cycles) relative to later fetches.
+    frequencyTimer = static_cast<uint16_t>((2048 - period()) * 2 + 6);
     wavePosition = 0;
-
-    if (!enabled) {
-        data = 0;
-    }
+    waveReadWindow = 0;
+    sampleBuffer = static_cast<uint8_t>((waveRam[0] >> 4) & 0x0F);
+    data = enabled ? applyOutputLevel(sampleBuffer) : 0;
 }
 
 uint8_t GbChannel3::applyOutputLevel(uint8_t sample) const

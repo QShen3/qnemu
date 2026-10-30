@@ -59,17 +59,23 @@ TEST_F(GbChannel3Test, WaveRamReadWriteWhenInactive)
     EXPECT_EQ(channel->read(0xFF3F), 0x34);
 }
 
-TEST_F(GbChannel3Test, FirstSampleIsLowerNibble)
+TEST_F(GbChannel3Test, FirstSampleIsUpperNibble)
 {
     triggerWithWave(0x12);
 
     EXPECT_TRUE(channel->isEnabled());
     EXPECT_TRUE(channel->isDacEnabled());
 
-    channel->step();  // still emitting the previous (zero) sample
-    EXPECT_EQ(channel->getData(), 0);
+    // The hardware outputs the upper nibble immediately on trigger.
+    EXPECT_EQ(channel->getData(), 1);
 
-    channel->step();  // first wave RAM read: index 1 = lower nibble of FF30
+    // The first wave RAM fetch happens after the initial 3-cycle (2 MHz)
+    // delay, then switches to the lower nibble.
+    for (int i = 0; i < 7; ++i) {
+        channel->step();
+        EXPECT_EQ(channel->getData(), 1);
+    }
+    channel->step();
     EXPECT_EQ(channel->getData(), 2);
 }
 

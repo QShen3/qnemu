@@ -47,6 +47,9 @@ if(QNEMU_ENABLE_ROM_TESTS)
         qnemu_add_rom_test("blargg_instr_timing"
             "${BLARGG_ROM_ROOT}/instr_timing/instr_timing.gb" "blargg")
 
+        qnemu_add_rom_test("blargg_halt_bug"
+            "${BLARGG_ROM_ROOT}/halt_bug.gb" "blargg")
+
         file(GLOB BLARGG_MEM_TIMING "${BLARGG_ROM_ROOT}/mem_timing/individual/*.gb")
         foreach(ROM IN LISTS BLARGG_MEM_TIMING)
             get_filename_component(NAME "${ROM}" NAME_WE)
@@ -61,9 +64,7 @@ if(QNEMU_ENABLE_ROM_TESTS)
         endforeach()
         qnemu_add_rom_test("blargg_mem_timing2" "${BLARGG_ROM_ROOT}/mem_timing-2/mem_timing.gb" "blargg")
 
-        # Sound register/length/trigger/sweep tests.  The remaining wave-RAM
-        # timing tests need cycle-exact CPU/APU bus alignment and are not
-        # registered yet.
+        # Sound register/length/trigger/sweep and wave-RAM timing tests.
         set(BLARGG_DMG_SOUND_TESTS
             "01-registers"
             "02-len ctr"
@@ -73,7 +74,10 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "06-overflow on trigger"
             "07-len sweep period sync"
             "08-len ctr during power"
+            "09-wave read while on"
+            "10-wave trigger while on"
             "11-regs after power"
+            "12-wave write while on"
         )
         foreach(NAME IN LISTS BLARGG_DMG_SOUND_TESTS)
             qnemu_add_rom_test("blargg_dmg_sound_${NAME}"
@@ -90,6 +94,7 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "06-overflow on trigger"
             "07-len sweep period sync"
             "08-len ctr during power"
+            "09-wave read while on"
             "10-wave trigger while on"
             "11-regs after power"
             "12-wave"
