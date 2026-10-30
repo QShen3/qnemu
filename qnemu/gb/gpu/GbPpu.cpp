@@ -41,6 +41,47 @@ constexpr uint16_t objPaletteDataAddress = 0xFF6B;
 constexpr uint16_t objectPriorityAddress = 0xFF6C;
 }  // namespace
 
+namespace
+{
+
+uint8_t bitwiseGlitch(uint8_t a, uint8_t b, uint8_t c)
+{
+    return static_cast<uint8_t>(((a ^ c) & (b ^ c)) ^ c);
+}
+
+uint16_t bitwiseGlitchReadWord(uint16_t a, uint16_t b, uint16_t c)
+{
+    return static_cast<uint16_t>(b | (a & c));
+}
+
+uint16_t bitwiseGlitchTertiary1(uint16_t a, uint16_t b, uint16_t c, uint16_t d, uint16_t e)
+{
+    return static_cast<uint16_t>(c | (a & b & d & e));
+}
+
+uint16_t bitwiseGlitchTertiary2(uint16_t a, uint16_t b, uint16_t c, uint16_t d, uint16_t e)
+{
+    return static_cast<uint16_t>((c & (a | b | d | e)) | (a & b & d & e));
+}
+
+uint16_t bitwiseGlitchTertiary3(uint16_t a, uint16_t b, uint16_t c, uint16_t d, uint16_t e)
+{
+    return static_cast<uint16_t>((c & (a | b | d | e)) | (b & d & e));
+}
+
+uint16_t bitwiseGlitchQuaternaryDmg(uint16_t /*a*/, uint16_t b, uint16_t c, uint16_t d,
+    uint16_t e, uint16_t f, uint16_t g, uint16_t h)
+{
+    return static_cast<uint16_t>((e & (h | g | (static_cast<uint16_t>(~d) & f) | c | b)) | (c & g & h));
+}
+
+uint8_t bitwiseGlitchReadIncrease(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+{
+    return static_cast<uint8_t>((b & a) | (b & c) | (b & d) | (a & c & d));
+}
+
+}  // namespace
+
 GbPpu::GbPpu(bool cgb,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
@@ -62,11 +103,20 @@ uint8_t GbPpu::read(uint16_t address) const
         return memory_.readVram(address);
     }
 
-    if (address >= OamStart && address <= OamEnd) {
+    if (address >= OamStart && address < 0xFF00) {
         if (oamReadBlocked()) {
+            if (oamBugEnabled_) {
+                // The read itself is what triggers the DMG OAM corruption;
+                // the method has to mutate OAM even though the bus read is
+                // logically const.
+                const_cast<GbPpu*>(this)->triggerOamBugRead(address);
+            }
             return 0xFF;
         }
-        return memory_.readOam(address);
+        if (address <= OamEnd) {
+            return memory_.readOam(address);
+        }
+        return 0xFF;
     }
 
     switch (address) {
@@ -259,6 +309,7 @@ void GbPpu::reset()
     mode3Dots_ = 0;
     windowLine_ = 0;
     frameCount_ = 0;
+    accessedOamRow_ = -1;
     statIrqLine_ = false;
     lcdJustEnabled_ = false;
     registers_.ly = 0;
@@ -312,6 +363,142 @@ void GbPpu::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
 void GbPpu::clearDmgCompatibilityPalette()
 {
     memory_.clearDmgCompatibilityPalette();
+}
+
+
+void GbPpu::triggerOamBugWrite(uint16_t address)
+{
+    if (!oamBugEnabled_ || address < 0xFE00 || address >= 0xFF00
+        || accessedOamRow_ < 8) {
+        return;
+    }
+    const int row = accessedOamRow_;
+    if (row + 8 > static_cast<int>(OamSize)) {
+        return;
+    }
+
+    memory_.writeOamByte(static_cast<uint8_t>(row),
+        bitwiseGlitch(memory_.readOamByte(static_cast<uint8_t>(row)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 8)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 4))));
+    memory_.writeOamByte(static_cast<uint8_t>(row + 1),
+        bitwiseGlitch(memory_.readOamByte(static_cast<uint8_t>(row + 1)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 7)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 3))));
+    for (int i = 2; i < 8; ++i) {
+        memory_.writeOamByte(static_cast<uint8_t>(row + i),
+            memory_.readOamByte(static_cast<uint8_t>(row - 8 + i)));
+    }
+}
+
+void GbPpu::triggerOamBugRead(uint16_t address)
+{
+    if (!oamBugEnabled_ || address < 0xFE00 || address >= 0xFF00
+        || accessedOamRow_ < 8) {
+        return;
+    }
+    const int row = accessedOamRow_;
+    if (row < 8 || row + 8 > static_cast<int>(OamSize)) {
+        return;
+    }
+
+    const auto readWord = [this](int offset) {
+        return static_cast<uint16_t>(
+            memory_.readOamByte(static_cast<uint8_t>(offset))
+            | (static_cast<uint16_t>(memory_.readOamByte(static_cast<uint8_t>(offset + 1))) << 8));
+    };
+    const auto writeWord = [this](int offset, uint16_t value) {
+        memory_.writeOamByte(static_cast<uint8_t>(offset), static_cast<uint8_t>(value & 0xFF));
+        memory_.writeOamByte(static_cast<uint8_t>(offset + 1), static_cast<uint8_t>(value >> 8));
+    };
+
+    if ((row & 0x18) == 0x10) {
+        if (row < 0x10) {
+            return;
+        }
+        const uint16_t a = readWord(row - 0x10);
+        const uint16_t b = readWord(row - 0x08);
+        const uint16_t c = readWord(row);
+        const uint16_t d = readWord(row - 0x04);
+        const uint16_t glitch = static_cast<uint16_t>((b & (a | c | d)) | (a & c & d));
+        memory_.writeOamByte(static_cast<uint8_t>(row - 0x08),
+            static_cast<uint8_t>(glitch & 0xFF));
+        memory_.writeOamByte(static_cast<uint8_t>(row - 0x07),
+            static_cast<uint8_t>(glitch >> 8));
+        for (int i = 0; i < 8; ++i) {
+            memory_.writeOamByte(static_cast<uint8_t>(row - 0x10 + i),
+                memory_.readOamByte(static_cast<uint8_t>(row - 0x08 + i)));
+        }
+        return;
+    }
+
+    if ((row & 0x18) == 0x00) {
+        if (row < 0x20) {
+            return;
+        }
+        const uint16_t a = readWord(row);
+        const uint16_t b = readWord(row - 0x02);
+        const uint16_t c = readWord(row - 0x04);
+        const uint16_t d = readWord(row - 0x08);
+        const uint16_t e = readWord(row - 0x10);
+        uint16_t glitch;
+        if (row == 0x40) {
+            glitch = bitwiseGlitchQuaternaryDmg(readWord(0), a, b, readWord(row - 0x06),
+                c, readWord(row - 0x07), d, e);
+        } else if (row == 0x20) {
+            glitch = bitwiseGlitchTertiary2(a, b, c, d, e);
+        } else if (row == 0x60) {
+            glitch = bitwiseGlitchTertiary3(a, b, c, d, e);
+        } else {
+            glitch = bitwiseGlitchTertiary1(a, b, c, d, e);
+        }
+        writeWord(row - 0x04, glitch);
+        for (int i = 0; i < 8; ++i) {
+            const uint8_t value = memory_.readOamByte(static_cast<uint8_t>(row - 0x08 + i));
+            memory_.writeOamByte(static_cast<uint8_t>(row - 0x10 + i), value);
+            memory_.writeOamByte(static_cast<uint8_t>(row - 0x20 + i), value);
+        }
+        return;
+    }
+
+    const uint16_t glitch = bitwiseGlitchReadWord(
+        readWord(row), readWord(row - 8), readWord(row - 4));
+    writeWord(row - 8, glitch);
+    writeWord(row, glitch);
+    for (int i = 0; i < 8; ++i) {
+        memory_.writeOamByte(static_cast<uint8_t>(row + i),
+            memory_.readOamByte(static_cast<uint8_t>(row - 8 + i)));
+    }
+}
+
+void GbPpu::triggerOamBugReadIncrease(uint16_t address)
+{
+    if (!oamBugEnabled_ || address < 0xFE00 || address >= 0xFF00
+        || accessedOamRow_ < 0x20 || accessedOamRow_ >= 0x98) {
+        return;
+    }
+    const int row = accessedOamRow_;
+    if (row + 8 > static_cast<int>(OamSize)) {
+        return;
+    }
+
+    memory_.writeOamByte(static_cast<uint8_t>(row - 8),
+        bitwiseGlitchReadIncrease(
+            memory_.readOamByte(static_cast<uint8_t>(row - 0x10)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 0x08)),
+            memory_.readOamByte(static_cast<uint8_t>(row)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 0x04))));
+    memory_.writeOamByte(static_cast<uint8_t>(row - 7),
+        bitwiseGlitchReadIncrease(
+            memory_.readOamByte(static_cast<uint8_t>(row - 0x0F)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 0x07)),
+            memory_.readOamByte(static_cast<uint8_t>(row + 0x01)),
+            memory_.readOamByte(static_cast<uint8_t>(row - 0x03))));
+    for (int i = 0; i < 8; ++i) {
+        const uint8_t value = memory_.readOamByte(static_cast<uint8_t>(row - 8 + i));
+        memory_.writeOamByte(static_cast<uint8_t>(row + i), value);
+        memory_.writeOamByte(static_cast<uint8_t>(row - 0x10 + i), value);
+    }
 }
 
 void GbPpu::stepOamDma()
@@ -409,6 +596,14 @@ void GbPpu::stepTiming()
         if (display_) {
             display_->presentFrame(frame_);
         }
+    }
+
+    if (oamBugEnabled_ && registers_.lcdEnabled() && registers_.ly < 144
+        && registers_.mode() == 2 && dot_ < 80) {
+        const int index = dot_ / 2;
+        accessedOamRow_ = ((index & ~1) * 4) + 8;
+    } else {
+        accessedOamRow_ = -1;
     }
 
     ++dot_;

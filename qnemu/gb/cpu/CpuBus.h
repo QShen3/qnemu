@@ -26,6 +26,11 @@ public:
     virtual void write(uint16_t address, uint8_t value) = 0;
     virtual void tick(uint8_t cycles) = 0;
 
+    /// DMG OAM corruption hooks (default no-op for test buses and CGB).
+    virtual void triggerOamBugWrite(uint16_t /*address*/) {}
+    virtual void triggerOamBugRead(uint16_t /*address*/) {}
+    virtual void triggerOamBugReadIncrease(uint16_t /*address*/) {}
+
     /**
      * Called after the STOP opcode and its padding byte have been fetched.
      * Return true to enter the low-power stopped state (the DMG behaviour),

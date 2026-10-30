@@ -192,7 +192,9 @@ uint16_t GbCpu::pop16()
 
 void GbCpu::push16(uint16_t value)
 {
+    bus.triggerOamBugWrite(registers_.sp);
     write8(static_cast<uint16_t>(registers_.sp - 1), static_cast<uint8_t>(value >> 8));
+    bus.triggerOamBugWrite(static_cast<uint16_t>(registers_.sp - 1));
     write8(static_cast<uint16_t>(registers_.sp - 2), static_cast<uint8_t>(value & 0xFF));
     registers_.sp -= 2;
 }
@@ -368,6 +370,7 @@ void GbCpu::execute(uint8_t opcode)
             write8(registers_.bc(), registers_.a);
             break;
         case 0x03:  // INC BC
+            bus.triggerOamBugWrite(registers_.bc());
             registers_.setBc(static_cast<uint16_t>(registers_.bc() + 1));
             tick(4);
             break;
@@ -396,6 +399,7 @@ void GbCpu::execute(uint8_t opcode)
             registers_.a = read8(registers_.bc());
             break;
         case 0x0B:  // DEC BC
+            bus.triggerOamBugWrite(registers_.bc());
             registers_.setBc(static_cast<uint16_t>(registers_.bc() - 1));
             tick(4);
             break;
@@ -422,6 +426,7 @@ void GbCpu::execute(uint8_t opcode)
             write8(registers_.de(), registers_.a);
             break;
         case 0x13:  // INC DE
+            bus.triggerOamBugWrite(registers_.de());
             registers_.setDe(static_cast<uint16_t>(registers_.de() + 1));
             tick(4);
             break;
@@ -450,6 +455,7 @@ void GbCpu::execute(uint8_t opcode)
             registers_.a = read8(registers_.de());
             break;
         case 0x1B:  // DEC DE
+            bus.triggerOamBugWrite(registers_.de());
             registers_.setDe(static_cast<uint16_t>(registers_.de() - 1));
             tick(4);
             break;
@@ -479,6 +485,7 @@ void GbCpu::execute(uint8_t opcode)
             break;
         }
         case 0x23:  // INC HL
+            bus.triggerOamBugWrite(registers_.hl());
             registers_.setHl(static_cast<uint16_t>(registers_.hl() + 1));
             tick(4);
             break;
@@ -502,11 +509,13 @@ void GbCpu::execute(uint8_t opcode)
             break;
         case 0x2A: {  // LD A, (HL+)
             const uint16_t address = registers_.hl();
+            bus.triggerOamBugReadIncrease(address);
             registers_.a = read8(address);
             registers_.setHl(static_cast<uint16_t>(address + 1));
             break;
         }
         case 0x2B:  // DEC HL
+            bus.triggerOamBugWrite(registers_.hl());
             registers_.setHl(static_cast<uint16_t>(registers_.hl() - 1));
             tick(4);
             break;
@@ -536,6 +545,7 @@ void GbCpu::execute(uint8_t opcode)
             break;
         }
         case 0x33:  // INC SP
+            bus.triggerOamBugWrite(registers_.sp);
             registers_.sp += 1;
             tick(4);
             break;
@@ -567,11 +577,13 @@ void GbCpu::execute(uint8_t opcode)
             break;
         case 0x3A: {  // LD A, (HL-)
             const uint16_t address = registers_.hl();
+            bus.triggerOamBugReadIncrease(address);
             registers_.a = read8(address);
             registers_.setHl(static_cast<uint16_t>(address - 1));
             break;
         }
         case 0x3B:  // DEC SP
+            bus.triggerOamBugWrite(registers_.sp);
             registers_.sp -= 1;
             tick(4);
             break;

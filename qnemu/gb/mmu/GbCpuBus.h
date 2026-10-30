@@ -78,6 +78,21 @@ public:
         }
     }
 
+    void triggerOamBugWrite(uint16_t address) override
+    {
+        mmu.triggerOamBugWrite(address);
+    }
+
+    void triggerOamBugRead(uint16_t address) override
+    {
+        mmu.triggerOamBugRead(address);
+    }
+
+    void triggerOamBugReadIncrease(uint16_t address) override
+    {
+        mmu.triggerOamBugReadIncrease(address);
+    }
+
     bool onStop() override
     {
         if (speedSwitchArmed) {

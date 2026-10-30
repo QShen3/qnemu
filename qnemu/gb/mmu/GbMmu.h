@@ -40,6 +40,9 @@ public:
     void reset() override;
     void setDoubleSpeed(bool doubleSpeed) override;
     void setCgb(bool cgb) override;
+    void triggerOamBugWrite(uint16_t address) override;
+    void triggerOamBugRead(uint16_t address) override;
+    void triggerOamBugReadIncrease(uint16_t address) override;
 
 private:
     std::unique_ptr<GbApu> apu;

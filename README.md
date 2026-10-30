@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 351 CTest cases, including 136 curated test ROMs.
+- 357 CTest cases, including 142 curated test ROMs.
 
 ## Build
 
@@ -512,7 +512,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **351/351 CTest cases**, including 136 ROM tests.
+The current set is **357/357 CTest cases**, including 142 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -559,6 +559,23 @@ CGB (`--model cgb`):
 - `10-wave trigger while on`
 - `11-regs after power`
 - `12-wave`
+
+</details>
+
+<details>
+<summary>Blargg OAM corruption tests (<code>-L ppu</code>, requires <code>--ppu</code>)</summary>
+
+DMG (`--model dmg`):
+
+- `oam_bug/rom_singles/1-lcd_sync`
+- `2-causes`
+- `3-non_causes`
+- `4-scanline_timing`
+- `5-timing_bug`
+- `6-timing_no_bug`
+
+The two effect-pattern ROMs, `7-timing_effect` and `8-instr_effect`, are still
+being worked on.
 
 </details>
 
@@ -638,8 +655,10 @@ The curated CTest set registers only passing ROMs; the current 136 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- Blargg `interrupt_time` (interrupt latency) and `oam_bug` (OAM corruption
-  behavior) fail.
+- Blargg `interrupt_time` (interrupt latency) fails.
+- Blargg `oam_bug` 1-6 pass, but the effect-pattern tests
+  `7-timing_effect` and `8-instr_effect` do not match the hardware patterns
+  yet and are not registered.
 - Mooneye `acceptance/oam_dma/sources-GS` fails at `$FE00`; OAM DMA source
   selection is not fully accurate.
 - Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do

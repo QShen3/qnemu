@@ -104,6 +104,22 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${BLARGG_ROM_ROOT}/cgb_sound/rom_singles/${NAME}.gb"
                 "blargg;sound" --model cgb --apu)
         endforeach()
+        # OAM corruption: causes and scanline timing.  The two effect-pattern
+        # ROMs (7-timing_effect, 8-instr_effect) still need exact corruption
+        # patterns and are not registered yet.
+        set(BLARGG_OAM_BUG_TESTS
+            "1-lcd_sync"
+            "2-causes"
+            "3-non_causes"
+            "4-scanline_timing"
+            "5-timing_bug"
+            "6-timing_no_bug"
+        )
+        foreach(NAME IN LISTS BLARGG_OAM_BUG_TESTS)
+            qnemu_add_rom_test("blargg_oam_bug_${NAME}"
+                "${BLARGG_ROM_ROOT}/oam_bug/rom_singles/${NAME}.gb"
+                "blargg;ppu" --model dmg --ppu)
+        endforeach()
     endif()
 
     set(MOONEYE_ROM_ROOT "${QNEMU_TEST_ROM_ROOT}/mooneye-test-roms")

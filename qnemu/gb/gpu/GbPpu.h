@@ -51,6 +51,14 @@ public:
     void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
     void clearDmgCompatibilityPalette();
 
+    /// DMG OAM corruption quirk.  CGB hardware and SGB models that use the
+    /// CGB PPU path must leave this disabled.
+    void setOamBugEnabled(bool enabled) { oamBugEnabled_ = enabled; }
+    int accessedOamRow() const { return accessedOamRow_; }
+    void triggerOamBugWrite(uint16_t address) override;
+    void triggerOamBugRead(uint16_t address) override;
+    void triggerOamBugReadIncrease(uint16_t address) override;
+
     const FrameBuffer& frameBuffer() const { return frame_; }
     uint64_t frameCount() const { return frameCount_; }
 
@@ -94,6 +102,8 @@ private:
     uint8_t mode3Dots_ = 0;
     uint16_t windowLine_ = 0;
     uint64_t frameCount_ = 0;
+    bool oamBugEnabled_ = false;
+    int accessedOamRow_ = -1;
     bool statIrqLine_ = false;
     bool lcdJustEnabled_ = false;
 

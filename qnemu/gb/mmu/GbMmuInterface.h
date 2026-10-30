@@ -20,6 +20,11 @@ public:
 
     /// Selects CGB or DMG compatibility behavior for model-specific registers.
     virtual void setCgb(bool /*cgb*/) {}
+
+    /// DMG OAM corruption hooks.
+    virtual void triggerOamBugWrite(uint16_t /*address*/) {}
+    virtual void triggerOamBugRead(uint16_t /*address*/) {}
+    virtual void triggerOamBugReadIncrease(uint16_t /*address*/) {}
 };
 
 }  // namespace qnemu

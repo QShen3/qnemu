@@ -71,6 +71,7 @@ Gb::Gb(GbModel model,
     auto ppuInstance = std::make_unique<GbPpu>(
         model == GbModel::cgb && cartridge->isGbcCartridge(), display, interruptHandler);
     ppu = ppuInstance.get();
+    ppu->setOamBugEnabled(model != GbModel::cgb);
 
     mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppuInstance), std::move(highRam),
         interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));

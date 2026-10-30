@@ -42,7 +42,7 @@ uint8_t GbMmu::read(uint16_t address) const
         return cartridge->read(address);
     } else if (address <= EchoRamEnd) {
         return workRam->read(address);
-    } else if (address <= OamEnd) {
+    } else if (address <= 0xFEFF) {
         return gpu->read(address);
     } else if (address == 0xFF00) {
         return joypad->read(address);
@@ -129,6 +129,21 @@ void GbMmu::setDoubleSpeed(bool doubleSpeed)
 void GbMmu::setCgb(bool cgb)
 {
     workRam->setCgb(cgb);
+}
+
+void GbMmu::triggerOamBugWrite(uint16_t address)
+{
+    gpu->triggerOamBugWrite(address);
+}
+
+void GbMmu::triggerOamBugRead(uint16_t address)
+{
+    gpu->triggerOamBugRead(address);
+}
+
+void GbMmu::triggerOamBugReadIncrease(uint16_t address)
+{
+    gpu->triggerOamBugReadIncrease(address);
 }
 
 void GbMmu::step()

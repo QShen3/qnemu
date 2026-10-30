@@ -60,6 +60,7 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
         display = std::make_shared<MemoryDisplay>();
         const bool ppuCgb = cgb && cartridge->isGbcCartridge();
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
+        ppu->setOamBugEnabled(!cgb);
         if (cgb && !cartridge->isGbcCartridge()) {
             const auto header = cartridge->cartridgeHeader();
             ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
@@ -137,7 +138,7 @@ uint8_t GbTestSystem::read(uint16_t address)
 
     if (ppu
         && ((address >= 0x8000 && address <= 0x9FFF)
-            || (address >= 0xFE00 && address <= 0xFE9F)
+            || (address >= 0xFE00 && address <= 0xFEFF)
             || (address >= 0xFF40 && address <= 0xFF4B)
             || address == 0xFF4F
             || (address >= 0xFF51 && address <= 0xFF55)
@@ -213,7 +214,7 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
 
     if (ppu
         && ((address >= 0x8000 && address <= 0x9FFF)
-            || (address >= 0xFE00 && address <= 0xFE9F)
+            || (address >= 0xFE00 && address <= 0xFEFF)
             || (address >= 0xFF40 && address <= 0xFF4B)
             || address == 0xFF4F
             || (address >= 0xFF51 && address <= 0xFF55)
@@ -340,6 +341,27 @@ void GbTestSystem::tick(uint8_t cycles)
             ppuTick();
         }
         ++cycles_;
+    }
+}
+
+void GbTestSystem::triggerOamBugWrite(uint16_t address)
+{
+    if (ppu) {
+        ppu->triggerOamBugWrite(address);
+    }
+}
+
+void GbTestSystem::triggerOamBugRead(uint16_t address)
+{
+    if (ppu) {
+        ppu->triggerOamBugRead(address);
+    }
+}
+
+void GbTestSystem::triggerOamBugReadIncrease(uint16_t address)
+{
+    if (ppu) {
+        ppu->triggerOamBugReadIncrease(address);
     }
 }
 

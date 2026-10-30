@@ -40,6 +40,9 @@ public:
     uint8_t read(uint16_t address) override;
     void write(uint16_t address, uint8_t value) override;
     void tick(uint8_t cycles) override;
+    void triggerOamBugWrite(uint16_t address) override;
+    void triggerOamBugRead(uint16_t address) override;
+    void triggerOamBugReadIncrease(uint16_t address) override;
     bool onStop() override;
 
     const std::string& serialOutput() const { return serialOutput_; }
