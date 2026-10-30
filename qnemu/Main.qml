@@ -13,7 +13,7 @@ ApplicationWindow {
     minimumHeight: 220
     visible: true
     title: appController.windowTitle
-    color: "#1b1b1b"
+    color: palette.window
 
     function applyScale() {
         const factor = appController.scaleFactor;
@@ -127,11 +127,13 @@ ApplicationWindow {
 
         LibraryPage {
             id: libraryPage
+            theme: window.palette
             onAddGameRequested: addGameDialog.open()
         }
 
-        Item {
+        Rectangle {
             id: gamePage
+            color: "black"
 
             Item {
                 id: viewport

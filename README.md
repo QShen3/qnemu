@@ -216,6 +216,10 @@ settings window persists paths, the 100/150/200% window scale, audio enable,
 screenshot folder/format and key profiles through `QSettings`; key bindings are
 applied to `EmulatorItem` immediately.
 
+Window backgrounds, controls and text follow the platform palette, so the UI
+adapts to light and dark appearance automatically. The game viewport keeps a
+black background so the 160×144 frame is not tinted by the theme.
+
 ## Emulation notes
 
 ### CPU

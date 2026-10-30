@@ -6,6 +6,10 @@ Item {
     id: page
     signal addGameRequested
 
+    /// Application palette passed from the main window so custom labels follow
+    /// the system light/dark theme.
+    property var theme
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
@@ -61,6 +65,7 @@ Item {
                     anchors.centerIn: parent
                     visible: gbList.count === 0
                     text: qsTr("No GB games in this library")
+                    color: page.theme.windowText
                     opacity: 0.6
                 }
             }
@@ -79,6 +84,7 @@ Item {
                     anchors.centerIn: parent
                     visible: gbcList.count === 0
                     text: qsTr("No GBC games in this library")
+                    color: page.theme.windowText
                     opacity: 0.6
                 }
             }
@@ -113,12 +119,14 @@ Item {
                         Layout.fillWidth: true
                         text: model.title
                         font.bold: true
+                        color: page.theme.windowText
                         elide: Text.ElideRight
                     }
 
                     Label {
                         Layout.fillWidth: true
                         text: model.missing ? qsTr("File missing") : model.publisher + "  ·  " + model.region
+                        color: page.theme.windowText
                         opacity: 0.65
                         font.pixelSize: 12
                         elide: Text.ElideRight
@@ -127,6 +135,7 @@ Item {
 
                 Label {
                     text: model.platform
+                    color: page.theme.windowText
                     opacity: 0.55
                     font.pixelSize: 12
                 }

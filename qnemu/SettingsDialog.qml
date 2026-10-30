@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
 
-Window {
+ApplicationWindow {
     id: settingsWindow
 
     property var settings: appController.settings
@@ -47,7 +47,6 @@ Window {
     title: qsTr("QNEmu Settings")
     width: 720
     height: 560
-    color: "#f2f2f2"
     visible: false
     modality: Qt.ApplicationModal
     flags: Qt.Dialog
