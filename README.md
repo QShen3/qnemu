@@ -167,18 +167,12 @@ The host layer and the console implementation are deliberately separate:
 ```text
 qnemu/
 ├── main.cpp            QGuiApplication + QML engine setup
-├── Main.qml            library window, menu, dialogs
-├── GameWindow.qml      game window and emulator view
-├── LibraryPage.qml     per-platform game library cards
-├── EmptyLibrary.qml    empty-library illustration and actions
-├── SettingsDialog.qml  sidebar settings window
-├── SettingsCard.qml    grouped settings container
-├── StatusToast.qml     transient status message
-├── Theme.qml           palette-derived UI colors
-├── AppController.*     QML-facing C++ controller
-├── AppSettings.*       persistent global/platform settings
-├── GameLibrary.*       ROM scan, metadata and library models
-├── EmulatorItem.*      QQuickPaintedItem frame view and key mapping
+├── ui/                 Qt/QML host layer
+│   ├── *.qml           library, game window, settings and shared components
+│   ├── AppController.* QML-facing C++ controller
+│   ├── AppSettings.*   persistent global/platform settings
+│   ├── GameLibrary.*   ROM scan, metadata and library models
+│   └── EmulatorItem.*  QQuickPaintedItem frame view and key mapping
 ├── display/            DisplayInterface and FrameBuffer headers
 ├── sound/              Qt Multimedia audio output (shared host service)
 ├── save/               battery-save and RTC persistence (shared service)

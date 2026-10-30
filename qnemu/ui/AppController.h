@@ -11,8 +11,8 @@
 #include <QtCore/QString>
 #include <QtCore/QUrl>
 
-#include "qnemu/AppSettings.h"
-#include "qnemu/GameLibrary.h"
+#include "qnemu/ui/AppSettings.h"
+#include "qnemu/ui/GameLibrary.h"
 #include "qnemu/gb/Gb.h"
 
 namespace qnemu

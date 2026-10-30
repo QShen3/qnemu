@@ -15,8 +15,8 @@
 #include <QtQml/qqml.h>
 #include <QtQuickControls2/QQuickStyle>
 
-#include "qnemu/AppController.h"
-#include "qnemu/EmulatorItem.h"
+#include "qnemu/ui/AppController.h"
+#include "qnemu/ui/EmulatorItem.h"
 
 int main(int argc, char* argv[])
 {

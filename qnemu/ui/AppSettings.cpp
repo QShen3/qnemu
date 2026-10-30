@@ -11,7 +11,7 @@
 #include <QtGui/QImageWriter>
 #include <QtGui/QKeySequence>
 
-#include "qnemu/AppSettings.h"
+#include "qnemu/ui/AppSettings.h"
 
 namespace qnemu
 {

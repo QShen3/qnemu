@@ -11,7 +11,7 @@
 #include <QtGui/QKeyEvent>
 #include <QtGui/QPainter>
 
-#include "qnemu/EmulatorItem.h"
+#include "qnemu/ui/EmulatorItem.h"
 
 namespace qnemu
 {

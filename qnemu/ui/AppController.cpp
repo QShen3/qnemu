@@ -14,8 +14,8 @@
 #include <QtCore/QFileInfo>
 #include <QtGui/QImage>
 
-#include "qnemu/AppController.h"
-#include "qnemu/EmulatorItem.h"
+#include "qnemu/ui/AppController.h"
+#include "qnemu/ui/EmulatorItem.h"
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/input/InputInterface.h"
 #include "qnemu/sound/DefaultSound.h"

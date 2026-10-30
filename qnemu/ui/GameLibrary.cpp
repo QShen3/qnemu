@@ -11,7 +11,7 @@
 #include <QtCore/QMap>
 #include <QtCore/QVariant>
 
-#include "qnemu/GameLibrary.h"
+#include "qnemu/ui/GameLibrary.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 
 namespace qnemu
