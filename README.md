@@ -156,8 +156,11 @@ The host layer and the console implementation are deliberately separate:
 qnemu/
 ├── main.cpp            QGuiApplication + QML engine setup
 ├── Main.qml            application window, menu, dialogs
-├── LibraryPage.qml     per-platform game library tabs and list
-├── SettingsDialog.qml  independent settings window
+├── LibraryPage.qml     per-platform game library cards
+├── EmptyLibrary.qml    empty-library illustration and actions
+├── SettingsDialog.qml  sidebar settings window
+├── SettingsCard.qml    grouped settings container
+├── Theme.qml           palette-derived UI colors
 ├── AppController.*     QML-facing C++ controller
 ├── AppSettings.*       persistent global/platform settings
 ├── GameLibrary.*       ROM scan, metadata and library models
@@ -206,15 +209,28 @@ only a small property/action surface, while `EmulatorItem` implements
 macOS, `FluentWinUI3` on Windows, `iOS` on iOS, and `Fusion` as the portable
 fallback. Native Quick Controls styles require a recent Qt (`macOS` in 6.7+,
 `FluentWinUI3` in 6.8+); older Qt versions use Fusion. ROM selection uses the
-native `FileDialog`; the menu bar is currently the in-window Quick Controls
-menu (a global native menu bar can be added later with a platform bridge).
+native `FileDialog`; the File/View menus live in the `ApplicationWindow` menu
+bar, which maps to the system menu bar on macOS and appears in-window on other
+platforms.
 
 `GameLibrary` scans the configured GB/GBC folders and reads cartridge headers
 for title, publisher and region. ROMs opened from other folders are stored as
 references, so the original collection is never copied or reorganized. The
-settings window persists paths, the 100/150/200% window scale, audio enable,
-screenshot folder/format and key profiles through `QSettings`; key bindings are
-applied to `EmulatorItem` immediately.
+library page uses a compact header, a platform switcher with live counts and
+rounded game cards with a platform badge, publisher/region line and a hover
+action menu; an empty library shows a cartridge illustration and shortcuts to
+add a game or open the settings.
+
+The settings window is a sidebar layout with grouped cards instead of a flat
+form:
+
+- **General**: display scale, audio, screenshot folder/format and save folder.
+- **Game Boy / Game Boy Color**: each platform's library folder, a live count
+  and a rescan button.
+- **Controls**: profile management and a two-column key binding grid.
+
+All paths, scale, audio, screenshot settings and key profiles persist through
+`QSettings`; key bindings apply to `EmulatorItem` immediately.
 
 Window backgrounds, controls and text follow the platform palette, so the UI
 adapts to light and dark appearance automatically. The game viewport keeps a

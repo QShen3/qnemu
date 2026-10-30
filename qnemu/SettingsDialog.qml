@@ -8,7 +8,27 @@ ApplicationWindow {
 
     property var settings: appController.settings
     property var parentWindow: null
+    property int currentPage: 0
     property string capturingButton: ""
+
+    readonly property var navItems: [
+        {
+            title: qsTr("General"),
+            subtitle: qsTr("Display, audio and storage")
+        },
+        {
+            title: qsTr("Game Boy"),
+            subtitle: qsTr("Original Game Boy library")
+        },
+        {
+            title: qsTr("Game Boy Color"),
+            subtitle: qsTr("Game Boy Color library")
+        },
+        {
+            title: qsTr("Controls"),
+            subtitle: qsTr("Profiles and key bindings")
+        }
+    ]
     readonly property var keyActions: [
         {
             name: "up",
@@ -44,9 +64,16 @@ ApplicationWindow {
         }
     ]
 
+    Theme {
+        id: uiTheme
+        palette: settingsWindow.palette
+    }
+
     title: qsTr("QNEmu Settings")
-    width: 720
-    height: 560
+    width: 760
+    height: 580
+    minimumWidth: 680
+    minimumHeight: 500
     visible: false
     modality: Qt.ApplicationModal
     flags: Qt.Dialog
@@ -54,330 +81,654 @@ ApplicationWindow {
     x: parentWindow ? parentWindow.x + (parentWindow.width - width) / 2 : 0
     y: parentWindow ? parentWindow.y + (parentWindow.height - height) / 2 : 0
 
+    function showPage(index) {
+        if (index >= 0 && index < navItems.length) {
+            currentPage = index;
+        }
+        show();
+        raise();
+        requestActivate();
+    }
+
+    function buttonLabel(name) {
+        for (let i = 0; i < keyActions.length; ++i) {
+            if (keyActions[i].name === name) {
+                return keyActions[i].label;
+            }
+        }
+        return name;
+    }
+
+    function addProfile() {
+        if (newProfileName.text.trim() === "") {
+            return;
+        }
+        settings.addKeyProfile(newProfileName.text);
+        newProfileName.text = "";
+    }
+
+    function foundText(count) {
+        return count === 1 ? qsTr("1 game found") : qsTr("%1 games found").arg(count);
+    }
+
+    onClosing: capturingButton = ""
+
     Shortcut {
         sequence: "Esc"
         enabled: settingsWindow.capturingButton === ""
         onActivated: settingsWindow.close()
     }
 
-    ColumnLayout {
+    background: Rectangle {
+        color: uiTheme.window
+    }
+
+    RowLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        spacing: 0
 
-        TabBar {
-            id: tabs
-            Layout.fillWidth: true
+        Rectangle {
+            Layout.preferredWidth: 200
+            Layout.fillHeight: true
+            color: uiTheme.sidebar
 
-            TabButton {
-                text: qsTr("General")
+            Rectangle {
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                width: 1
+                color: uiTheme.separator
             }
-            TabButton {
-                text: qsTr("GB")
-            }
-            TabButton {
-                text: qsTr("GBC")
-            }
-            TabButton {
-                text: qsTr("Controls")
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 3
+
+                Label {
+                    text: qsTr("Settings")
+                    color: uiTheme.windowText
+                    font.pixelSize: 20
+                    font.weight: Font.DemiBold
+                }
+
+                Label {
+                    text: qsTr("QNEmu")
+                    color: uiTheme.mutedText
+                    font.pixelSize: 11
+                    Layout.bottomMargin: 12
+                }
+
+                Repeater {
+                    model: settingsWindow.navItems
+
+                    ItemDelegate {
+                        id: navItem
+
+                        Layout.fillWidth: true
+                        height: 36
+                        leftPadding: 10
+                        rightPadding: 10
+                        hoverEnabled: true
+
+                        background: Rectangle {
+                            radius: 7
+                            color: settingsWindow.currentPage === index ? uiTheme.withAlpha(uiTheme.highlight, 0.18) : navItem.hovered ? uiTheme.hover : "transparent"
+                        }
+
+                        contentItem: RowLayout {
+                            spacing: 8
+
+                            Rectangle {
+                                Layout.preferredWidth: 3
+                                Layout.preferredHeight: 16
+                                radius: 2
+                                color: settingsWindow.currentPage === index ? uiTheme.accent : "transparent"
+                            }
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: modelData.title
+                                color: settingsWindow.currentPage === index ? uiTheme.windowText : uiTheme.mutedText
+                                font.pixelSize: 12
+                                font.weight: settingsWindow.currentPage === index ? Font.DemiBold : Font.Normal
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        onClicked: settingsWindow.currentPage = index
+                    }
+                }
+
+                Item {
+                    Layout.fillHeight: true
+                }
+
+                Label {
+                    text: qsTr("Version %1").arg(Qt.application.version)
+                    color: uiTheme.faintText
+                    font.pixelSize: 11
+                }
             }
         }
 
-        StackLayout {
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: tabs.currentIndex
+            Layout.margins: 24
+            spacing: 14
 
-            ScrollView {
-                contentWidth: availableWidth
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            ColumnLayout {
+                spacing: 2
 
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 10
+                Label {
+                    text: settingsWindow.navItems[settingsWindow.currentPage].title
+                    color: uiTheme.windowText
+                    font.pixelSize: 22
+                    font.weight: Font.DemiBold
+                }
 
-                    Label {
-                        text: qsTr("Display")
-                        font.bold: true
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Label {
-                            text: qsTr("Scale")
-                            Layout.preferredWidth: 150
-                        }
-
-                        ComboBox {
-                            model: ["100%", "150%", "200%"]
-                            currentIndex: settings.scalePercent === 100 ? 0 : settings.scalePercent === 150 ? 1 : 2
-                            onActivated: settings.scalePercent = [100, 150, 200][currentIndex]
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                    }
-
-                    Switch {
-                        text: qsTr("Play sound")
-                        checked: settings.soundEnabled
-                        onToggled: settings.soundEnabled = checked
-                    }
-
-                    Label {
-                        text: qsTr("Screenshots")
-                        font.bold: true
-                    }
-
-                    Label {
-                        text: qsTr("Output folder")
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        TextField {
-                            Layout.fillWidth: true
-                            text: settings.screenshotDirectory
-                            onEditingFinished: settings.screenshotDirectory = text
-                        }
-
-                        Button {
-                            text: qsTr("Browse...")
-                            onClicked: {
-                                folderDialog.target = "screenshots";
-                                folderDialog.open();
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Label {
-                            text: qsTr("Format")
-                            Layout.preferredWidth: 150
-                        }
-
-                        ComboBox {
-                            model: settings.screenshotFormats
-                            currentIndex: Math.max(0, settings.screenshotFormats.indexOf(settings.screenshotFormat))
-                            onActivated: settings.screenshotFormat = settings.screenshotFormats[currentIndex]
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                    }
-
-                    Label {
-                        text: qsTr("Saves")
-                        font.bold: true
-                    }
-
-                    Label {
-                        text: qsTr("Save folder")
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        TextField {
-                            Layout.fillWidth: true
-                            text: settings.savePath
-                            onEditingFinished: settings.savePath = text
-                        }
-
-                        Button {
-                            text: qsTr("Browse...")
-                            onClicked: {
-                                folderDialog.target = "saves";
-                                folderDialog.open();
-                            }
-                        }
-                    }
-
-                    Item {
-                        Layout.fillHeight: true
-                    }
+                Label {
+                    text: settingsWindow.navItems[settingsWindow.currentPage].subtitle
+                    color: uiTheme.mutedText
+                    font.pixelSize: 11
                 }
             }
 
-            ScrollView {
-                contentWidth: availableWidth
+            StackLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                currentIndex: settingsWindow.currentPage
 
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 10
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentWidth: availableWidth
+                    clip: true
 
-                    Label {
-                        text: qsTr("Game Boy library")
-                        font.bold: true
-                    }
+                    ColumnLayout {
+                        width: parent.width
+                        spacing: 14
 
-                    Label {
-                        text: qsTr("ROM folder for original Game Boy games")
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Display")
 
-                        TextField {
-                            Layout.fillWidth: true
-                            text: settings.gbLibraryPath
-                            onEditingFinished: settings.gbLibraryPath = text
-                        }
-
-                        Button {
-                            text: qsTr("Browse...")
-                            onClicked: {
-                                folderDialog.target = "gb";
-                                folderDialog.open();
-                            }
-                        }
-                    }
-                }
-            }
-
-            ScrollView {
-                contentWidth: availableWidth
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 10
-
-                    Label {
-                        text: qsTr("Game Boy Color library")
-                        font.bold: true
-                    }
-
-                    Label {
-                        text: qsTr("ROM folder for Game Boy Color games")
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        TextField {
-                            Layout.fillWidth: true
-                            text: settings.gbcLibraryPath
-                            onEditingFinished: settings.gbcLibraryPath = text
-                        }
-
-                        Button {
-                            text: qsTr("Browse...")
-                            onClicked: {
-                                folderDialog.target = "gbc";
-                                folderDialog.open();
-                            }
-                        }
-                    }
-                }
-            }
-
-            ScrollView {
-                contentWidth: availableWidth
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 10
-
-                    Label {
-                        text: qsTr("Controller")
-                        font.bold: true
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Label {
-                            text: qsTr("Profile")
-                            Layout.preferredWidth: 150
-                        }
-
-                        ComboBox {
-                            Layout.fillWidth: true
-                            model: settings.profileNames
-                            currentIndex: Math.max(0, settings.profileNames.indexOf(settings.activeKeyProfile))
-                            onActivated: settings.activeKeyProfile = settings.profileNames[currentIndex]
-                        }
-
-                        Button {
-                            text: qsTr("Delete")
-                            onClicked: settings.removeKeyProfile(settings.activeKeyProfile)
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        TextField {
-                            id: newProfileName
-                            Layout.fillWidth: true
-                            placeholderText: qsTr("New profile name")
-                        }
-
-                        Button {
-                            text: qsTr("Add profile")
-                            onClicked: {
-                                settings.addKeyProfile(newProfileName.text);
-                                newProfileName.text = "";
-                            }
-                        }
-                    }
-
-                    Label {
-                        text: qsTr("Click a key button, then press the new key.")
-                        opacity: 0.65
-                    }
-
-                    Repeater {
-                        model: settingsWindow.keyActions
-
-                        RowLayout {
-                            Layout.fillWidth: true
-
-                            Label {
-                                text: modelData.label
-                                Layout.preferredWidth: 100
-                            }
-
-                            Button {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                text: settings.keyName(settings.activeKeyBindings[modelData.name] || 0)
-                                onClicked: {
-                                    settingsWindow.capturingButton = modelData.name;
-                                    captureOverlay.forceActiveFocus();
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Window scale")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("100% is 320×288; 200% is 640×576.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 130
+                                    model: ["100%", "150%", "200%"]
+                                    currentIndex: settings.scalePercent === 100 ? 0 : settings.scalePercent === 150 ? 1 : 2
+                                    onActivated: settings.scalePercent = [100, 150, 200][currentIndex]
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: uiTheme.separator
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Play sound")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Turn off to mute the emulator's audio output.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Switch {
+                                    checked: settings.soundEnabled
+                                    onToggled: settings.soundEnabled = checked
                                 }
                             }
                         }
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Screenshots")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Folder")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Saved as ROM name plus date.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        Layout.topMargin: 4
+                                        spacing: 8
+
+                                        TextField {
+                                            Layout.fillWidth: true
+                                            text: settings.screenshotDirectory
+                                            onEditingFinished: settings.screenshotDirectory = text
+                                        }
+
+                                        Button {
+                                            text: qsTr("Browse…")
+                                            onClicked: {
+                                                folderDialog.target = "screenshots";
+                                                folderDialog.open();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                ColumnLayout {
+                                    Layout.preferredWidth: 120
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Format")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Formats provided by Qt.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 130
+                                    model: settings.screenshotFormats
+                                    currentIndex: Math.max(0, settings.screenshotFormats.indexOf(settings.screenshotFormat))
+                                    onActivated: settings.screenshotFormat = settings.screenshotFormats[currentIndex]
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                }
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Storage")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Save folder")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Battery saves and RTC data.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        Layout.topMargin: 4
+                                        spacing: 8
+
+                                        TextField {
+                                            Layout.fillWidth: true
+                                            text: settings.savePath
+                                            onEditingFinished: settings.savePath = text
+                                        }
+
+                                        Button {
+                                            text: qsTr("Browse…")
+                                            onClicked: {
+                                                folderDialog.target = "saves";
+                                                folderDialog.open();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Item {
+                            Layout.fillHeight: true
+                        }
+                    }
+                }
+
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentWidth: availableWidth
+                    clip: true
+
+                    ColumnLayout {
+                        width: parent.width
+                        spacing: 14
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Library folder")
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Original Game Boy ROMs are scanned recursively from this folder.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: settings.gbLibraryPath
+                                    onEditingFinished: settings.gbLibraryPath = text
+                                }
+
+                                Button {
+                                    text: qsTr("Browse…")
+                                    onClicked: {
+                                        folderDialog.target = "gb";
+                                        folderDialog.open();
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Label {
+                                    text: settingsWindow.foundText(appController.library.gbCount)
+                                    color: uiTheme.mutedText
+                                    font.pixelSize: 11
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                }
+
+                                Button {
+                                    text: qsTr("Rescan")
+                                    onClicked: appController.refreshLibrary()
+                                }
+                            }
+                        }
+
+                        Item {
+                            Layout.fillHeight: true
+                        }
+                    }
+                }
+
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentWidth: availableWidth
+                    clip: true
+
+                    ColumnLayout {
+                        width: parent.width
+                        spacing: 14
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Library folder")
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Game Boy Color ROMs are scanned recursively from this folder.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: settings.gbcLibraryPath
+                                    onEditingFinished: settings.gbcLibraryPath = text
+                                }
+
+                                Button {
+                                    text: qsTr("Browse…")
+                                    onClicked: {
+                                        folderDialog.target = "gbc";
+                                        folderDialog.open();
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Label {
+                                    text: settingsWindow.foundText(appController.library.gbcCount)
+                                    color: uiTheme.mutedText
+                                    font.pixelSize: 11
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                }
+
+                                Button {
+                                    text: qsTr("Rescan")
+                                    onClicked: appController.refreshLibrary()
+                                }
+                            }
+                        }
+
+                        Item {
+                            Layout.fillHeight: true
+                        }
+                    }
+                }
+
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentWidth: availableWidth
+                    clip: true
+
+                    ColumnLayout {
+                        width: parent.width
+                        spacing: 14
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Profile")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Label {
+                                    Layout.preferredWidth: 100
+                                    text: qsTr("Active profile")
+                                    color: uiTheme.windowText
+                                    font.pixelSize: 12
+                                }
+
+                                ComboBox {
+                                    Layout.fillWidth: true
+                                    model: settings.profileNames
+                                    currentIndex: Math.max(0, settings.profileNames.indexOf(settings.activeKeyProfile))
+                                    onActivated: settings.activeKeyProfile = settings.profileNames[currentIndex]
+                                }
+
+                                Button {
+                                    text: qsTr("Delete")
+                                    enabled: settings.profileNames.length > 1
+                                    onClicked: settings.removeKeyProfile(settings.activeKeyProfile)
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                TextField {
+                                    id: newProfileName
+                                    Layout.fillWidth: true
+                                    placeholderText: qsTr("New profile name")
+                                    onAccepted: settingsWindow.addProfile()
+                                }
+
+                                Button {
+                                    text: qsTr("Add profile")
+                                    onClicked: settingsWindow.addProfile()
+                                }
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Key bindings")
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Click a key button, then press the new key. Esc cancels.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: 2
+                                columnSpacing: 16
+                                rowSpacing: 8
+
+                                Repeater {
+                                    model: settingsWindow.keyActions
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+
+                                        Label {
+                                            Layout.preferredWidth: 56
+                                            text: modelData.label
+                                            color: uiTheme.mutedText
+                                            font.pixelSize: 11
+                                        }
+
+                                        Button {
+                                            Layout.fillWidth: true
+                                            text: settings.keyName(settings.activeKeyBindings[modelData.name] || 0)
+                                            onClicked: {
+                                                settingsWindow.capturingButton = modelData.name;
+                                                captureOverlay.forceActiveFocus();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Item {
+                            Layout.fillHeight: true
+                        }
                     }
                 }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-
-            Item {
+            RowLayout {
                 Layout.fillWidth: true
-            }
 
-            Button {
-                text: qsTr("Close")
-                onClicked: settingsWindow.close()
+                Label {
+                    text: qsTr("Changes are applied immediately.")
+                    color: uiTheme.faintText
+                    font.pixelSize: 11
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Button {
+                    text: qsTr("Close")
+                    onClicked: settingsWindow.close()
+                }
             }
         }
     }
 
     FolderDialog {
         id: folderDialog
+
         property string target
+
         title: qsTr("Choose folder")
 
         onAccepted: {
@@ -396,6 +747,7 @@ ApplicationWindow {
 
     Item {
         id: captureOverlay
+
         anchors.fill: parent
         visible: settingsWindow.capturingButton !== ""
         focus: visible
@@ -403,14 +755,44 @@ ApplicationWindow {
 
         Rectangle {
             anchors.fill: parent
-            color: "#99000000"
+            color: "#66000000"
         }
 
-        Label {
+        Rectangle {
             anchors.centerIn: parent
-            color: "white"
-            font.pixelSize: 20
-            text: qsTr("Press a key for ") + settingsWindow.capturingButton
+            width: 360
+            height: 150
+            radius: 12
+            color: uiTheme.card
+            border.width: 1
+            border.color: uiTheme.border
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 6
+
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Press a key for")
+                    color: uiTheme.mutedText
+                    font.pixelSize: 11
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: settingsWindow.buttonLabel(settingsWindow.capturingButton)
+                    color: uiTheme.windowText
+                    font.pixelSize: 20
+                    font.weight: Font.DemiBold
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Esc to cancel")
+                    color: uiTheme.faintText
+                    font.pixelSize: 11
+                }
+            }
         }
 
         Keys.onPressed: function (event) {

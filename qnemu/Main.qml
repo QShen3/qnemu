@@ -9,11 +9,16 @@ ApplicationWindow {
 
     width: 320
     height: 288
-    minimumWidth: 240
-    minimumHeight: 220
+    minimumWidth: 300
+    minimumHeight: 280
     visible: true
     title: appController.windowTitle
     color: palette.window
+
+    Theme {
+        id: uiTheme
+        palette: window.palette
+    }
 
     function applyScale() {
         const factor = appController.scaleFactor;
@@ -78,7 +83,7 @@ ApplicationWindow {
                 action: Action {
                     text: qsTr("&Settings...")
                     shortcut: "Ctrl+,"
-                    onTriggered: settingsDialog.show()
+                    onTriggered: settingsDialog.showPage(settingsDialog.currentPage)
                 }
             }
 
@@ -127,8 +132,9 @@ ApplicationWindow {
 
         LibraryPage {
             id: libraryPage
-            theme: window.palette
+            theme: uiTheme
             onAddGameRequested: addGameDialog.open()
+            onSettingsRequested: settingsDialog.showPage(1)
         }
 
         Rectangle {

@@ -14,7 +14,10 @@ qt_add_resources(qnemu "qml"
     FILES
         Main.qml
         LibraryPage.qml
-        SettingsDialog.qml)
+        SettingsDialog.qml
+        Theme.qml
+        SettingsCard.qml
+        EmptyLibrary.qml)
 target_include_directories(qnemu PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
     qnemu
