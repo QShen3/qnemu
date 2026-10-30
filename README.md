@@ -630,12 +630,26 @@ CGB (`--model cgb`):
 
 ### Known limitations
 
-- `oam_dma/sources-GS` and `interrupt_time` are not part of the curated set.
-- Wave-RAM accesses while CH3 is active
-  (`dmg_sound/rom_singles/09-wave read while on`, `10-wave trigger while on`,
-  `12-wave write while on` and `cgb_sound/rom_singles/09-wave read while on`)
-  need cycle-exact CPU/APU bus alignment. The other sound tests pass.
-- No boot ROM is implemented, so `boot_*` tests are not run.
+The curated CTest set registers only passing ROMs; the current 131 registered
+ROM tests all pass. The following ROMs are deliberately not registered and
+fail when run directly:
+
+- Blargg sound: `dmg_sound/rom_singles/09-wave read while on`,
+  `10-wave trigger while on` and `12-wave write while on`; and
+  `cgb_sound/rom_singles/09-wave read while on`. These need cycle-exact CH3
+  wave-RAM access aligned with the CPU/APU bus.
+- Blargg `interrupt_time` (interrupt latency) and `oam_bug` (OAM corruption
+  behavior) fail. `halt_bug` passes but is not registered yet.
+- Mooneye `acceptance/oam_dma/sources-GS` fails at `$FE00`; OAM DMA source
+  selection is not fully accurate.
+- Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do
+  not reproduce the hardware values.
+- Boot-dependent Mooneye tests (`boot_div*`, `boot_hwio-*`,
+  `boot_regs-{dmg0,mgb,sgb,sgb2}` and
+  `serial/boot_sclk_align-dmgABCmgb`) fail because no boot ROM is executed and
+  the post-boot DIV/I/O state is not fully reproduced. `boot_regs-dmgABC`
+  happens to pass because the headless runner sets the DMG post-boot CPU
+  registers explicitly.
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
 - SGB border, command protocol and palettes are not implemented.
 - The CGB boot ROM is not executed: its logo animation, header checksum check
