@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 357 CTest cases, including 142 curated test ROMs.
+- 358 CTest cases, including 143 curated test ROMs.
 
 ## Build
 
@@ -512,7 +512,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **357/357 CTest cases**, including 142 ROM tests.
+The current set is **358/358 CTest cases**, including 143 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -524,6 +524,7 @@ The current set is **357/357 CTest cases**, including 142 ROM tests.
 - `mem_timing/mem_timing`
 - `mem_timing-2/rom_singles/01-read_timing`, `02-write_timing`, `03-modify_timing`
 - `mem_timing-2/mem_timing`
+- `interrupt_time` (CGB, requires `--apu` for the speed detector)
 
 </details>
 
@@ -655,7 +656,6 @@ The curated CTest set registers only passing ROMs; the current 136 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- Blargg `interrupt_time` (interrupt latency) fails.
 - Blargg `oam_bug` 1-6 pass, but the effect-pattern tests
   `7-timing_effect` and `8-instr_effect` do not match the hardware patterns
   yet and are not registered.

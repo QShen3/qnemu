@@ -50,6 +50,10 @@ if(QNEMU_ENABLE_ROM_TESTS)
         qnemu_add_rom_test("blargg_halt_bug"
             "${BLARGG_ROM_ROOT}/halt_bug.gb" "blargg")
 
+        qnemu_add_rom_test("blargg_interrupt_time"
+            "${BLARGG_ROM_ROOT}/interrupt_time/interrupt_time.gb"
+            "blargg" --model cgb --apu)
+
         file(GLOB BLARGG_MEM_TIMING "${BLARGG_ROM_ROOT}/mem_timing/individual/*.gb")
         foreach(ROM IN LISTS BLARGG_MEM_TIMING)
             get_filename_component(NAME "${ROM}" NAME_WE)
