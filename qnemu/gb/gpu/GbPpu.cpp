@@ -304,9 +304,14 @@ void GbPpu::setCgb(bool cgb)
     fifo_.setCgb(cgb);
 }
 
-void GbPpu::setDmgColorization(bool enabled)
+void GbPpu::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
 {
-    memory_.setDmgColorization(enabled);
+    memory_.setDmgCompatibilityPalette(palette);
+}
+
+void GbPpu::clearDmgCompatibilityPalette()
+{
+    memory_.clearDmgCompatibilityPalette();
 }
 
 void GbPpu::stepOamDma()

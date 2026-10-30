@@ -15,6 +15,7 @@
 #include "qnemu/gb/apu/GbChannel2.h"
 #include "qnemu/gb/apu/GbChannel3.h"
 #include "qnemu/gb/apu/GbChannel4.h"
+#include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "tests/rom/GbTestSystem.h"
 #include "tests/support/NullSound.h"
 
@@ -59,7 +60,16 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
         display = std::make_shared<MemoryDisplay>();
         const bool ppuCgb = cgb && cartridge->isGbcCartridge();
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
-        ppu->setDmgColorization(cgb && !cartridge->isGbcCartridge());
+        if (cgb && !cartridge->isGbcCartridge()) {
+            const auto header = cartridge->cartridgeHeader();
+            ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
+                header.titleBytes,
+                header.oldLicensee,
+                header.newLicensee,
+            }));
+        } else {
+            ppu->clearDmgCompatibilityPalette();
+        }
         ppu->setExternalRead([this](uint16_t address) {
             return read(address);
         });

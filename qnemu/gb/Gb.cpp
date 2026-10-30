@@ -18,6 +18,7 @@
 #include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
+#include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
@@ -112,16 +113,24 @@ void Gb::loadCartridge(const char* filePath)
     bus->setCgb(cgb);
     bus->reset();
     ppu->setCgb(cgb);
-    // DMG cartridges on CGB hardware keep the DMG PPU path but use the CGB
-    // compatibility palette, matching the colorization of a real GBC.
-    ppu->setDmgColorization(model == GbModel::cgb && !cartridge->isGbcCartridge());
     mmu->reset();
+    if (model == GbModel::cgb && !cartridge->isGbcCartridge()) {
+        const GbCartridgeHeader header = cartridge->cartridgeHeader();
+        ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
+            header.titleBytes,
+            header.oldLicensee,
+            header.newLicensee,
+        }));
+    } else {
+        ppu->clearDmgCompatibilityPalette();
+    }
     cpu->reset(cgb);
 
     saveManager = std::make_unique<SaveManager>(
         saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, filePath);
     saveManager->load(*cartridge);
 
+    setPaused(false);
     start();
 }
 
@@ -135,8 +144,23 @@ void Gb::start()
 void Gb::stop()
 {
     running.store(false);
+    pauseCondition.notify_all();
     if (work.joinable()) {
         work.join();
+    }
+}
+
+void Gb::setPaused(bool value)
+{
+    if (paused.exchange(value) == value) {
+        return;
+    }
+    if (value) {
+        if (sound) {
+            sound->flush();
+        }
+    } else {
+        pauseCondition.notify_all();
     }
 }
 
@@ -167,6 +191,16 @@ void Gb::run()
     auto nextFrame = Clock::now();
 
     while (running.load()) {
+        if (paused.load()) {
+            std::unique_lock lock(pauseMutex);
+            pauseCondition.wait(lock, [this] {
+                return !paused.load() || !running.load();
+            });
+        }
+        if (!running.load()) {
+            break;
+        }
+
         cpu->step();
 
         const bool stopped = cpu->isStopped();

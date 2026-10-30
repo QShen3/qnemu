@@ -48,7 +48,8 @@ public:
     /// External memory used by OAM DMA/HDMA (ROM, cartridge RAM, WRAM).
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);
     void setCgb(bool cgb);
-    void setDmgColorization(bool enabled);
+    void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
+    void clearDmgCompatibilityPalette();
 
     const FrameBuffer& frameBuffer() const { return frame_; }
     uint64_t frameCount() const { return frameCount_; }

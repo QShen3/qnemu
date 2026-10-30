@@ -62,6 +62,7 @@ void AppController::shutdown()
     gb.reset();
     displayItem = nullptr;
     currentRomPath.clear();
+    pausedValue = false;
     if (showingGameValue) {
         showingGameValue = false;
         emit showingGameChanged();
@@ -101,6 +102,10 @@ void AppController::openRom(const QUrl& url)
     }
 
     const QString path = url.toLocalFile();
+    if (pausedValue) {
+        pausedValue = false;
+        emit pausedChanged();
+    }
     gb.reset();
     emit hasGameChanged();
 
@@ -170,6 +175,11 @@ void AppController::showLibrary()
         return;
     }
     showingGameValue = false;
+    const bool hadGame = gb != nullptr;
+    setPaused(true);
+    if (hadGame) {
+        setStatusText(QStringLiteral("Paused"));
+    }
     emit showingGameChanged();
 }
 
@@ -180,6 +190,31 @@ void AppController::showGame()
     }
     showingGameValue = true;
     emit showingGameChanged();
+}
+
+void AppController::togglePause()
+{
+    setPaused(!pausedValue);
+}
+
+void AppController::pause()
+{
+    setPaused(true);
+}
+
+void AppController::resume()
+{
+    setPaused(false);
+}
+
+void AppController::setPaused(bool value)
+{
+    if (!gb || value == pausedValue) {
+        return;
+    }
+    pausedValue = value;
+    gb->setPaused(value);
+    emit pausedChanged();
 }
 
 QString AppController::localPath(const QUrl& url) const

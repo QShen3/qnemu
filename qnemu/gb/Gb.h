@@ -5,7 +5,9 @@
 #pragma once
 
 #include <atomic>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <utility>
@@ -55,6 +57,8 @@ public:
 
     void loadCartridge(const char* filePath);
     void stop();
+    void setPaused(bool paused);
+    bool isPaused() const { return paused.load(); }
 
     void setSaveDirectory(std::string directory) { saveDirectory = std::move(directory); }
     void setSoundEnabled(bool enabled);
@@ -79,6 +83,9 @@ private:
     std::string saveDirectory;
     std::thread work;
     std::atomic_bool running{false};
+    std::atomic_bool paused{false};
+    std::mutex pauseMutex;
+    std::condition_variable pauseCondition;
 };
 
 }  // namespace qnemu

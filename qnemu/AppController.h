@@ -34,6 +34,7 @@ class AppController : public QObject
     Q_PROPERTY(bool showingGame READ showingGame NOTIFY showingGameChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
     Q_PROPERTY(double scaleFactor READ scaleFactor NOTIFY scaleFactorChanged)
+    Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
     Q_PROPERTY(AppSettings* settings READ settings CONSTANT)
     Q_PROPERTY(GameLibrary* library READ library CONSTANT)
 
@@ -46,6 +47,7 @@ public:
     bool showingGame() const { return showingGameValue; }
     QString statusText() const { return status; }
     double scaleFactor() const;
+    bool paused() const { return pausedValue; }
     AppSettings* settings() { return settingsValue; }
     GameLibrary* library() { return libraryValue; }
 
@@ -57,6 +59,9 @@ public:
     Q_INVOKABLE void refreshLibrary();
     Q_INVOKABLE void showLibrary();
     Q_INVOKABLE void showGame();
+    Q_INVOKABLE void togglePause();
+    Q_INVOKABLE void pause();
+    Q_INVOKABLE void resume();
     Q_INVOKABLE bool takeScreenshot();
     Q_INVOKABLE QString localPath(const QUrl& url) const;
 
@@ -69,10 +74,12 @@ signals:
     void showingGameChanged();
     void statusTextChanged();
     void scaleFactorChanged();
+    void pausedChanged();
 
 private:
     void setWindowTitle(const QString& newTitle);
     void setStatusText(const QString& newStatus);
+    void setPaused(bool value);
     void applyKeyBindings();
     GbModel launchModel() const;
 
@@ -85,6 +92,7 @@ private:
     QString status;
     QString currentRomPath;
     bool showingGameValue = false;
+    bool pausedValue = false;
 };
 
 }  // namespace qnemu

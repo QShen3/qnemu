@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "qnemu/gb/const.h"
+#include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 
 namespace qnemu
 {
@@ -45,12 +46,18 @@ public:
     uint32_t dmgColor(uint8_t palette, uint8_t colorIndex) const;
     uint32_t cgbColor(bool object, uint8_t palette, uint8_t colorIndex) const;
 
-    /// Enables the CGB compatibility palette for DMG cartridges.  The four
-    /// monochrome shades then map to fixed colors instead of grey levels.
-    void setDmgColorization(bool enabled) { dmgColorization_ = enabled; }
-    bool dmgColorization() const { return dmgColorization_; }
+    /// Installs the CGB compatibility palettes used by DMG cartridges on GBC.
+    /// BGP/OBP0/OBP1 then select among these CGB palette entries.
+    void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
+    void clearDmgCompatibilityPalette() { dmgCompatibility_ = false; }
+    bool dmgCompatibility() const { return dmgCompatibility_; }
+    uint32_t dmgCompatibilityColor(bool object, uint8_t palette, uint8_t dmgPalette,
+        uint8_t colorIndex) const;
 
 private:
+    void writePaletteBlock(std::array<uint8_t, 0x40>& destination, uint8_t palette,
+        const std::array<uint16_t, 4>& colors);
+
     std::array<std::array<uint8_t, VideoRamBankSize>, 2> videoRam_{};
     std::array<uint8_t, OamSize> oam_{};
     std::array<uint8_t, 0x40> backgroundPalette_{};
@@ -58,7 +65,7 @@ private:
     uint8_t vramBank_ = 0x00;
     uint8_t backgroundPaletteSpec_ = 0x00;
     uint8_t objectPaletteSpec_ = 0x00;
-    bool dmgColorization_ = false;
+    bool dmgCompatibility_ = false;
 };
 
 }  // namespace qnemu

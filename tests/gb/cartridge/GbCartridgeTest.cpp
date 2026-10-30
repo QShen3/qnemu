@@ -52,6 +52,9 @@ TEST(GbCartridgeTest, ReadHeaderMetadata)
     EXPECT_EQ(header.publisher, "Nintendo");
     EXPECT_EQ(header.region, "World");
     EXPECT_TRUE(header.cgb);
+    EXPECT_EQ(header.titleBytes.at(0), static_cast<uint8_t>('T'));
+    EXPECT_EQ(header.oldLicensee, 0x31);
+    EXPECT_EQ(header.newLicensee.at(0), 0);
 }
 
 }  // namespace qnemuTest

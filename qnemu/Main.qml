@@ -79,6 +79,28 @@ ApplicationWindow {
         }
 
         Menu {
+            title: qsTr("&Game")
+
+            MenuItem {
+                text: appController.paused ? qsTr("&Resume") : qsTr("&Pause")
+                action: Action {
+                    text: appController.paused ? qsTr("&Resume") : qsTr("&Pause")
+                    shortcut: "Ctrl+P"
+                    enabled: appController.hasGame
+                    onTriggered: {
+                        if (appController.paused) {
+                            appController.resume();
+                            appController.showGame();
+                            gameWindow.present();
+                        } else {
+                            appController.pause();
+                        }
+                    }
+                }
+            }
+        }
+
+        Menu {
             title: qsTr("&View")
 
             MenuItem {

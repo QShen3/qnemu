@@ -60,7 +60,9 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
     bool windowVisible = false;
 
     const bool backgroundVisible = cgb_ || registers.bgWindowEnabled();
-    const uint32_t backgroundOffColor = memory.dmgColor(registers.bgp, 0);
+    const uint32_t backgroundOffColor = !cgb_ && memory.dmgCompatibility()
+        ? memory.dmgCompatibilityColor(false, 0, registers.bgp, 0)
+        : memory.dmgColor(registers.bgp, 0);
     for (int x = 0; x < FrameBuffer::width; ++x) {
         frame.at(x, line) = backgroundOffColor;
     }
@@ -75,6 +77,9 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
             backgroundPriority.at(x) = pixel.priority;
             if (cgb_) {
                 frame.at(x, line) = memory.cgbColor(false, pixel.palette, pixel.colorIndex);
+            } else if (memory.dmgCompatibility()) {
+                frame.at(x, line) = memory.dmgCompatibilityColor(
+                    false, 0, registers.bgp, pixel.colorIndex);
             } else {
                 frame.at(x, line) = memory.dmgColor(registers.bgp, pixel.colorIndex);
             }
@@ -92,6 +97,9 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
                 backgroundPriority.at(x) = pixel.priority;
                 if (cgb_) {
                     frame.at(x, line) = memory.cgbColor(false, pixel.palette, pixel.colorIndex);
+                } else if (memory.dmgCompatibility()) {
+                    frame.at(x, line) = memory.dmgCompatibilityColor(
+                        false, 0, registers.bgp, pixel.colorIndex);
                 } else {
                     frame.at(x, line) = memory.dmgColor(registers.bgp, pixel.colorIndex);
                 }
@@ -193,8 +201,14 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
                 frame.at(x, line) = memory.cgbColor(
                     true, static_cast<uint8_t>(attributes & 0x07), colorIndex);
             } else {
-                const uint8_t palette = (attributes & 0x10) != 0 ? registers.obp1 : registers.obp0;
-                frame.at(x, line) = memory.dmgColor(palette, colorIndex);
+                const bool objectPalette1 = (attributes & 0x10) != 0;
+                const uint8_t palette = objectPalette1 ? registers.obp1 : registers.obp0;
+                if (memory.dmgCompatibility()) {
+                    frame.at(x, line) = memory.dmgCompatibilityColor(
+                        true, objectPalette1 ? 1 : 0, palette, colorIndex);
+                } else {
+                    frame.at(x, line) = memory.dmgColor(palette, colorIndex);
+                }
             }
             spritePixel.at(x) = true;
         }

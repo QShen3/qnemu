@@ -53,6 +53,7 @@ public:
     void reset() override { ++resets; }
     void load(const char*) override { ++loads; }
     bool isGbcCartridge() const override { return false; }
+    qnemu::GbCartridgeHeader cartridgeHeader() const override { return {}; }
 
     std::array<uint8_t, 0x2000> ram{};
     int steps = 0;

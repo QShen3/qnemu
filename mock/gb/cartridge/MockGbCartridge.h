@@ -21,6 +21,7 @@ public:
 
     MOCK_METHOD(void, load, (const char*), (override));
     MOCK_METHOD(bool, isGbcCartridge, (), (const, override));
+    MOCK_METHOD(qnemu::GbCartridgeHeader, cartridgeHeader, (), (const, override));
 };
 
 }  // namespace qnemuMock

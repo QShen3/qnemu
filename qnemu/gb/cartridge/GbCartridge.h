@@ -4,27 +4,20 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <string>
 #include <vector>
 
+#include "qnemu/gb/cartridge/GbCartridgeHeader.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
 #include "qnemu/save/SaveTarget.h"
 
 namespace qnemu
 {
-
-struct GbCartridgeHeader
-{
-    std::string title;
-    std::string publisher;
-    std::string region;
-    bool cgb = false;
-    uint8_t type = 0;
-};
 
 class GbCartridge : public GbCartridgeInterface
 {
@@ -41,6 +34,9 @@ public:
 
     void load(const char* filePath) override;
     bool isGbcCartridge() const override;
+
+    /// Raw header fields for compatibility palette selection.
+    GbCartridgeHeader cartridgeHeader() const override;
 
     /// Lightweight header read for the game library; does not build an MBC.
     static GbCartridgeHeader readHeader(const std::string& filePath);
@@ -67,6 +63,7 @@ private:
     bool japanCartridge;
     bool loaded;
     std::unique_ptr<GbMbcInterface> mbc;
+    GbCartridgeHeader header;
     std::string publisher;
     size_t ramSizeBytes;
     size_t romSize;

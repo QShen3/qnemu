@@ -21,6 +21,7 @@ qnemu_add_gb_library(gb_interrupt
 # scanline renderer.
 qnemu_add_gb_library(gb_ppu
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/CgbCompatibilityPalette.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuFifo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp)

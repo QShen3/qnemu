@@ -47,7 +47,7 @@ Item {
 
                 Label {
                     Layout.fillWidth: true
-                    text: page.gameCountText()
+                    text: page.gameCountText() + (appController.paused ? qsTr("  ·  Paused") : "")
                     color: page.theme.mutedText
                     font.pixelSize: 11
                     elide: Text.ElideRight

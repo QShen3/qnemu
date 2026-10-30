@@ -157,18 +157,26 @@ void GbCartridge::load(const char* filePath)
         throw std::runtime_error("Cartridge file is not correct!");
     }
 
-    char gameTitle[15];
-    for (size_t i = 0x134; i <= 0x142; i++) {
-        gameTitle[i - 0x134] = static_cast<char>(buffer.at(i));
+    std::copy_n(buffer.begin() + 0x134, 16, header.titleBytes.begin());
+    title.assign(reinterpret_cast<const char*>(header.titleBytes.data()), 15);
+    const std::size_t titleEnd = title.find('\0');
+    if (titleEnd != std::string::npos) {
+        title.resize(titleEnd);
     }
-    title = std::string(gameTitle);
     publisher = getPublisherFromCartridge(buffer);
+    header.title = title;
+    header.publisher = publisher;
+    header.region = buffer.at(0x14A) == 0 ? "Japan" : "World";
+    header.oldLicensee = buffer.at(0x14B);
+    header.newLicensee = {buffer.at(0x144), buffer.at(0x145)};
 
     ramSizeBytes = getRamSizeFromCartridge(buffer.at(0x149));
     const size_t ramBankCounts = ramSizeBytes == 0x800 ? 1 : ramSizeBytes / RamBankSize;
 
     type = buffer.at(0x147);
     japanCartridge = buffer.at(0x14A) == 0 ? true : false;
+    header.cgb = gbcCartridge;
+    header.type = type;
 
     std::vector<std::array<uint8_t, RomBankSize>> romBanks(romBankCounts);
     std::vector<std::array<uint8_t, RamBankSize>> ramBanks(ramBankCounts);
@@ -186,6 +194,11 @@ void GbCartridge::load(const char* filePath)
 bool GbCartridge::isGbcCartridge() const
 {
     return gbcCartridge;
+}
+
+GbCartridgeHeader GbCartridge::cartridgeHeader() const
+{
+    return header;
 }
 
 bool GbCartridge::hasBattery() const
@@ -254,6 +267,9 @@ GbCartridgeHeader GbCartridge::readHeader(const std::string& filePath)
     header.type = buffer.at(0x147);
     header.publisher = getPublisherFromCartridge(buffer);
     header.region = buffer.at(0x14A) == 0 ? "Japan" : "World";
+    std::copy_n(buffer.begin() + 0x134, 16, header.titleBytes.begin());
+    header.oldLicensee = buffer.at(0x14B);
+    header.newLicensee = {buffer.at(0x144), buffer.at(0x145)};
 
     for (std::size_t i = 0x134; i <= 0x142; ++i) {
         const char character = static_cast<char>(buffer.at(i));

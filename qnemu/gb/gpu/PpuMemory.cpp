@@ -10,21 +10,6 @@
 namespace qnemu
 {
 
-namespace
-{
-
-// Fixed fallback used when a DMG cartridge runs on CGB hardware.  The real
-// CGB boot ROM picks per-game palettes; a single DMG-green palette keeps the
-// compatibility mode useful until the boot ROM palette table is implemented.
-constexpr std::array<uint32_t, 4> DmgColorizationPalette = {
-    rgb(255, 255, 255),
-    rgb(139, 172, 15),
-    rgb(48, 98, 48),
-    rgb(15, 56, 15),
-};
-
-}  // namespace
-
 PpuMemory::PpuMemory()
 {
     reset();
@@ -41,6 +26,7 @@ void PpuMemory::reset()
     vramBank_ = 0x00;
     backgroundPaletteSpec_ = 0x00;
     objectPaletteSpec_ = 0x00;
+    dmgCompatibility_ = false;
 }
 
 uint8_t PpuMemory::readVram(uint16_t address) const
@@ -120,15 +106,39 @@ void PpuMemory::writePaletteData(bool object, uint8_t value)
 uint32_t PpuMemory::dmgColor(uint8_t palette, uint8_t colorIndex) const
 {
     const uint8_t shade = static_cast<uint8_t>((palette >> (colorIndex * 2)) & 0x03);
-    if (dmgColorization_) {
-        return DmgColorizationPalette.at(shade);
-    }
     switch (shade) {
         case 0: return rgb(255, 255, 255);
         case 1: return rgb(170, 170, 170);
         case 2: return rgb(85, 85, 85);
         default: return rgb(0, 0, 0);
     }
+}
+
+
+void PpuMemory::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
+{
+    writePaletteBlock(backgroundPalette_, 0, palette.background);
+    writePaletteBlock(objectPalette_, 0, palette.object0);
+    writePaletteBlock(objectPalette_, 1, palette.object1);
+    dmgCompatibility_ = true;
+}
+
+void PpuMemory::writePaletteBlock(std::array<uint8_t, 0x40>& destination, uint8_t palette,
+    const std::array<uint16_t, 4>& colors)
+{
+    const std::size_t base = static_cast<std::size_t>(palette) * 8;
+    for (std::size_t i = 0; i < colors.size(); ++i) {
+        const uint16_t color = colors.at(i);
+        destination.at(base + i * 2) = static_cast<uint8_t>(color & 0xFF);
+        destination.at(base + i * 2 + 1) = static_cast<uint8_t>(color >> 8);
+    }
+}
+
+uint32_t PpuMemory::dmgCompatibilityColor(bool object, uint8_t palette, uint8_t dmgPalette,
+    uint8_t colorIndex) const
+{
+    const uint8_t shade = static_cast<uint8_t>((dmgPalette >> (colorIndex * 2)) & 0x03);
+    return cgbColor(object, palette, shade);
 }
 
 uint32_t PpuMemory::cgbColor(bool object, uint8_t palette, uint8_t colorIndex) const

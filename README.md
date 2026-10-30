@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 343 CTest cases, including 131 curated test ROMs.
+- 346 CTest cases, including 131 curated test ROMs.
 
 ## Build
 
@@ -117,8 +117,9 @@ implemented yet, so `sgb` currently behaves like the DMG baseline.
 
 The library and the game view are separate windows. The library window keeps a
 comfortable fixed layout independent of the game scale; the game window opens
-at the configured scale and can be resized or closed while the emulator keeps
-running in the background.
+at the configured scale and can be resized. Closing the game window pauses
+emulation; use **Game → Resume** (Ctrl+P) or Space from the game window to
+continue.
 
 The home page is a per-platform library:
 
@@ -133,6 +134,8 @@ The home page is a per-platform library:
 - **Screenshot** saves the current 160×144 frame using the configured output
   folder and format.
 - **View → Library / Game** raises the library or game window.
+- **Game → Pause / Resume** (Ctrl+P) pauses or resumes the running game. Closing
+  the game window or switching back to the library pauses it automatically.
 
 The settings window has four pages:
 
@@ -182,7 +185,7 @@ qnemu/
 └── gb/                 Game Boy implementation
     ├── cpu/            SM83 core
     ├── interrupt/      IF/IE and interrupt priority
-    ├── gpu/            PPU, pixel FIFO, VRAM/OAM/palettes
+    ├── gpu/            PPU, pixel FIFO, CGB compatibility palettes
     ├── apu/            APU and four channels
     ├── timer/          DIV/TIMA timer
     ├── cartridge/      cartridge header, MBCs
@@ -227,9 +230,11 @@ bar, which maps to the system menu bar on macOS and appears in-window on other
 platforms.
 
 The library window has a fixed comfortable size and is not affected by the
-game scale. The game window is resized to the 100/150/200% preset and can be
-closed while the emulator keeps running; **View → Game** raises it again. The
-settings window is positioned once when it opens and stays put when the game
+game scale. The game window is resized to the 100/150/200% preset. Closing the
+game window or returning to the library pauses the emulator; the paused frame
+stays visible behind a **Paused** overlay, and **Game → Resume** (Ctrl+P or
+Space in the game window) continues. **View → Game** raises the window again.
+The settings window is positioned once when it opens and stays put when the game
 window is resized.
 
 `GameLibrary` scans the configured GB/GBC folders and reads cartridge headers
@@ -253,10 +258,12 @@ All paths, scale, audio, screenshot settings and key profiles persist through
 `QSettings`; key bindings apply to `EmulatorItem` immediately.
 
 When a DMG cartridge is launched with the CGB model, the PPU keeps the DMG
-tile/attribute path but maps the four shades to a fixed CGB compatibility
-palette. This is the same mechanism real GBC hardware uses, but the current
-implementation uses one DMG-green palette instead of the boot ROM's per-game
-palette table.
+tile/attribute path but maps the four shades through the CGB compatibility
+palettes. The per-game selection follows the boot ROM algorithm: Nintendo
+license check, title checksum, duplicate checksums disambiguated by the fourth
+title character, and the palette combination table. The boot ROM logo
+animation/checksum step itself is not run; the resulting palettes are applied
+directly.
 
 Window backgrounds, controls and text follow the platform palette, so the UI
 adapts to light and dark appearance automatically. The game viewport keeps a
@@ -511,7 +518,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **343/343 CTest cases**, including 131 ROM tests.
+The current set is **346/346 CTest cases**, including 131 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -637,8 +644,9 @@ CGB (`--model cgb`):
 - No boot ROM is implemented, so `boot_*` tests are not run.
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
 - SGB border, command protocol and palettes are not implemented.
-- DMG games launched as CGB use one fixed DMG-green compatibility palette. The
-  CGB boot ROM's per-game palette table is not implemented yet.
+- The CGB boot ROM is not executed: its logo animation, header checksum check
+  and boot hand-off are skipped. The compatibility palette selection and data
+  are implemented directly instead.
 - The library uses references to the original ROM files. Copy/import into a
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
@@ -673,6 +681,8 @@ CGB (`--model cgb`):
 | Screenshots      | ✅          | manual smoke test |
 | Key profiles     | ✅          | manual smoke test |
 | Model selection  | ✅          | CLI + settings |
+| CGB DMG colorization | ✅      | unit + manual |
+| Pause / resume   | ✅          | manual |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |
 | Save states      | ❌          | — |
@@ -684,6 +694,7 @@ CGB (`--model cgb`):
 ## Thanks
 
 - [Pan Docs](https://gbdev.io/pandocs/)
+- [SameBoy](https://github.com/LIJI32/SameBoy) (MIT-licensed CGB boot ROM reimplementation used to cross-check the compatibility palette tables)
 - [The Cycle-Accurate Game Boy Docs](https://github.com/AntonioND/giibiiadvance/blob/master/docs/TCAGBD.pdf)
 - [gb-opcodes](https://gbdev.github.io/gb-opcodes/optables/)
 - [SingleStepTests/sm83](https://github.com/SingleStepTests/sm83)

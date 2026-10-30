@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 160
     minimumHeight: 144
     visible: false
-    title: appController.windowTitle
+    title: appController.windowTitle + (appController.paused ? qsTr(" (Paused)") : "")
     color: "black"
 
     function applyScale() {
@@ -76,6 +76,18 @@ ApplicationWindow {
             title: qsTr("&Game")
 
             MenuItem {
+                text: appController.paused ? qsTr("&Resume") : qsTr("&Pause")
+                action: Action {
+                    text: appController.paused ? qsTr("&Resume") : qsTr("&Pause")
+                    shortcut: "Space"
+                    enabled: appController.hasGame
+                    onTriggered: appController.togglePause()
+                }
+            }
+
+            MenuSeparator {}
+
+            MenuItem {
                 text: qsTr("&Back to Library")
                 action: Action {
                     text: qsTr("&Back to Library")
@@ -130,6 +142,12 @@ ApplicationWindow {
         }
     }
 
+    Shortcut {
+        sequence: "Ctrl+P"
+        enabled: appController.hasGame
+        onActivated: appController.togglePause()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: "black"
@@ -150,6 +168,40 @@ ApplicationWindow {
                 TapHandler {
                     onTapped: emulator.forceActiveFocus()
                 }
+            }
+        }
+    }
+
+    Rectangle {
+        id: pauseOverlay
+
+        anchors.centerIn: parent
+        width: 240
+        height: 112
+        radius: 12
+        color: "#d9000000"
+        border.width: 1
+        border.color: "#33ffffff"
+        visible: appController.paused
+        z: 40
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 4
+
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Paused")
+                color: "white"
+                font.pixelSize: 22
+                font.weight: Font.DemiBold
+            }
+
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Space or Ctrl+P to resume")
+                color: "#b3ffffff"
+                font.pixelSize: 11
             }
         }
     }
