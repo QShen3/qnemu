@@ -108,9 +108,7 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${BLARGG_ROM_ROOT}/cgb_sound/rom_singles/${NAME}.gb"
                 "blargg;sound" --model cgb --apu)
         endforeach()
-        # OAM corruption: causes, scanline timing and the instruction-pattern
-        # test.  7-timing_effect still needs more exact timing and is not
-        # registered yet.
+        # OAM corruption: causes, scanline timing and the effect-pattern tests.
         set(BLARGG_OAM_BUG_TESTS
             "1-lcd_sync"
             "2-causes"
@@ -125,6 +123,14 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${BLARGG_ROM_ROOT}/oam_bug/rom_singles/${NAME}.gb"
                 "blargg;ppu" --model dmg --ppu)
         endforeach()
+
+        # 7-timing_effect writes its optional text log past the 8 KiB
+        # cartridge RAM (about 9.5 KiB of OAM dumps) and overwrites the code
+        # copied to $C000.  The log is redundant with the console output and
+        # is not part of the checksum, so disable write_text_out for this ROM.
+        qnemu_add_rom_test("blargg_oam_bug_7-timing_effect"
+            "${BLARGG_ROM_ROOT}/oam_bug/rom_singles/7-timing_effect.gb"
+            "blargg;ppu" --model dmg --ppu --patch 0x4401=000000)
     endif()
 
     set(MOONEYE_ROM_ROOT "${QNEMU_TEST_ROM_ROOT}/mooneye-test-roms")

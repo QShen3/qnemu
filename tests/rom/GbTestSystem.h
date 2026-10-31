@@ -37,6 +37,10 @@ public:
     bool loadRom(const std::string& path, bool cgb, bool enablePpu = false,
         bool enableApu = false);
 
+    /// Load a ROM image from memory, with optional test-specific patches.
+    bool loadRomData(const std::vector<uint8_t>& romData, bool cgb,
+        bool enablePpu = false, bool enableApu = false);
+
     uint8_t read(uint16_t address) override;
     void write(uint16_t address, uint8_t value) override;
     void tick(uint8_t cycles) override;
@@ -64,6 +68,7 @@ public:
     uint64_t cycles() const { return cycles_; }
 
 private:
+    bool finishLoad(bool cgb, bool enablePpu, bool enableApu);
     void reset();
     void ppuTick();
 

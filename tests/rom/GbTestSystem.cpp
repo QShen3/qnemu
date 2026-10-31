@@ -47,7 +47,24 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
         cartridge.reset();
         return false;
     }
+    return finishLoad(cgb, enablePpu, enableApu);
+}
 
+bool GbTestSystem::loadRomData(const std::vector<uint8_t>& romData, bool cgb,
+    bool enablePpu, bool enableApu)
+{
+    try {
+        cartridge = std::make_unique<qnemu::GbCartridge>(mbcFactory);
+        cartridge->load(romData);
+    } catch (const std::exception&) {
+        cartridge.reset();
+        return false;
+    }
+    return finishLoad(cgb, enablePpu, enableApu);
+}
+
+bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
+{
     cgb_ = cgb;
 
     ppu.reset();

@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 360 CTest cases, including 145 curated test ROMs.
+- 361 CTest cases, including 146 curated test ROMs.
 
 ## Build
 
@@ -450,6 +450,9 @@ result protocols:
 # render frames and compare against a reference PNG
 ./build/tests/rom/gb_test_runner path/to/acid2.gb --frames 10 \
     --compare-image path/to/reference.png
+
+# patch ROM bytes before loading (repeatable, offset=hex)
+./build/tests/rom/gb_test_runner path/to/test.gb --patch 0x4401=000000
 ```
 
 Without `--ppu`, the CPU-only bus keeps a tiny LY/VBlank stub. With `--ppu`,
@@ -512,7 +515,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **360/360 CTest cases**, including 145 ROM tests.
+The current set is **361/361 CTest cases**, including 146 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -574,9 +577,14 @@ DMG (`--model dmg`):
 - `4-scanline_timing`
 - `5-timing_bug`
 - `6-timing_no_bug`
+- `7-timing_effect`
 - `8-instr_effect`
 
-`7-timing_effect` still needs more exact timing and is not registered yet.
+`7-timing_effect` is run with a small ROM patch that disables the ROM's
+optional `write_text_out` log.  The log grows past the 8 KiB cartridge
+RAM (about 9.5 KiB of OAM dumps) and overwrites the test code copied to
+`$C000`; it is redundant with the console output and is not part of the
+checksum.  The OAM corruption and CRC behaviour are unchanged.
 
 </details>
 
@@ -652,12 +660,10 @@ DMG (`--model dmg`):
 
 ### Known limitations
 
-The curated CTest set registers only passing ROMs; the current 136 registered
+The curated CTest set registers only passing ROMs; the current 146 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- Blargg `oam_bug` 1-6 and 8-instr_effect pass, but `7-timing_effect` still
-  needs more exact timing and is not registered.
 - Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do
   not reproduce the hardware values.
 - Boot-dependent Mooneye tests (`boot_div*`, `boot_hwio-*`,

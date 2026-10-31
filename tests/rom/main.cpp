@@ -2,13 +2,17 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
+#include <algorithm>
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <QtGui/QImage>
 
@@ -25,6 +29,12 @@ enum class Result
     none,
     pass,
     fail,
+};
+
+struct RomPatch
+{
+    std::size_t offset;
+    std::vector<uint8_t> bytes;
 };
 
 Result textResult(const std::string& output)
@@ -71,6 +81,7 @@ void printUsage(const char* program)
               << "  --frames N          run N PPU frames instead of result protocols\n"
               << "  --compare-image P   compare the final frame with a PNG\n"
               << "  --dump-frame P      write the final frame as a binary PPM\n"
+              << "  --patch OFF=HEX     patch the ROM image before loading (repeatable)\n"
               << "  --verbose           stream serial output as it is produced\n";
 }
 
@@ -142,6 +153,7 @@ int main(int argc, char** argv)
     bool enablePpu = false;
     bool enableApu = false;
     bool verbose = false;
+    std::vector<RomPatch> patches;
 
     for (int index = 1; index < argc; ++index) {
         const std::string argument = argv[index];
@@ -157,6 +169,24 @@ int main(int argc, char** argv)
             compareImage = argv[++index];
         } else if (argument == "--dump-frame" && index + 1 < argc) {
             dumpFrame = argv[++index];
+        } else if (argument == "--patch" && index + 1 < argc) {
+            const std::string specification = argv[++index];
+            const auto separator = specification.find('=');
+            const std::string hex = separator == std::string::npos
+                ? std::string {}
+                : specification.substr(separator + 1);
+            if (separator == std::string::npos || hex.empty() || hex.size() % 2 != 0) {
+                std::cerr << "Invalid patch, expected OFF=HEX: " << specification << '\n';
+                return 2;
+            }
+            RomPatch patch;
+            patch.offset = static_cast<std::size_t>(
+                std::strtoull(specification.substr(0, separator).c_str(), nullptr, 0));
+            for (std::size_t position = 0; position < hex.size(); position += 2) {
+                patch.bytes.push_back(static_cast<uint8_t>(
+                    std::strtoul(hex.substr(position, 2).c_str(), nullptr, 16)));
+            }
+            patches.push_back(std::move(patch));
         } else if (argument == "--ppu") {
             enablePpu = true;
         } else if (argument == "--apu") {
@@ -190,7 +220,38 @@ int main(int argc, char** argv)
     }
 
     qnemuTest::GbTestSystem system;
-    if (!system.loadRom(romPath, model == "cgb", attachPpu, enableApu)) {
+    bool loaded = false;
+    if (patches.empty()) {
+        loaded = system.loadRom(romPath, model == "cgb", attachPpu, enableApu);
+    } else {
+        std::ifstream input(romPath, std::ios::binary | std::ios::ate);
+        if (!input) {
+            std::cerr << "Failed to load ROM: " << romPath << '\n';
+            return 2;
+        }
+        const std::streamsize size = input.tellg();
+        if (size < 0) {
+            std::cerr << "Failed to load ROM: " << romPath << '\n';
+            return 2;
+        }
+        input.seekg(0, std::ios::beg);
+        std::vector<uint8_t> romData(static_cast<std::size_t>(size));
+        input.read(reinterpret_cast<char*>(romData.data()), size);
+        if (!input) {
+            std::cerr << "Failed to load ROM: " << romPath << '\n';
+            return 2;
+        }
+        for (const auto& patch : patches) {
+            if (patch.offset + patch.bytes.size() > romData.size()) {
+                std::cerr << "Patch is outside the ROM image\n";
+                return 2;
+            }
+            std::copy(patch.bytes.begin(), patch.bytes.end(),
+                romData.begin() + static_cast<std::ptrdiff_t>(patch.offset));
+        }
+        loaded = system.loadRomData(romData, model == "cgb", attachPpu, enableApu);
+    }
+    if (!loaded) {
         std::cerr << "Failed to load ROM: " << romPath << '\n';
         return 2;
     }

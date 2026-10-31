@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
 #include <map>
 #include <numeric>
 #include <stdexcept>
@@ -98,12 +99,7 @@ GbCartridge::GbCartridge(const GbMbcFactoryInterface& gbMbcFactory) :
 {
 }
 
-GbCartridge::~GbCartridge()
-{
-    if (file.is_open()) {
-        file.close();
-    }
-}
+GbCartridge::~GbCartridge() = default;
 
 uint8_t GbCartridge::read(uint16_t address) const
 {
@@ -133,19 +129,27 @@ void GbCartridge::reset()
 
 void GbCartridge::load(const char* filePath)
 {
-    if (file.is_open()) {
-        file.close();
-    }
-    file.open(filePath, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {
+    std::ifstream input(filePath, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!input.is_open()) {
         throw std::runtime_error("Load cartridge file failed!");
     }
-    romSize = file.tellg();
-    const size_t romBankCounts = romSize / RomBankSize;
-    file.seekg(0, std::ios::beg);
+    const std::streamsize size = input.tellg();
+    if (size < 0) {
+        throw std::runtime_error("Load cartridge file failed!");
+    }
+    input.seekg(0, std::ios::beg);
+    std::vector<uint8_t> buffer(static_cast<std::size_t>(size));
+    input.read(reinterpret_cast<char*>(buffer.data()), size);
+    if (!input) {
+        throw std::runtime_error("Load cartridge file failed!");
+    }
+    load(buffer);
+}
 
-    std::vector<uint8_t> buffer(romSize);
-    file.read(reinterpret_cast<char *>(buffer.data()), static_cast<std::streamsize>(romSize));
+void GbCartridge::load(const std::vector<uint8_t>& buffer)
+{
+    romSize = buffer.size();
+    const size_t romBankCounts = romSize / RomBankSize;
 
     if (buffer.at(0x143) == 0xC0) {
         gbcCartridge = true;
@@ -180,11 +184,9 @@ void GbCartridge::load(const char* filePath)
 
     std::vector<std::array<uint8_t, RomBankSize>> romBanks(romBankCounts);
     std::vector<std::array<uint8_t, RamBankSize>> ramBanks(ramBankCounts);
-    file.seekg(0, std::ios::beg);
-    for (auto& bank : romBanks) {
-        std::array<uint8_t, RomBankSize> data;
-        file.read(reinterpret_cast<char*>(data.data()), RomBankSize);
-        std::copy(data.begin(), data.end(), bank.begin());
+    for (size_t bank = 0; bank < romBankCounts; ++bank) {
+        const auto begin = buffer.begin() + static_cast<std::ptrdiff_t>(bank * RomBankSize);
+        std::copy_n(begin, RomBankSize, romBanks[bank].begin());
     }
     mbc = gbMbcFactory.create(std::move(romBanks), std::move(ramBanks), type);
 

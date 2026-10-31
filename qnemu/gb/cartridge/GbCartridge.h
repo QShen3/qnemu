@@ -7,7 +7,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -33,6 +32,9 @@ public:
     void reset() override;
 
     void load(const char* filePath) override;
+    /// Load a ROM image already held in memory.  Used by the test runner to
+    /// apply small, test-specific ROM patches without touching the file.
+    void load(const std::vector<uint8_t>& buffer);
     bool isGbcCartridge() const override;
 
     /// Raw header fields for compatibility palette selection.
@@ -57,7 +59,6 @@ private:
     static size_t getRomSizeFromCartridge(uint8_t flag);
     bool validate(const std::vector<uint8_t>& buffer) const;
 
-    std::ifstream file;
     const GbMbcFactoryInterface& gbMbcFactory;
     bool gbcCartridge;
     bool japanCartridge;
