@@ -80,6 +80,44 @@ TEST(GbSgbTest, AttributeLineSelectsPalette)
     EXPECT_EQ(sgb.colorForPixel(0, 0, 0), qnemu::rgb(255, 0, 0));
 }
 
+TEST(GbSgbTest, ChrAndPctTransfersLoadCustomBorder)
+{
+    qnemu::GbSgb sgb;
+    sgb.reset();
+
+    // CHR_TRN: one 4 KiB half of 4bpp tile data.  Tile 0 pixel (0, 0) uses
+    // color 1.
+    std::array<uint8_t, 0x2000> vram {};
+    vram[0] = 0x80;
+    std::array<uint8_t, 16> chr {};
+    chr[0] = 0x99;  // CHR_TRN, one packet, low half
+    sendPacket(sgb, chr);
+    sgb.processTransfers(vram.data(), vram.size());
+    sgb.processTransfers(vram.data(), vram.size());
+    sgb.processTransfers(vram.data(), vram.size());
+
+    // PCT_TRN: map every tile to tile 0, and palette color 1 to red.
+    vram.fill(0);
+    for (std::size_t tile = 0; tile < 32 * 28; ++tile) {
+        vram[tile * 2] = 0;
+        vram[tile * 2 + 1] = 0;
+    }
+    vram[0x802] = 0x1F;  // palette 0, color 1: red RGB555
+    vram[0x803] = 0x00;
+    std::array<uint8_t, 16> pct {};
+    pct[0] = 0xA1;  // PCT_TRN
+    sendPacket(sgb, pct);
+    sgb.processTransfers(vram.data(), vram.size());
+    sgb.processTransfers(vram.data(), vram.size());
+    sgb.processTransfers(vram.data(), vram.size());
+
+    qnemu::FrameBuffer game;
+    game.fill(qnemu::rgb(0, 0, 0));
+    qnemu::SgbFrameBuffer output;
+    sgb.renderBorder(game, output);
+    EXPECT_EQ(output.at(0, 0), qnemu::rgb(255, 0, 0));
+}
+
 TEST(GbSgbTest, BorderCompositionPlacesGameInCenter)
 {
     qnemu::GbSgb sgb;

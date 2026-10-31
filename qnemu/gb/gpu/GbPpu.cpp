@@ -611,6 +611,14 @@ void GbPpu::stepTiming()
         ++frameCount_;
         if (display_) {
             if (sgb_) {
+                if (sgb_->transferPending()) {
+                    std::array<uint8_t, 0x2000> vram {};
+                    for (std::size_t index = 0; index < vram.size(); ++index) {
+                        vram.at(index) = memory_.readVramByte(
+                            0, static_cast<uint16_t>(index));
+                    }
+                    sgb_->processTransfers(vram.data(), vram.size());
+                }
                 SgbFrameBuffer sgbFrame;
                 sgb_->renderBorder(frame_, sgbFrame);
                 display_->presentSgbFrame(sgbFrame);

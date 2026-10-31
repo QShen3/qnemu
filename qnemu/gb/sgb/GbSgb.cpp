@@ -38,6 +38,15 @@ constexpr uint8_t CommandATTRTRN = 0x15;
 constexpr uint8_t CommandATTRSET = 0x16;
 constexpr uint8_t CommandMASKEN = 0x17;
 
+enum TransferDestination : uint8_t
+{
+    TransferLowTiles,
+    TransferHighTiles,
+    TransferPalettes,
+    TransferBorderData,
+    TransferAttributes,
+};
+
 // SGB boot-ROM palette groups.  Values are little-endian RGB555, matching
 // SameBoy's MIT-licensed SGB tables.
 constexpr std::array<uint16_t, 32 * 4> BuiltInPalettes = {
@@ -142,6 +151,8 @@ void GbSgb::reset()
     maskMode_ = 0;
     playerCount_ = 1;
     currentPlayer_ = 0;
+    transferCountdown_ = 0;
+    transferDestination_ = 0;
     for (std::size_t i = 0; i < 4; ++i) {
         effectivePalettes_.at(i) = BuiltInPalettes.at(i);
     }
@@ -378,11 +389,22 @@ void GbSgb::commandReady()
         break;
     }
     case CommandPALTRN:
+        transferDestination_ = TransferPalettes;
+        transferCountdown_ = 3;
+        break;
     case CommandCHRTRN:
+        transferDestination_ = (command_.at(1) & 1) != 0
+            ? TransferHighTiles
+            : TransferLowTiles;
+        transferCountdown_ = 3;
+        break;
     case CommandPCTTRN:
+        transferDestination_ = TransferBorderData;
+        transferCountdown_ = 3;
+        break;
     case CommandATTRTRN:
-        // VRAM-to-SGB transfers are handled by the border/palette transfer
-        // path.  Until then, keep the current palette/attribute state.
+        transferDestination_ = TransferAttributes;
+        transferCountdown_ = 3;
         break;
     case CommandDATASND:
         break;
@@ -478,6 +500,47 @@ void GbSgb::write(uint8_t value)
     }
 
     lastValue_ = value;
+}
+
+void GbSgb::processTransfers(const uint8_t* vram, std::size_t size)
+{
+    if (transferCountdown_ == 0 || vram == nullptr) {
+        return;
+    }
+    if (--transferCountdown_ != 0) {
+        return;
+    }
+
+    switch (transferDestination_) {
+    case TransferLowTiles:
+    case TransferHighTiles:
+        if (size >= 0x1000) {
+            const std::size_t destination = transferDestination_ == TransferHighTiles
+                ? 0x1000
+                : 0;
+            std::memcpy(borderTiles_.data() + destination, vram, 0x1000);
+        }
+        break;
+    case TransferPalettes:
+        if (size >= 0x1000) {
+            std::memcpy(ramPalettes_.data(), vram, 0x1000);
+        }
+        break;
+    case TransferBorderData:
+        if (size >= 0x860) {
+            std::memcpy(borderMap_.data(), vram, 0x700);
+            borderPalette_.fill(0);
+            std::memcpy(borderPalette_.data(), vram + 0x800, 0x60);
+        }
+        break;
+    case TransferAttributes:
+        if (size >= attributeFiles_.size()) {
+            std::memcpy(attributeFiles_.data(), vram, attributeFiles_.size());
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 uint8_t GbSgb::attributeForTile(int tileX, int tileY) const

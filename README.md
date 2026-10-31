@@ -18,12 +18,12 @@ goal is to support more consoles and handhelds with the same host layer.
 - Four-channel APU with a DIV-APU frame sequencer, mixer, DC filter and
   low-pass output stage.
 - Timer/divider, joypad and OAM DMA/HDMA.
-- Super Game Boy command protocol, palette/attribute colorization and the
-  default 256×224 border.
+- Super Game Boy command protocol, palette/attribute colorization, the
+  default 256×224 border and custom border transfers.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 388 CTest cases, including 160 curated test ROMs.
+- 389 CTest cases, including 160 curated test ROMs.
 
 ## Build
 
@@ -117,8 +117,8 @@ cartridges always use CGB. With `cgb`, a CGB-capable cartridge (dual-mode
 DMG compatibility mode with the CGB compatibility palette, so monochrome games
 are colorized. `dmg` forces the DMG-compatible CPU/PPU path. `sgb` keeps the
 DMG CPU/PPU path but enables the Super Game Boy command protocol, palette and
-attribute commands, and the default SGB border. Custom border transfers
-(`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`) are not implemented yet.
+attribute commands, the default SGB border and custom border transfers
+(`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`/`PAL_TRN`).
 
 The library and the game view are separate windows. The library window keeps a
 comfortable fixed layout independent of the game scale; the game window opens
@@ -534,7 +534,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **388/388 CTest cases**, including 160 ROM tests.
+The current set is **389/389 CTest cases**, including 160 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -699,9 +699,10 @@ ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
-- SGB custom border transfers (`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`) are not
-  implemented yet. The default SGB border, palette/attribute commands and
-  colorization are implemented.
+- SGB sound commands (`SOUND`/`SOU_TRN`), the SGB boot animation and visual
+  `MASK_EN` effects are not implemented yet. The command/palette/attribute
+  protocol, default border, custom border transfers and colorization are
+  implemented.
 - The CGB boot ROM is not executed: its logo animation, header checksum check
   and boot hand-off are skipped. The compatibility palette selection and data
   are implemented directly instead.

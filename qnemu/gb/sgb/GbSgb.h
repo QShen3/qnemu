@@ -37,7 +37,12 @@ public:
     /// Color for a DMG color index at screen pixel (x, y).
     uint32_t colorForPixel(int x, int y, uint8_t colorIndex) const;
 
-    /// Composes the default SGB border around a finished 160x144 frame.
+    /// Advances a pending CHR_TRN/PCT_TRN/PAL_TRN/ATTR_TRN transfer.  The
+    /// caller supplies the current 8 KiB VRAM image at VBlank.
+    void processTransfers(const uint8_t* vram, std::size_t size);
+    bool transferPending() const { return transferCountdown_ != 0; }
+
+    /// Composes the default or custom SGB border around a finished frame.
     void renderBorder(const FrameBuffer& gameFrame, SgbFrameBuffer& output) const;
 
     uint8_t attributeForTile(int tileX, int tileY) const;
@@ -71,6 +76,8 @@ private:
     uint8_t maskMode_ = 0;
     uint8_t playerCount_ = 1;
     uint8_t currentPlayer_ = 0;
+    uint8_t transferCountdown_ = 0;
+    uint8_t transferDestination_ = 0;
 };
 
 }  // namespace qnemu
