@@ -27,7 +27,7 @@ public:
     virtual void tick(uint8_t cycles) = 0;
 
     /// DMG OAM corruption hooks (default no-op for test buses and CGB).
-    virtual void triggerOamBugWrite(uint16_t /*address*/) {}
+    virtual void triggerOamBugWrite(uint16_t /*address*/, int /*rowOffset*/ = 0) {}
     virtual void triggerOamBugRead(uint16_t /*address*/) {}
     virtual void triggerOamBugReadIncrease(uint16_t /*address*/) {}
 

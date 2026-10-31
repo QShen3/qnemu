@@ -131,9 +131,9 @@ void GbMmu::setCgb(bool cgb)
     workRam->setCgb(cgb);
 }
 
-void GbMmu::triggerOamBugWrite(uint16_t address)
+void GbMmu::triggerOamBugWrite(uint16_t address, int rowOffset)
 {
-    gpu->triggerOamBugWrite(address);
+    gpu->triggerOamBugWrite(address, rowOffset);
 }
 
 void GbMmu::triggerOamBugRead(uint16_t address)

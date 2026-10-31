@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 359 CTest cases, including 144 curated test ROMs.
+- 360 CTest cases, including 145 curated test ROMs.
 
 ## Build
 
@@ -512,7 +512,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **359/359 CTest cases**, including 144 ROM tests.
+The current set is **360/360 CTest cases**, including 145 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -574,9 +574,9 @@ DMG (`--model dmg`):
 - `4-scanline_timing`
 - `5-timing_bug`
 - `6-timing_no_bug`
+- `8-instr_effect`
 
-The two effect-pattern ROMs, `7-timing_effect` and `8-instr_effect`, are still
-being worked on.
+`7-timing_effect` still needs more exact timing and is not registered yet.
 
 </details>
 
@@ -656,9 +656,8 @@ The curated CTest set registers only passing ROMs; the current 136 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- Blargg `oam_bug` 1-6 pass, but the effect-pattern tests
-  `7-timing_effect` and `8-instr_effect` do not match the hardware patterns
-  yet and are not registered.
+- Blargg `oam_bug` 1-6 and 8-instr_effect pass, but `7-timing_effect` still
+  needs more exact timing and is not registered.
 - Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do
   not reproduce the hardware values.
 - Boot-dependent Mooneye tests (`boot_div*`, `boot_hwio-*`,

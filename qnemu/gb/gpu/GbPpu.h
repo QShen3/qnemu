@@ -55,7 +55,7 @@ public:
     /// CGB PPU path must leave this disabled.
     void setOamBugEnabled(bool enabled) { oamBugEnabled_ = enabled; }
     int accessedOamRow() const { return accessedOamRow_; }
-    void triggerOamBugWrite(uint16_t address) override;
+    void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override;
     void triggerOamBugRead(uint16_t address) override;
     void triggerOamBugReadIncrease(uint16_t address) override;
 

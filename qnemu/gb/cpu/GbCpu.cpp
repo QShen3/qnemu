@@ -80,6 +80,14 @@ void GbCpu::step()
         }
     }
 
+    // PUSH's SP decrement leaves a write on the address bus one M-cycle
+    // before the first actual write, so sample the OAM row before fetching
+    // the opcode.
+    const uint8_t nextOpcode = bus.read(registers_.pc);
+    if (nextOpcode == 0xC5 || nextOpcode == 0xD5 || nextOpcode == 0xE5
+        || nextOpcode == 0xF5) {
+        bus.triggerOamBugWrite(registers_.sp, 8);
+    }
     const uint8_t opcode = fetch8();
     execute(opcode);
 
@@ -192,9 +200,7 @@ uint16_t GbCpu::pop16()
 
 void GbCpu::push16(uint16_t value)
 {
-    bus.triggerOamBugWrite(registers_.sp);
     write8(static_cast<uint16_t>(registers_.sp - 1), static_cast<uint8_t>(value >> 8));
-    bus.triggerOamBugWrite(static_cast<uint16_t>(registers_.sp - 1));
     write8(static_cast<uint16_t>(registers_.sp - 2), static_cast<uint8_t>(value & 0xFF));
     registers_.sp -= 2;
 }

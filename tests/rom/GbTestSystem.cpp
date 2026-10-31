@@ -344,10 +344,10 @@ void GbTestSystem::tick(uint8_t cycles)
     }
 }
 
-void GbTestSystem::triggerOamBugWrite(uint16_t address)
+void GbTestSystem::triggerOamBugWrite(uint16_t address, int rowOffset)
 {
     if (ppu) {
-        ppu->triggerOamBugWrite(address);
+        ppu->triggerOamBugWrite(address, rowOffset);
     }
 }
 

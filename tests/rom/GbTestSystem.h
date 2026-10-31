@@ -40,7 +40,7 @@ public:
     uint8_t read(uint16_t address) override;
     void write(uint16_t address, uint8_t value) override;
     void tick(uint8_t cycles) override;
-    void triggerOamBugWrite(uint16_t address) override;
+    void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override;
     void triggerOamBugRead(uint16_t address) override;
     void triggerOamBugReadIncrease(uint16_t address) override;
     bool onStop() override;

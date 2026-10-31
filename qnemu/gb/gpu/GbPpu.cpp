@@ -178,11 +178,16 @@ void GbPpu::write(uint16_t address, const uint8_t& value)
         return;
     }
 
-    if (address >= OamStart && address <= OamEnd) {
+    if (address >= OamStart && address < 0xFF00) {
         if (oamAccessBlocked()) {
+            if (oamBugEnabled_) {
+                triggerOamBugWrite(address);
+            }
             return;
         }
-        memory_.writeOam(address, value);
+        if (address <= OamEnd) {
+            memory_.writeOam(address, value);
+        }
         return;
     }
 
@@ -366,14 +371,14 @@ void GbPpu::clearDmgCompatibilityPalette()
 }
 
 
-void GbPpu::triggerOamBugWrite(uint16_t address)
+void GbPpu::triggerOamBugWrite(uint16_t address, int rowOffset)
 {
     if (!oamBugEnabled_ || address < 0xFE00 || address >= 0xFF00
         || accessedOamRow_ < 8) {
         return;
     }
-    const int row = accessedOamRow_;
-    if (row + 8 > static_cast<int>(OamSize)) {
+    const int row = accessedOamRow_ + rowOffset;
+    if (row < 8 || row + 8 > static_cast<int>(OamSize)) {
         return;
     }
 
@@ -426,8 +431,9 @@ void GbPpu::triggerOamBugRead(uint16_t address)
         memory_.writeOamByte(static_cast<uint8_t>(row - 0x07),
             static_cast<uint8_t>(glitch >> 8));
         for (int i = 0; i < 8; ++i) {
-            memory_.writeOamByte(static_cast<uint8_t>(row - 0x10 + i),
-                memory_.readOamByte(static_cast<uint8_t>(row - 0x08 + i)));
+            const uint8_t value = memory_.readOamByte(static_cast<uint8_t>(row - 0x08 + i));
+            memory_.writeOamByte(static_cast<uint8_t>(row - 0x10 + i), value);
+            memory_.writeOamByte(static_cast<uint8_t>(row + i), value);
         }
         return;
     }
@@ -457,6 +463,7 @@ void GbPpu::triggerOamBugRead(uint16_t address)
             const uint8_t value = memory_.readOamByte(static_cast<uint8_t>(row - 0x08 + i));
             memory_.writeOamByte(static_cast<uint8_t>(row - 0x10 + i), value);
             memory_.writeOamByte(static_cast<uint8_t>(row - 0x20 + i), value);
+            memory_.writeOamByte(static_cast<uint8_t>(row + i), value);
         }
         return;
     }

@@ -20,7 +20,7 @@ public:
     virtual bool isLcdEnable() const = 0;
 
     /// DMG OAM corruption hooks; no-op on GPUs without the quirk.
-    virtual void triggerOamBugWrite(uint16_t /*address*/) {}
+    virtual void triggerOamBugWrite(uint16_t /*address*/, int /*rowOffset*/ = 0) {}
     virtual void triggerOamBugRead(uint16_t /*address*/) {}
     virtual void triggerOamBugReadIncrease(uint16_t /*address*/) {}
 };

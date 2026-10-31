@@ -40,7 +40,7 @@ public:
     void reset() override;
     void setDoubleSpeed(bool doubleSpeed) override;
     void setCgb(bool cgb) override;
-    void triggerOamBugWrite(uint16_t address) override;
+    void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override;
     void triggerOamBugRead(uint16_t address) override;
     void triggerOamBugReadIncrease(uint16_t address) override;
 

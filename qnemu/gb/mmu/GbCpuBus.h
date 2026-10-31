@@ -78,9 +78,9 @@ public:
         }
     }
 
-    void triggerOamBugWrite(uint16_t address) override
+    void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override
     {
-        mmu.triggerOamBugWrite(address);
+        mmu.triggerOamBugWrite(address, rowOffset);
     }
 
     void triggerOamBugRead(uint16_t address) override
