@@ -5,8 +5,10 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <chrono>
 #include <functional>
 #include <memory>
+#include <thread>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -142,6 +144,31 @@ TEST(GbTest, DualModeCartridgeStaysDmgWhenDmgForced)
     system.loadCartridge(path.toStdString().c_str());
     EXPECT_FALSE(system.isCgbMode());
     system.stop();
+}
+
+TEST(GbTest, CgbBootRomPresentsQnemuLogo)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+    const QString path = writeRom(directory, QStringLiteral("boot.gbc"), 0xC0);
+    ASSERT_FALSE(path.isEmpty());
+
+    auto display = std::make_shared<MemoryDisplay>();
+    qnemu::Gb system(qnemu::GbModel::cgb, display,
+        std::make_unique<NullSound>(), nullptr);
+    system.setBootRomEnabled(true);
+    system.loadCartridge(path.toStdString().c_str());
+
+    for (int i = 0; i < 120 && display->frameCount < 70; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    system.stop();
+
+    ASSERT_GE(display->frameCount, 70U);
+    const auto& frame = display->lastFrame;
+    // The Q in the QNEMU wordmark is at x=34.., y=49..; its top bar is black.
+    EXPECT_EQ(frame.at(37, 50), qnemu::rgb(0, 0, 0));
+    EXPECT_EQ(frame.at(0, 0), qnemu::rgb(255, 255, 255));
 }
 
 TEST(GbTest, WiresAndClearsInputCallbacks)

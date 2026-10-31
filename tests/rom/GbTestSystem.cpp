@@ -87,6 +87,9 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
         const auto header = cartridge->cartridgeHeader();
         const bool ppuCgb = cgb && (bootRomActive_ || header.cgb);
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
+        if (bootRomActive_) {
+            ppu->resetForBootRom();
+        }
         ppu->setOamBugEnabled(!cgb);
         if (!bootRomActive_ && cgb && !header.cgb) {
             ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({

@@ -304,6 +304,20 @@ void GbPpu::step()
     stepTiming();
 }
 
+void GbPpu::resetForBootRom()
+{
+    reset();
+    registers_.lcdc = 0x00;
+    registers_.stat = 0x85;
+    registers_.ly = 0;
+    dot_ = 0;
+    lineLength_ = 456;
+    mode3Dots_ = 0;
+    windowLine_ = 0;
+    lcdJustEnabled_ = false;
+    registers_.setMode(0);
+}
+
 void GbPpu::reset()
 {
     registers_ = PpuRegisters{};

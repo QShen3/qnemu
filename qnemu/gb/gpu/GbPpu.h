@@ -44,6 +44,10 @@ public:
     void step() override;
     void reset() override;
 
+    /// Power-on state used before executing a boot ROM: the LCD is off, so
+    /// the boot ROM can clear VRAM/OAM and load its logo unobstructed.
+    void resetForBootRom();
+
     uint8_t currentMode() const override;
     bool isLcdEnable() const override;
 

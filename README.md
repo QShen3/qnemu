@@ -23,7 +23,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 398 CTest cases, including 163 curated test ROMs.
+- 399 CTest cases, including 163 curated test ROMs.
 
 ## Build
 
@@ -572,7 +572,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **398/398 CTest cases**, including 163 ROM tests.
+The current set is **399/399 CTest cases**, including 163 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>

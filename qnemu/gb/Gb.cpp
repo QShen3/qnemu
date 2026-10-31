@@ -153,6 +153,9 @@ void Gb::loadCartridge(const char* filePath)
     mmu->setBootRom(cgbBootRom());
     mmu->setBootRomActive(bootRomActive);
     mmu->reset();
+    if (bootRomActive) {
+        ppu->resetForBootRom();
+    }
     ppu->setDmgMode(false);
     if (!bootRomActive && model == GbModel::cgb && !header.cgb) {
         ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
