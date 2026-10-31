@@ -11,6 +11,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/timer GB_TIMERTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/gpu GB_GPUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/system GB_SYSTEMTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/save SAVE_TEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/ui UI_TEST_SRCS)
 
 # Executable
 add_executable(
@@ -27,9 +28,12 @@ add_executable(
     ${GB_GPUTEST_SRCS}
     ${GB_SYSTEMTEST_SRCS}
     ${SAVE_TEST_SRCS}
+    ${UI_TEST_SRCS}
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/GameLibrary.cpp
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/AppSettings.cpp
 )
 set_target_properties(qnemu_test PROPERTIES
-    AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    AUTOMOC ON AUTOUIC OFF AUTORCC OFF)
 target_include_directories(qnemu_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
     qnemu_test
@@ -38,7 +42,8 @@ target_link_libraries(
     gb
     save
     GTest::gmock_main
-    Qt6::Core)
+    Qt6::Core
+    Qt6::Gui)
 
 include(GoogleTest)
 gtest_discover_tests(qnemu_test DISCOVERY_TIMEOUT 30)

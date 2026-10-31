@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 375 CTest cases, including 160 curated test ROMs.
+- 382 CTest cases, including 160 curated test ROMs.
 
 ## Build
 
@@ -100,20 +100,22 @@ install the `qml6-module-qtquick*` packages for your Qt version.
 
 ```bash
 ./build/qnemu/qnemu
-./build/qnemu/qnemu --model cgb   # override the launch model for this run
+./build/qnemu/qnemu --model cgb   # override the hardware model for this run
 ./build/qnemu/qnemu --model dmg
 ./build/qnemu/qnemu --model sgb
 ./build/qnemu/qnemu --rom path/to/game.gb
 ```
 
 `-m` is accepted as a shorthand for `--model`. `--rom` loads a ROM on startup;
-without it, use **File → Open...**. `--model` overrides the **Launch model**
-setting for the current run; when it is omitted, the stored setting is used
-(CGB by default). With `cgb`, a CGB cartridge runs in CGB mode and a DMG
-cartridge runs in DMG compatibility mode with the CGB compatibility palette, so
-monochrome games are colorized. `dmg` and `sgb` force the DMG-compatible
-CPU/PPU path. SGB-specific features (border, command protocol, palettes) are not
-implemented yet, so `sgb` currently behaves like the DMG baseline.
+without it, use **File → Open...**. `--model` overrides the hardware model for
+the current run. When it is omitted, GB and dual-mode cartridges use the GB
+platform **Launch mode** setting (CGB compatibility by default), while GBC-only
+cartridges always use CGB. With `cgb`, a CGB-capable cartridge (dual-mode
+`0x80` or CGB-only `0xC0`) runs in native CGB mode; a DMG-only cartridge runs in
+DMG compatibility mode with the CGB compatibility palette, so monochrome games
+are colorized. `dmg` and `sgb` force the DMG-compatible CPU/PPU path.
+SGB-specific features (border, command protocol, palettes) are not implemented
+yet, so `sgb` currently behaves like the DMG baseline.
 
 The library and the game view are separate windows. The library window keeps a
 comfortable fixed layout independent of the game scale; the game window opens
@@ -129,7 +131,7 @@ The home page is a per-platform library:
 - **Add Game...** adds a ROM to the library without starting it.
 - Click a library row to run it. The row menu can remove it from the library
   without deleting the file.
-- **Settings...** opens the settings window with the launch model, library
+- **Settings...** opens the settings window with the GB launch mode, library
   paths, save path, screenshots, game scale, audio and key profiles.
 - **Screenshot** saves the current 160×144 frame using the configured output
   folder and format.
@@ -139,11 +141,13 @@ The home page is a per-platform library:
 
 The settings window has four pages:
 
-- **General**: launch model (CGB/DMG/SGB), game-window scale (100/150/200%),
-  audio enable, save folder, screenshot folder and format (the format list
-  comes from Qt's image writers). The library window is not affected by the
-  scale setting.
-- **GB / GBC**: the ROM folder scanned for each platform's library.
+- **General**: game-window scale (100/150/200%), audio enable, save folder,
+  screenshot folder and format (the format list comes from Qt's image writers).
+  The library window is not affected by the scale setting.
+- **Game Boy**: launch mode (DMG / SGB / CGB compatibility) for GB and
+  dual-mode cartridges, plus the ROM folder scanned for the GB library.
+- **Game Boy Color**: the GBC-only ROM folder. GBC-only cartridges always use
+  CGB, so this page has no launch-mode setting.
 - **Controls**: named key profiles, profile creation/deletion, and click-to-capture
   key bindings. Changes apply immediately.
 
@@ -232,8 +236,12 @@ The settings window is positioned once when it opens and stays put when the game
 window is resized.
 
 `GameLibrary` scans the configured GB/GBC folders and reads cartridge headers
-for title, publisher and region. ROMs opened from other folders are stored as
-references, so the original collection is never copied or reorganized. The
+for title, publisher, region and platform. Platform classification uses the
+CGB flag, not the file extension: CGB-only cartridges (`0xC0`) go to the GBC
+library, while DMG and dual-mode (`0x80`) cartridges stay in the GB library so
+they can be launched as DMG, SGB or CGB. ROMs opened from other folders are
+stored as references, so the original collection is never copied or
+reorganized. The
 library page uses a compact header, a platform switcher with live counts and
 rounded game cards with a platform badge, publisher/region line and a hover
 action menu; an empty library shows a cartridge illustration and shortcuts to
@@ -242,18 +250,20 @@ add a game or open the settings.
 The settings window is a sidebar layout with grouped cards instead of a flat
 form:
 
-- **General**: launch model, game-window scale, audio, screenshot folder/format
-  and save folder.
-- **Game Boy / Game Boy Color**: each platform's library folder, a live count
-  and a rescan button.
+- **General**: game-window scale, audio, screenshot folder/format and save
+  folder.
+- **Game Boy**: launch mode, library folder, a live count and a rescan button.
+- **Game Boy Color**: library folder, a live count and a rescan button. The
+  launch mode is fixed to CGB.
 - **Controls**: profile management and a two-column key binding grid.
 
 All paths, scale, audio, screenshot settings and key profiles persist through
 `QSettings`; key bindings apply to `EmulatorItem` immediately.
 
-When a DMG cartridge is launched with the CGB model, the PPU keeps the DMG
+When a DMG-only cartridge is launched with the CGB model, the PPU keeps the DMG
 tile/attribute path but maps the four shades through the CGB compatibility
-palettes. The per-game selection follows the boot ROM algorithm: Nintendo
+palettes. A dual-mode cartridge launched with the CGB model uses the native CGB
+PPU path instead. The per-game selection follows the boot ROM algorithm: Nintendo
 license check, title checksum, duplicate checksums disambiguated by the fourth
 title character, and the palette combination table. The boot ROM logo
 animation/checksum step itself is not run; the resulting palettes are applied
@@ -519,7 +529,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **375/375 CTest cases**, including 160 ROM tests.
+The current set is **382/382 CTest cases**, including 160 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>

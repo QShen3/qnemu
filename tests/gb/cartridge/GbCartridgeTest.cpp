@@ -52,9 +52,32 @@ TEST(GbCartridgeTest, ReadHeaderMetadata)
     EXPECT_EQ(header.publisher, "Nintendo");
     EXPECT_EQ(header.region, "World");
     EXPECT_TRUE(header.cgb);
+    EXPECT_FALSE(header.cgbOnly);
     EXPECT_EQ(header.titleBytes.at(0), static_cast<uint8_t>('T'));
     EXPECT_EQ(header.oldLicensee, 0x31);
     EXPECT_EQ(header.newLicensee.at(0), 0);
+}
+
+TEST(GbCartridgeTest, ReadHeaderCgbOnlyFlag)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+    const QString path = directory.filePath(QStringLiteral("cgb-only.gbc"));
+    QFile file(path);
+    ASSERT_TRUE(file.open(QIODevice::WriteOnly));
+    QByteArray data(0x150, 0);
+    data.replace(0x134, 4, QByteArray("CGB!"));
+    data[0x143] = static_cast<char>(0xC0);
+    data[0x147] = static_cast<char>(0x00);
+    data[0x14A] = static_cast<char>(0x01);
+    data[0x14B] = static_cast<char>(0x31);
+    ASSERT_EQ(file.write(data), data.size());
+    file.close();
+
+    const qnemu::GbCartridgeHeader header =
+        qnemu::GbCartridge::readHeader(path.toStdString());
+    EXPECT_TRUE(header.cgb);
+    EXPECT_TRUE(header.cgbOnly);
 }
 
 }  // namespace qnemuTest

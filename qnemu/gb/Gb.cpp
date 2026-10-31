@@ -108,15 +108,18 @@ void Gb::loadCartridge(const char* filePath)
     saveManager.reset();
 
     cartridge->load(filePath);
-    // CGB hardware only enters CGB mode for a CGB cartridge. DMG/SGB models
-    // always use the DMG-compatible PPU/CPU state.
-    const bool cgb = model == GbModel::cgb && cartridge->isGbcCartridge();
+    // A CGB-capable cartridge (dual-mode 0x80 or CGB-only 0xC0) enters CGB
+    // mode on CGB hardware.  DMG-only carts use the DMG-compatible PPU/CPU
+    // state and the CGB boot compatibility palette.  DMG/SGB models always
+    // use the DMG-compatible path.
+    const GbCartridgeHeader header = cartridge->cartridgeHeader();
+    const bool cgb = model == GbModel::cgb && header.cgb;
+    cgbMode = cgb;
     bus->setCgb(cgb);
     bus->reset();
     ppu->setCgb(cgb);
     mmu->reset();
-    if (model == GbModel::cgb && !cartridge->isGbcCartridge()) {
-        const GbCartridgeHeader header = cartridge->cartridgeHeader();
+    if (model == GbModel::cgb && !header.cgb) {
         ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
             header.titleBytes,
             header.oldLicensee,

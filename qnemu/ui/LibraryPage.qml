@@ -6,7 +6,7 @@ Item {
     id: page
 
     signal addGameRequested
-    signal settingsRequested
+    signal settingsRequested(string platform)
 
     /// Application palette passed from the main window so custom labels follow
     /// the system light/dark theme.
@@ -182,7 +182,7 @@ Item {
                     theme: page.theme
                     platformName: "GB"
                     onAddRequested: page.addGameRequested()
-                    onSettingsRequested: page.settingsRequested()
+                    onSettingsRequested: page.settingsRequested("GB")
                 }
             }
 
@@ -207,7 +207,7 @@ Item {
                     theme: page.theme
                     platformName: "GBC"
                     onAddRequested: page.addGameRequested()
-                    onSettingsRequested: page.settingsRequested()
+                    onSettingsRequested: page.settingsRequested("GBC")
                 }
             }
         }

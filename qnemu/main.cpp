@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     parser.addVersionOption();
     const QCommandLineOption modelOption(
         QStringList {"m", "model"},
-        "Override the launch model setting for this run: cgb, dmg or sgb.",
+        "Override the hardware model for this run: cgb, dmg or sgb.",
         "model");
     parser.addOption(modelOption);
     const QCommandLineOption romOption(

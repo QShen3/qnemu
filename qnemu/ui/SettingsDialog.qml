@@ -18,7 +18,7 @@ ApplicationWindow {
         },
         {
             title: qsTr("Game Boy"),
-            subtitle: qsTr("Original Game Boy library")
+            subtitle: qsTr("Launch mode and ROM library")
         },
         {
             title: qsTr("Game Boy Color"),
@@ -31,16 +31,16 @@ ApplicationWindow {
     ]
     readonly property var launchModels: [
         {
-            value: "cgb",
-            label: qsTr("CGB (color)")
-        },
-        {
             value: "dmg",
             label: qsTr("DMG (monochrome)")
         },
         {
             value: "sgb",
             label: qsTr("SGB (DMG fallback)")
+        },
+        {
+            value: "cgb",
+            label: qsTr("CGB compatibility (color)")
         }
     ]
     readonly property var keyActions: [
@@ -118,13 +118,13 @@ ApplicationWindow {
         requestActivate();
     }
 
-    function launchModelIndex(value) {
+    function gbLaunchModelIndex(value) {
         for (let i = 0; i < launchModels.length; ++i) {
             if (launchModels[i].value === value) {
                 return i;
             }
         }
-        return 0;
+        return launchModels.length - 1;
     }
 
     function buttonLabel(name) {
@@ -286,43 +286,6 @@ ApplicationWindow {
                     ColumnLayout {
                         width: parent.width
                         spacing: 14
-
-                        SettingsCard {
-                            theme: uiTheme
-                            title: qsTr("Emulation")
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 16
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Label {
-                                        text: qsTr("Launch model")
-                                        color: uiTheme.windowText
-                                        font.pixelSize: 12
-                                    }
-
-                                    Label {
-                                        Layout.fillWidth: true
-                                        text: qsTr("Used when a ROM is opened. CGB colorizes monochrome games with a compatibility palette; SGB currently falls back to DMG.")
-                                        color: uiTheme.mutedText
-                                        font.pixelSize: 11
-                                        wrapMode: Text.WordWrap
-                                    }
-                                }
-
-                                ComboBox {
-                                    Layout.preferredWidth: 180
-                                    model: settingsWindow.launchModels
-                                    textRole: "label"
-                                    currentIndex: settingsWindow.launchModelIndex(settings.launchModel)
-                                    onActivated: settings.launchModel = settingsWindow.launchModels[currentIndex].value
-                                }
-                            }
-                        }
 
                         SettingsCard {
                             theme: uiTheme
@@ -546,11 +509,48 @@ ApplicationWindow {
 
                         SettingsCard {
                             theme: uiTheme
+                            title: qsTr("Emulation")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Launch mode")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Applies to GB and dual-mode cartridges. DMG keeps the original monochrome display; SGB uses SGB features (not implemented yet, currently a DMG fallback); CGB colorizes DMG-only games with the compatibility palette. GBC-only cartridges always use CGB.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 210
+                                    model: settingsWindow.launchModels
+                                    textRole: "label"
+                                    currentIndex: settingsWindow.gbLaunchModelIndex(settings.gbLaunchModel)
+                                    onActivated: settings.gbLaunchModel = settingsWindow.launchModels[currentIndex].value
+                                }
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
                             title: qsTr("Library folder")
 
                             Label {
                                 Layout.fillWidth: true
-                                text: qsTr("Original Game Boy ROMs are scanned recursively from this folder.")
+                                text: qsTr("ROMs are scanned recursively from this folder and classified by cartridge header, not file extension. Dual-mode cartridges stay in the GB library.")
                                 color: uiTheme.mutedText
                                 font.pixelSize: 11
                                 wrapMode: Text.WordWrap
@@ -613,11 +613,31 @@ ApplicationWindow {
 
                         SettingsCard {
                             theme: uiTheme
+                            title: qsTr("Emulation")
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("Hardware: Game Boy Color (CGB)")
+                                color: uiTheme.windowText
+                                font.pixelSize: 12
+                            }
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("GBC-only cartridges always launch in CGB mode and cannot run as DMG or SGB, so there is no launch-mode setting for this platform.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
                             title: qsTr("Library folder")
 
                             Label {
                                 Layout.fillWidth: true
-                                text: qsTr("Game Boy Color ROMs are scanned recursively from this folder.")
+                                text: qsTr("ROMs are scanned recursively from this folder and classified by cartridge header. Only CGB-only cartridges appear in this library.")
                                 color: uiTheme.mutedText
                                 font.pixelSize: 11
                                 wrapMode: Text.WordWrap

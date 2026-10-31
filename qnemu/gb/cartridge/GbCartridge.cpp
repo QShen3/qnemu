@@ -179,7 +179,8 @@ void GbCartridge::load(const std::vector<uint8_t>& buffer)
 
     type = buffer.at(0x147);
     japanCartridge = buffer.at(0x14A) == 0 ? true : false;
-    header.cgb = gbcCartridge;
+    header.cgb = (buffer.at(0x143) & 0x80) != 0;
+    header.cgbOnly = gbcCartridge;
     header.type = type;
 
     std::vector<std::array<uint8_t, RomBankSize>> romBanks(romBankCounts);
@@ -266,6 +267,7 @@ GbCartridgeHeader GbCartridge::readHeader(const std::string& filePath)
     const std::vector<uint8_t> buffer(headerBytes.begin(), headerBytes.end());
     GbCartridgeHeader header;
     header.cgb = (buffer.at(0x143) & 0x80) != 0;
+    header.cgbOnly = buffer.at(0x143) == 0xC0;
     header.type = buffer.at(0x147);
     header.publisher = getPublisherFromCartridge(buffer);
     header.region = buffer.at(0x14A) == 0 ? "Japan" : "World";

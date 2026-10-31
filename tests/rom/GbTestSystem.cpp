@@ -75,11 +75,11 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
 
     if (enablePpu) {
         display = std::make_shared<MemoryDisplay>();
-        const bool ppuCgb = cgb && cartridge->isGbcCartridge();
+        const auto header = cartridge->cartridgeHeader();
+        const bool ppuCgb = cgb && header.cgb;
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
         ppu->setOamBugEnabled(!cgb);
-        if (cgb && !cartridge->isGbcCartridge()) {
-            const auto header = cartridge->cartridgeHeader();
+        if (cgb && !header.cgb) {
             ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
                 header.titleBytes,
                 header.oldLicensee,

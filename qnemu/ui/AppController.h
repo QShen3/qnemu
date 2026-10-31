@@ -81,7 +81,7 @@ private:
     void setStatusText(const QString& newStatus);
     void setPaused(bool value);
     void applyKeyBindings();
-    GbModel launchModel() const;
+    GbModel launchModel(bool cgbOnly) const;
 
     std::optional<GbModel> modelOverride;
     AppSettings* settingsValue = nullptr;
@@ -91,6 +91,7 @@ private:
     QString title = QStringLiteral("QNEmu");
     QString status;
     QString currentRomPath;
+    bool currentRomCgbOnly = false;
     bool showingGameValue = false;
     bool pausedValue = false;
 };

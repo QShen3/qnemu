@@ -138,7 +138,9 @@ ApplicationWindow {
         anchors.fill: parent
         theme: uiTheme
         onAddGameRequested: addGameDialog.open()
-        onSettingsRequested: settingsDialog.showPage(1, window)
+        onSettingsRequested: function (platform) {
+            settingsDialog.showPage(platform === "GBC" ? 2 : 1, window);
+        }
     }
 
     StatusToast {

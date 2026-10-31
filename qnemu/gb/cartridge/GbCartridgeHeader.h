@@ -19,7 +19,10 @@ struct GbCartridgeHeader
     std::array<uint8_t, 16> titleBytes {};
     uint8_t oldLicensee = 0;
     std::array<uint8_t, 2> newLicensee {};
+    /// CGB flag bit 7 is set (CGB-only 0xC0 or dual-mode 0x80).
     bool cgb = false;
+    /// The cartridge is CGB-only (flag 0xC0) and cannot run on DMG/SGB.
+    bool cgbOnly = false;
     uint8_t type = 0;
 };
 

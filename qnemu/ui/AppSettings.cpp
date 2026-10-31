@@ -76,12 +76,23 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
     scalePercentValue = std::clamp(settings.value(QStringLiteral("ui/scalePercent"), 200).toInt(),
         100, 200);
     soundEnabledValue = settings.value(QStringLiteral("audio/enabled"), true).toBool();
-    launchModelValue = settings.value(QStringLiteral("emulator/launchModel"), QStringLiteral("cgb"))
-                           .toString()
-                           .toLower();
-    if (launchModelValue != QStringLiteral("cgb") && launchModelValue != QStringLiteral("dmg")
-        && launchModelValue != QStringLiteral("sgb")) {
-        launchModelValue = QStringLiteral("cgb");
+    gbLaunchModelValue = settings.value(QStringLiteral("platforms/gb/launchModel"))
+                             .toString()
+                             .toLower();
+    if (gbLaunchModelValue.isEmpty()) {
+        // Migrate the pre-platform global launch model.
+        const QString legacy = settings.value(QStringLiteral("emulator/launchModel"))
+                                   .toString()
+                                   .toLower();
+        if (legacy == QStringLiteral("cgb") || legacy == QStringLiteral("dmg")
+            || legacy == QStringLiteral("sgb")) {
+            gbLaunchModelValue = legacy;
+            settings.setValue(QStringLiteral("platforms/gb/launchModel"), legacy);
+        }
+    }
+    if (gbLaunchModelValue != QStringLiteral("cgb") && gbLaunchModelValue != QStringLiteral("dmg")
+        && gbLaunchModelValue != QStringLiteral("sgb")) {
+        gbLaunchModelValue = QStringLiteral("cgb");
     }
 
     loadKeyProfiles();
@@ -208,19 +219,19 @@ void AppSettings::setSoundEnabled(bool value)
     emit soundEnabledChanged();
 }
 
-void AppSettings::setLaunchModel(const QString& value)
+void AppSettings::setGbLaunchModel(const QString& value)
 {
     const QString model = value.toLower();
     if (model != QStringLiteral("cgb") && model != QStringLiteral("dmg")
         && model != QStringLiteral("sgb")) {
         return;
     }
-    if (model == launchModelValue) {
+    if (model == gbLaunchModelValue) {
         return;
     }
-    launchModelValue = model;
-    settings.setValue(QStringLiteral("emulator/launchModel"), model);
-    emit launchModelChanged();
+    gbLaunchModelValue = model;
+    settings.setValue(QStringLiteral("platforms/gb/launchModel"), model);
+    emit gbLaunchModelChanged();
 }
 
 QString AppSettings::keyName(int key) const

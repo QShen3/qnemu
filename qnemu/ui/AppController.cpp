@@ -16,6 +16,7 @@
 
 #include "qnemu/ui/AppController.h"
 #include "qnemu/ui/EmulatorItem.h"
+#include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/input/InputInterface.h"
 #include "qnemu/sound/DefaultSound.h"
@@ -43,9 +44,9 @@ AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* p
             gb->setSoundEnabled(settingsValue->soundEnabled());
         }
     });
-    connect(settingsValue, &AppSettings::launchModelChanged, this, [this]() {
-        if (gb) {
-            setStatusText(QStringLiteral("Launch model changed; reopen the ROM to apply."));
+    connect(settingsValue, &AppSettings::gbLaunchModelChanged, this, [this]() {
+        if (gb && !currentRomCgbOnly) {
+            setStatusText(QStringLiteral("GB launch mode changed; reopen the game to apply."));
         }
     });
     connect(settingsValue, &AppSettings::activeKeyBindingsChanged, this, &AppController::applyKeyBindings);
@@ -62,6 +63,7 @@ void AppController::shutdown()
     gb.reset();
     displayItem = nullptr;
     currentRomPath.clear();
+    currentRomCgbOnly = false;
     pausedValue = false;
     if (showingGameValue) {
         showingGameValue = false;
@@ -80,12 +82,17 @@ void AppController::attachDisplay(QObject* item)
     applyKeyBindings();
 }
 
-GbModel AppController::launchModel() const
+GbModel AppController::launchModel(bool cgbOnly) const
 {
+    // GBC-only cartridges can only run on CGB hardware, regardless of the
+    // GB platform preference.
+    if (cgbOnly) {
+        return GbModel::cgb;
+    }
     if (modelOverride) {
         return *modelOverride;
     }
-    const QString model = settingsValue->launchModel();
+    const QString model = settingsValue->gbLaunchModel();
     if (model == QStringLiteral("dmg")) {
         return GbModel::dmg;
     }
@@ -115,8 +122,12 @@ void AppController::openRom(const QUrl& url)
         auto input = std::shared_ptr<InputInterface>(displayItem,
             [](InputInterface*) {});
 
+        const GbCartridgeHeader header = GbCartridge::readHeader(path.toStdString());
+        currentRomCgbOnly = header.cgbOnly;
+
         auto sound = std::make_unique<DefaultSound>();
-        auto system = std::make_unique<Gb>(launchModel(), display, std::move(sound), input);
+        auto system = std::make_unique<Gb>(launchModel(currentRomCgbOnly), display,
+            std::move(sound), input);
         system->setSaveDirectory(settingsValue->savePath().toStdString());
         system->setSoundEnabled(settingsValue->soundEnabled());
         system->loadCartridge(path.toStdString().c_str());
@@ -134,6 +145,7 @@ void AppController::openRom(const QUrl& url)
         emit hasGameChanged();
     } catch (const std::exception& error) {
         qWarning().noquote() << "Failed to load ROM:" << error.what();
+        currentRomCgbOnly = false;
         setWindowTitle(QStringLiteral("QNEmu"));
         setStatusText(QStringLiteral("Failed to load ROM: ") + error.what());
         if (showingGameValue) {

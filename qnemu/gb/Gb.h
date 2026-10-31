@@ -57,6 +57,9 @@ public:
 
     void loadCartridge(const char* filePath);
     void stop();
+
+    /// True when the loaded cartridge is running through the CGB hardware path.
+    bool isCgbMode() const { return cgbMode; }
     void setPaused(bool paused);
     bool isPaused() const { return paused.load(); }
 
@@ -70,6 +73,7 @@ private:
     void run();
 
     GbModel model;
+    bool cgbMode = false;
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GbMmu> mmu;
     std::unique_ptr<GbCpuBus> bus;

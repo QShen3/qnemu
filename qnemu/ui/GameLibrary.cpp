@@ -245,9 +245,10 @@ GameEntry GameLibrary::makeEntry(const QString& path) const
         entry.title = QString::fromStdString(header.title);
         entry.publisher = QString::fromStdString(header.publisher);
         entry.region = QString::fromStdString(header.region);
-        if (header.cgb) {
-            entry.platform = QStringLiteral("GBC");
-        }
+        // The cartridge header is authoritative: only CGB-only carts belong
+        // to the GBC library.  Dual-mode (0x80) carts stay in the GB library
+        // so they can be launched as DMG, SGB or CGB.
+        entry.platform = header.cgbOnly ? QStringLiteral("GBC") : QStringLiteral("GB");
     } catch (const std::exception&) {
         entry.publisher = QStringLiteral("Unknown");
         entry.region = QStringLiteral("Unknown");
