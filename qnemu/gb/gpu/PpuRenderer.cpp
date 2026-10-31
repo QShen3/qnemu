@@ -8,9 +8,26 @@
 #include <cstdint>
 
 #include "qnemu/gb/gpu/PpuRenderer.h"
+#include "qnemu/gb/sgb/GbSgb.h"
 
 namespace qnemu
 {
+
+uint32_t PpuRenderer::dmgPixelColor(const PpuMemory& memory,
+    int x,
+    int y,
+    uint8_t colorIndex,
+    uint8_t palette) const
+{
+    if (sgb_) {
+        const uint8_t shade = static_cast<uint8_t>((palette >> (colorIndex * 2)) & 3);
+        return sgb_->colorForPixel(x, y, shade);
+    }
+    if (memory.dmgCompatibility()) {
+        return memory.dmgCompatibilityColor(false, 0, palette, colorIndex);
+    }
+    return memory.dmgColor(palette, colorIndex);
+}
 
 uint16_t PpuRenderer::tileDataAddress(const PpuRegisters& registers, uint8_t tileIndex)
 {
@@ -60,11 +77,17 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
     bool windowVisible = false;
 
     const bool backgroundVisible = cgb_ || registers.bgWindowEnabled();
-    const uint32_t backgroundOffColor = !cgb_ && memory.dmgCompatibility()
-        ? memory.dmgCompatibilityColor(false, 0, registers.bgp, 0)
-        : memory.dmgColor(registers.bgp, 0);
-    for (int x = 0; x < FrameBuffer::width; ++x) {
-        frame.at(x, line) = backgroundOffColor;
+    if (!cgb_ && sgb_) {
+        for (int x = 0; x < FrameBuffer::width; ++x) {
+            frame.at(x, line) = dmgPixelColor(memory, x, line, 0, registers.bgp);
+        }
+    } else {
+        const uint32_t backgroundOffColor = !cgb_ && memory.dmgCompatibility()
+            ? memory.dmgCompatibilityColor(false, 0, registers.bgp, 0)
+            : memory.dmgColor(registers.bgp, 0);
+        for (int x = 0; x < FrameBuffer::width; ++x) {
+            frame.at(x, line) = backgroundOffColor;
+        }
     }
 
     if (backgroundVisible) {
@@ -77,11 +100,9 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
             backgroundPriority.at(x) = pixel.priority;
             if (cgb_) {
                 frame.at(x, line) = memory.cgbColor(false, pixel.palette, pixel.colorIndex);
-            } else if (memory.dmgCompatibility()) {
-                frame.at(x, line) = memory.dmgCompatibilityColor(
-                    false, 0, registers.bgp, pixel.colorIndex);
             } else {
-                frame.at(x, line) = memory.dmgColor(registers.bgp, pixel.colorIndex);
+                frame.at(x, line) = dmgPixelColor(
+                    memory, x, line, pixel.colorIndex, registers.bgp);
             }
         }
 
@@ -97,11 +118,9 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
                 backgroundPriority.at(x) = pixel.priority;
                 if (cgb_) {
                     frame.at(x, line) = memory.cgbColor(false, pixel.palette, pixel.colorIndex);
-                } else if (memory.dmgCompatibility()) {
-                    frame.at(x, line) = memory.dmgCompatibilityColor(
-                        false, 0, registers.bgp, pixel.colorIndex);
                 } else {
-                    frame.at(x, line) = memory.dmgColor(registers.bgp, pixel.colorIndex);
+                    frame.at(x, line) = dmgPixelColor(
+                        memory, x, line, pixel.colorIndex, registers.bgp);
                 }
                 windowVisible = true;
             }
@@ -203,7 +222,9 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
             } else {
                 const bool objectPalette1 = (attributes & 0x10) != 0;
                 const uint8_t palette = objectPalette1 ? registers.obp1 : registers.obp0;
-                if (memory.dmgCompatibility()) {
+                if (sgb_) {
+                    frame.at(x, line) = dmgPixelColor(memory, x, line, colorIndex, palette);
+                } else if (memory.dmgCompatibility()) {
                     frame.at(x, line) = memory.dmgCompatibilityColor(
                         true, objectPalette1 ? 1 : 0, palette, colorIndex);
                 } else {

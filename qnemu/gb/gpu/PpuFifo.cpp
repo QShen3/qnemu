@@ -114,6 +114,9 @@ void PpuFifo::outputPixel(const PpuRegisters& registers,
 
     if (cgb_) {
         frame.at(outputX_, line_) = memory.cgbColor(false, pixel.palette, colorIndex);
+    } else if (sgb_) {
+        frame.at(outputX_, line_) = renderer_.dmgPixelColor(
+            memory, outputX_, line_, colorIndex, registers.bgp);
     } else if (memory.dmgCompatibility()) {
         frame.at(outputX_, line_) =
             memory.dmgCompatibilityColor(false, 0, registers.bgp, colorIndex);

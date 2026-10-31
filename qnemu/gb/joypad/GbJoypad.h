@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 
@@ -41,6 +42,9 @@ public:
     /// Called by the host input backend.  Safe to call from another thread.
     void setButtonState(GbButton button, bool pressed);
 
+    /// Called for every CPU write to FF00, used by the SGB packet receiver.
+    void setSgbWriteCallback(std::function<void(uint8_t)> callback);
+
 private:
     uint8_t selectedLowNibble() const;
     static uint8_t maskForButton(GbButton button);
@@ -52,6 +56,7 @@ private:
     uint8_t actionButtons = 0x0F;     // active low: A, B, Select, Start
     uint8_t directionButtons = 0x0F;  // active low: Right, Left, Up, Down
 
+    std::function<void(uint8_t)> sgbWriteCallback;
     mutable std::mutex mutex;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
 };

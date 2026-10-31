@@ -39,6 +39,10 @@ void GbJoypad::write(uint16_t address, const uint8_t& value)
         return;
     }
 
+    if (sgbWriteCallback) {
+        sgbWriteCallback(value);
+    }
+
     bool requestInterrupt = false;
     {
         const std::lock_guard lock(mutex);
@@ -66,6 +70,11 @@ void GbJoypad::reset()
     registers.select = 0x00;  // both groups selected (P1 reads 0xCF)
     actionButtons = 0x0F;
     directionButtons = 0x0F;
+}
+
+void GbJoypad::setSgbWriteCallback(std::function<void(uint8_t)> callback)
+{
+    sgbWriteCallback = std::move(callback);
 }
 
 void GbJoypad::setButtonState(GbButton button, bool pressed)

@@ -18,10 +18,12 @@ goal is to support more consoles and handhelds with the same host layer.
 - Four-channel APU with a DIV-APU frame sequencer, mixer, DC filter and
   low-pass output stage.
 - Timer/divider, joypad and OAM DMA/HDMA.
+- Super Game Boy command protocol, palette/attribute colorization and the
+  default 256×224 border.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 382 CTest cases, including 160 curated test ROMs.
+- 388 CTest cases, including 160 curated test ROMs.
 
 ## Build
 
@@ -113,9 +115,10 @@ platform **Launch mode** setting (CGB compatibility by default), while GBC-only
 cartridges always use CGB. With `cgb`, a CGB-capable cartridge (dual-mode
 `0x80` or CGB-only `0xC0`) runs in native CGB mode; a DMG-only cartridge runs in
 DMG compatibility mode with the CGB compatibility palette, so monochrome games
-are colorized. `dmg` and `sgb` force the DMG-compatible CPU/PPU path.
-SGB-specific features (border, command protocol, palettes) are not implemented
-yet, so `sgb` currently behaves like the DMG baseline.
+are colorized. `dmg` forces the DMG-compatible CPU/PPU path. `sgb` keeps the
+DMG CPU/PPU path but enables the Super Game Boy command protocol, palette and
+attribute commands, and the default SGB border. Custom border transfers
+(`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`) are not implemented yet.
 
 The library and the game view are separate windows. The library window keeps a
 comfortable fixed layout independent of the game scale; the game window opens
@@ -133,8 +136,8 @@ The home page is a per-platform library:
   without deleting the file.
 - **Settings...** opens the settings window with the GB launch mode, library
   paths, save path, screenshots, game scale, audio and key profiles.
-- **Screenshot** saves the current 160×144 frame using the configured output
-  folder and format.
+- **Screenshot** saves the current frame (160×144, or 256×224 with the SGB
+  border) using the configured output folder and format.
 - **View → Library / Game** raises the library or game window.
 - **Game → Pause / Resume** (Ctrl+P) pauses or resumes the running game. Closing
   the game window or switching back to the library pauses it automatically.
@@ -198,6 +201,7 @@ Each hardware block is a separate Qt-free static library:
 - `gb_cpu`
 - `gb_interrupt`
 - `gb_ppu`
+- `gb_sgb`
 - `gb_apu`
 - `gb_timer`
 - `gb_cartridge`
@@ -218,8 +222,8 @@ The application shell is QML and uses two top-level windows. `Main.qml` is the
 library/home window; `GameWindow.qml` hosts the `EmulatorItem` and opens only
 when a ROM is running. `AppController` owns the `Gb` instance and exposes only a
 small property/action surface, while `EmulatorItem` implements
-`DisplayInterface` and `InputInterface` and paints the 160×144 frame through a
-`QQuickPaintedItem`. The Quick Controls style is platform-selected: `macOS` on
+`DisplayInterface` and `InputInterface` and paints the frame (160×144, or
+256×224 with an SGB border) through a `QQuickPaintedItem`. The Quick Controls style is platform-selected: `macOS` on
 macOS, `FluentWinUI3` on Windows, `iOS` on iOS, and `Fusion` as the portable
 fallback. Native Quick Controls styles require a recent Qt (`macOS` in 6.7+,
 `FluentWinUI3` in 6.8+); older Qt versions use Fusion. ROM selection uses the
@@ -319,7 +323,8 @@ share one alignment cost derived from `OAM X & 7`.
 
 The PPU never touches Qt or `GbCartridgeInterface`. External memory needed by
 OAM DMA/HDMA is supplied through a callback, and finished frames are pushed to
-`DisplayInterface` as a plain 160×144 `FrameBuffer`. The QML `EmulatorItem`
+`DisplayInterface` as a plain 160×144 `FrameBuffer` (or a 256×224
+`SgbFrameBuffer` when the SGB border is active). The QML `EmulatorItem`
 paints that buffer into the scene without blocking the emulation thread.
 
 PPU tests live in `tests/gb/gpu/` and cover background/window addressing,
@@ -529,7 +534,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **382/382 CTest cases**, including 160 ROM tests.
+The current set is **388/388 CTest cases**, including 160 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -694,7 +699,9 @@ ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
-- SGB border, command protocol and palettes are not implemented.
+- SGB custom border transfers (`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`) are not
+  implemented yet. The default SGB border, palette/attribute commands and
+  colorization are implemented.
 - The CGB boot ROM is not executed: its logo animation, header checksum check
   and boot hand-off are skipped. The compatibility palette selection and data
   are implemented directly instead.

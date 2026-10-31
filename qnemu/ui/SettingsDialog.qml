@@ -36,7 +36,7 @@ ApplicationWindow {
         },
         {
             value: "sgb",
-            label: qsTr("SGB (DMG fallback)")
+            label: qsTr("SGB (border and color)")
         },
         {
             value: "cgb",
@@ -307,7 +307,7 @@ ApplicationWindow {
 
                                     Label {
                                         Layout.fillWidth: true
-                                        text: qsTr("Only the game window: 100% is 320×288; 200% is 640×576. The library window is independent.")
+                                        text: qsTr("Only the game window: 100% is 320×288 (SGB border 512×448); 200% is 640×576 (SGB 1024×896). The library window is independent.")
                                         color: uiTheme.mutedText
                                         font.pixelSize: 11
                                         wrapMode: Text.WordWrap
@@ -527,7 +527,7 @@ ApplicationWindow {
 
                                     Label {
                                         Layout.fillWidth: true
-                                        text: qsTr("Applies to GB and dual-mode cartridges. DMG keeps the original monochrome display; SGB uses SGB features (not implemented yet, currently a DMG fallback); CGB colorizes DMG-only games with the compatibility palette. GBC-only cartridges always use CGB.")
+                                        text: qsTr("Applies to GB and dual-mode cartridges. DMG keeps the original monochrome display; SGB uses the Super Game Boy color/attribute protocol and the default border; CGB colorizes DMG-only games with the compatibility palette. GBC-only cartridges always use CGB.")
                                         color: uiTheme.mutedText
                                         font.pixelSize: 11
                                         wrapMode: Text.WordWrap

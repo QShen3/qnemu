@@ -14,6 +14,8 @@
 namespace qnemu
 {
 
+class GbSgb;
+
 /**
  * Stateless pixel/scanline renderer.  It only reads PPU memory/registers and
  * writes into the framebuffer, so it can be unit-tested with synthetic VRAM
@@ -24,7 +26,9 @@ namespace qnemu
 class PpuRenderer
 {
 public:
-    explicit PpuRenderer(bool cgb) : cgb_(cgb) {}
+    explicit PpuRenderer(bool cgb, GbSgb* sgb = nullptr) : cgb_(cgb), sgb_(sgb) {}
+
+    void setSgb(GbSgb* sgb) { sgb_ = sgb; }
 
     /// Returns true when the window contributed at least one pixel to the line.
     bool renderLine(const PpuRegisters& registers,
@@ -53,6 +57,14 @@ public:
         const std::array<bool, FrameBuffer::width>& backgroundPriority,
         FrameBuffer& frame) const;
 
+    /// Converts a DMG color index through BGP/OBP and, in SGB mode, through
+    /// the SGB attribute palette for the screen pixel.
+    uint32_t dmgPixelColor(const PpuMemory& memory,
+        int x,
+        int y,
+        uint8_t colorIndex,
+        uint8_t palette) const;
+
 private:
     struct Sprite
     {
@@ -64,6 +76,7 @@ private:
     static uint16_t tileDataAddress(const PpuRegisters& registers, uint8_t tileIndex);
 
     bool cgb_;
+    GbSgb* sgb_ = nullptr;
 };
 
 }  // namespace qnemu

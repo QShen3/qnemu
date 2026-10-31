@@ -40,6 +40,7 @@ public:
     ~EmulatorItem() override = default;
 
     void presentFrame(const FrameBuffer& frame) override;
+    void presentSgbFrame(const SgbFrameBuffer& frame) override;
     void enable() override;
     void disable() override;
 
@@ -66,6 +67,7 @@ protected:
     void focusOutEvent(QFocusEvent* event) override;
 
 private:
+    void presentPixels(const uint32_t* pixels, int width, int height);
     std::optional<GbButton> buttonForQtKey(int key) const;
 
     mutable std::mutex frameMutex;

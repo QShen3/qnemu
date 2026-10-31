@@ -26,6 +26,7 @@
 #include "qnemu/gb/memory/GbWorkRam.h"
 #include "qnemu/gb/mmu/GbCpuBus.h"
 #include "qnemu/gb/mmu/GbMmu.h"
+#include "qnemu/gb/sgb/GbSgb.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "qnemu/save/SaveManager.h"
 
@@ -53,11 +54,22 @@ Gb::Gb(GbModel model,
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     auto interruptHandler = std::make_shared<GbInterruptHandler>();
 
+    if (model == GbModel::sgb) {
+        sgb = std::make_unique<GbSgb>();
+        sgb->reset();
+    }
+
     auto workRam = std::make_unique<GbWorkRam>();
     auto highRam = std::make_unique<GbHighRam>();
     auto timer = std::make_unique<GbTimer>(interruptHandler);
 
     auto joypad = std::make_unique<GbJoypad>(interruptHandler);
+    if (sgb) {
+        GbSgb* sgbPointer = sgb.get();
+        joypad->setSgbWriteCallback([sgbPointer](uint8_t value) {
+            sgbPointer->write(value);
+        });
+    }
     if (input) {
         auto* joypadPointer = joypad.get();
         input->setButtonPressCallback([joypadPointer](GbButton button) {
@@ -72,6 +84,7 @@ Gb::Gb(GbModel model,
         model == GbModel::cgb && cartridge->isGbcCartridge(), display, interruptHandler);
     ppu = ppuInstance.get();
     ppu->setOamBugEnabled(model != GbModel::cgb);
+    ppu->setSgb(sgb.get());
 
     mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppuInstance), std::move(highRam),
         interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
@@ -113,6 +126,9 @@ void Gb::loadCartridge(const char* filePath)
     // state and the CGB boot compatibility palette.  DMG/SGB models always
     // use the DMG-compatible path.
     const GbCartridgeHeader header = cartridge->cartridgeHeader();
+    if (sgb) {
+        sgb->setHeader(header);
+    }
     const bool cgb = model == GbModel::cgb && header.cgb;
     cgbMode = cgb;
     bus->setCgb(cgb);

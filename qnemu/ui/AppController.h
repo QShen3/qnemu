@@ -34,6 +34,8 @@ class AppController : public QObject
     Q_PROPERTY(bool showingGame READ showingGame NOTIFY showingGameChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
     Q_PROPERTY(double scaleFactor READ scaleFactor NOTIFY scaleFactorChanged)
+    Q_PROPERTY(int frameWidth READ frameWidth NOTIFY frameSizeChanged)
+    Q_PROPERTY(int frameHeight READ frameHeight NOTIFY frameSizeChanged)
     Q_PROPERTY(bool paused READ paused NOTIFY pausedChanged)
     Q_PROPERTY(AppSettings* settings READ settings CONSTANT)
     Q_PROPERTY(GameLibrary* library READ library CONSTANT)
@@ -47,6 +49,8 @@ public:
     bool showingGame() const { return showingGameValue; }
     QString statusText() const { return status; }
     double scaleFactor() const;
+    int frameWidth() const { return frameWidthValue; }
+    int frameHeight() const { return frameHeightValue; }
     bool paused() const { return pausedValue; }
     AppSettings* settings() { return settingsValue; }
     GameLibrary* library() { return libraryValue; }
@@ -74,12 +78,14 @@ signals:
     void showingGameChanged();
     void statusTextChanged();
     void scaleFactorChanged();
+    void frameSizeChanged();
     void pausedChanged();
 
 private:
     void setWindowTitle(const QString& newTitle);
     void setStatusText(const QString& newStatus);
     void setPaused(bool value);
+    void setFrameSize(int width, int height);
     void applyKeyBindings();
     GbModel launchModel(bool cgbOnly) const;
 
@@ -92,6 +98,8 @@ private:
     QString status;
     QString currentRomPath;
     bool currentRomCgbOnly = false;
+    int frameWidthValue = 160;
+    int frameHeightValue = 144;
     bool showingGameValue = false;
     bool pausedValue = false;
 };

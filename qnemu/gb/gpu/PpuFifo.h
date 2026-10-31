@@ -16,6 +16,8 @@
 namespace qnemu
 {
 
+class GbSgb;
+
 /**
  * Dot-level background/window pixel FIFO.
  *
@@ -34,7 +36,13 @@ public:
     void setCgb(bool cgb)
     {
         cgb_ = cgb;
-        renderer_ = PpuRenderer(cgb);
+        renderer_ = PpuRenderer(cgb, sgb_);
+    }
+
+    void setSgb(GbSgb* sgb)
+    {
+        sgb_ = sgb;
+        renderer_.setSgb(sgb);
     }
 
     /// Resets the pipeline at the start of mode 3.
@@ -83,6 +91,7 @@ private:
 
     PpuRenderer renderer_;
     bool cgb_;
+    GbSgb* sgb_ = nullptr;
 
     uint8_t line_ = 0;
     uint16_t windowLine_ = 0;

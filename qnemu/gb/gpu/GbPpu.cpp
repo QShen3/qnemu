@@ -8,8 +8,10 @@
 #include <cstdint>
 #include <utility>
 
+#include "qnemu/display/SgbFrameBuffer.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbPpu.h"
+#include "qnemu/gb/sgb/GbSgb.h"
 
 namespace qnemu
 {
@@ -356,8 +358,15 @@ void GbPpu::setExternalRead(std::function<uint8_t(uint16_t)> reader)
 void GbPpu::setCgb(bool cgb)
 {
     cgb_ = cgb;
-    renderer_ = PpuRenderer(cgb);
+    renderer_ = PpuRenderer(cgb, sgb_);
     fifo_.setCgb(cgb);
+}
+
+void GbPpu::setSgb(GbSgb* sgb)
+{
+    sgb_ = sgb;
+    renderer_.setSgb(sgb);
+    fifo_.setSgb(sgb);
 }
 
 void GbPpu::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
@@ -601,7 +610,13 @@ void GbPpu::stepTiming()
         }
         ++frameCount_;
         if (display_) {
-            display_->presentFrame(frame_);
+            if (sgb_) {
+                SgbFrameBuffer sgbFrame;
+                sgb_->renderBorder(frame_, sgbFrame);
+                display_->presentSgbFrame(sgbFrame);
+            } else {
+                display_->presentFrame(frame_);
+            }
         }
     }
 

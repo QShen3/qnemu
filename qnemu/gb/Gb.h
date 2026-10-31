@@ -33,6 +33,7 @@ class GbCpu;
 class GbCpuBus;
 class GbMmu;
 class GbPpu;
+class GbSgb;
 class SaveManager;
 
 /**
@@ -75,6 +76,7 @@ private:
     GbModel model;
     bool cgbMode = false;
     std::shared_ptr<GbCartridgeInterface> cartridge;
+    std::unique_ptr<GbSgb> sgb;
     std::unique_ptr<GbMmu> mmu;
     std::unique_ptr<GbCpuBus> bus;
     std::unique_ptr<GbCpu> cpu;

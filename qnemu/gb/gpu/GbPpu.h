@@ -20,6 +20,8 @@
 namespace qnemu
 {
 
+class GbSgb;
+
 /**
  * Game Boy PPU.
  *
@@ -48,6 +50,7 @@ public:
     /// External memory used by OAM DMA/HDMA (ROM, cartridge RAM, WRAM).
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);
     void setCgb(bool cgb);
+    void setSgb(GbSgb* sgb);
     void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
     void clearDmgCompatibilityPalette();
 
@@ -103,6 +106,7 @@ private:
     uint16_t windowLine_ = 0;
     uint64_t frameCount_ = 0;
     bool oamBugEnabled_ = false;
+    GbSgb* sgb_ = nullptr;
     int accessedOamRow_ = -1;
     bool statIrqLine_ = false;
     bool lcdJustEnabled_ = false;

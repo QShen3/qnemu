@@ -41,21 +41,30 @@ EmulatorItem::EmulatorItem(QQuickItem* parent) : QQuickPaintedItem(parent)
 
 void EmulatorItem::presentFrame(const FrameBuffer& frame)
 {
+    presentPixels(frame.pixels.data(), FrameBuffer::width, FrameBuffer::height);
+}
+
+void EmulatorItem::presentSgbFrame(const SgbFrameBuffer& frame)
+{
+    presentPixels(frame.pixels.data(), SgbFrameBuffer::width, SgbFrameBuffer::height);
+}
+
+void EmulatorItem::presentPixels(const uint32_t* pixels, int width, int height)
+{
     if (!enabled.load()) {
         return;
     }
 
     {
         const std::lock_guard lock(frameMutex);
-        if (frameImage.size() != QSize(FrameBuffer::width, FrameBuffer::height)
+        if (frameImage.size() != QSize(width, height)
             || frameImage.format() != QImage::Format_RGB32) {
-            frameImage = QImage(FrameBuffer::width, FrameBuffer::height,
-                QImage::Format_RGB32);
+            frameImage = QImage(width, height, QImage::Format_RGB32);
         }
-        for (int y = 0; y < FrameBuffer::height; ++y) {
+        for (int y = 0; y < height; ++y) {
             std::memcpy(frameImage.scanLine(y),
-                frame.pixels.data() + static_cast<std::size_t>(y) * FrameBuffer::width,
-                FrameBuffer::width * sizeof(uint32_t));
+                pixels + static_cast<std::size_t>(y) * width,
+                static_cast<std::size_t>(width) * sizeof(uint32_t));
         }
         hasFrame = true;
     }

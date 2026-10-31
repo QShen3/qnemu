@@ -10,6 +10,7 @@
 #include "qnemu/gb/gpu/PpuMemory.h"
 #include "qnemu/gb/gpu/PpuRegisters.h"
 #include "qnemu/gb/gpu/PpuRenderer.h"
+#include "qnemu/gb/sgb/GbSgb.h"
 
 namespace qnemuTest
 {
@@ -127,6 +128,26 @@ TEST(PpuRendererTest, DmgObjectToBackgroundPriorityHidesSpriteOverColor)
     setSprite(memory, 0, 16, 8, 1, 0x00);
     renderer.renderLine(registers, memory, 0, 0, frame);
     EXPECT_EQ(frame.at(0, 0), qnemu::rgb(0, 0, 0));
+}
+
+TEST(PpuRendererTest, SgbBackgroundUsesSgbPalette)
+{
+    qnemu::PpuMemory memory;
+    qnemu::PpuRegisters registers;
+    qnemu::FrameBuffer frame;
+    qnemu::GbSgb sgb;
+    sgb.reset();
+    qnemu::PpuRenderer renderer(false, &sgb);
+
+    registers.lcdc = dmgLcdc;
+    registers.bgp = 0xE4;
+    memory.writeVramByte(0, 0x1800, 0x00);
+    memory.writeVramByte(0, 0x0000, 0x80);
+    memory.writeVramByte(0, 0x0001, 0x00);
+
+    renderer.renderLine(registers, memory, 0, 0, frame);
+    EXPECT_EQ(frame.at(0, 0), sgb.colorForPixel(0, 0, 1));
+    EXPECT_NE(frame.at(0, 0), qnemu::rgb(170, 170, 170));
 }
 
 TEST(PpuRendererTest, CgbMasterAndBackgroundPriority)

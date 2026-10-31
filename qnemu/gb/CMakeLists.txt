@@ -26,6 +26,13 @@ qnemu_add_gb_library(gb_ppu
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuRenderer.cpp)
 
+# Super Game Boy command receiver, palette and attribute state.
+qnemu_add_gb_library(gb_sgb
+    ${CMAKE_CURRENT_SOURCE_DIR}/sgb/GbSgb.cpp)
+target_link_libraries(gb_ppu
+    PRIVATE
+        gb_sgb)
+
 # APU and its four channels.
 qnemu_add_gb_library(gb_apu
     ${CMAKE_CURRENT_SOURCE_DIR}/apu/GbApu.cpp
@@ -82,5 +89,6 @@ target_link_libraries(gb
         gb_memory
         gb_joypad
         gb_mmu
+        gb_sgb
     PRIVATE
         save)

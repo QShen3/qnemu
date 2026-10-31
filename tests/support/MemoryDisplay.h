@@ -21,11 +21,19 @@ public:
         ++frameCount;
     }
 
+    void presentSgbFrame(const qnemu::SgbFrameBuffer& frame) override
+    {
+        lastSgbFrame = frame;
+        ++sgbFrameCount;
+    }
+
     void enable() override { enabled = true; }
     void disable() override { enabled = false; }
 
     qnemu::FrameBuffer lastFrame;
+    qnemu::SgbFrameBuffer lastSgbFrame;
     uint64_t frameCount = 0;
+    uint64_t sgbFrameCount = 0;
     bool enabled = true;
 };
 

@@ -9,6 +9,7 @@
 
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/sgb/GbSgb.h"
 #include "tests/support/MemoryDisplay.h"
 
 namespace qnemuTest
@@ -67,6 +68,22 @@ TEST_F(GbPpuTest, VBlankPresentsOneFrame)
     EXPECT_EQ(display->frameCount, 1U);
     EXPECT_EQ(ppu->read(0xFF44), 144);
     EXPECT_EQ(ppu->currentMode(), 1);
+}
+
+TEST_F(GbPpuTest, SgbPresentsBorderFrame)
+{
+    qnemu::GbSgb sgb;
+    sgb.reset();
+    ppu->setSgb(&sgb);
+
+    for (int i = 0; i < 70224 * 2 && ppu->frameCount() == 0; ++i) {
+        ppu->step();
+    }
+
+    EXPECT_EQ(ppu->frameCount(), 1U);
+    EXPECT_EQ(display->frameCount, 0U);
+    EXPECT_EQ(display->sgbFrameCount, 1U);
+    EXPECT_EQ(display->lastSgbFrame.at(48, 40), ppu->frameBuffer().at(0, 0));
 }
 
 TEST_F(GbPpuTest, OamDmaCopiesOneBytePerFourCycles)

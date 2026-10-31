@@ -64,6 +64,7 @@ void AppController::shutdown()
     displayItem = nullptr;
     currentRomPath.clear();
     currentRomCgbOnly = false;
+    setFrameSize(160, 144);
     pausedValue = false;
     if (showingGameValue) {
         showingGameValue = false;
@@ -74,6 +75,16 @@ void AppController::shutdown()
 double AppController::scaleFactor() const
 {
     return settingsValue->scalePercent() / 100.0;
+}
+
+void AppController::setFrameSize(int width, int height)
+{
+    if (width == frameWidthValue && height == frameHeightValue) {
+        return;
+    }
+    frameWidthValue = width;
+    frameHeightValue = height;
+    emit frameSizeChanged();
 }
 
 void AppController::attachDisplay(QObject* item)
@@ -124,15 +135,18 @@ void AppController::openRom(const QUrl& url)
 
         const GbCartridgeHeader header = GbCartridge::readHeader(path.toStdString());
         currentRomCgbOnly = header.cgbOnly;
+        const GbModel targetModel = launchModel(currentRomCgbOnly);
 
         auto sound = std::make_unique<DefaultSound>();
-        auto system = std::make_unique<Gb>(launchModel(currentRomCgbOnly), display,
+        auto system = std::make_unique<Gb>(targetModel, display,
             std::move(sound), input);
         system->setSaveDirectory(settingsValue->savePath().toStdString());
         system->setSoundEnabled(settingsValue->soundEnabled());
         system->loadCartridge(path.toStdString().c_str());
 
         gb = std::move(system);
+        setFrameSize(targetModel == GbModel::sgb ? 256 : 160,
+            targetModel == GbModel::sgb ? 224 : 144);
         currentRomPath = path;
         libraryValue->addOpenedGame(path);
 
@@ -146,6 +160,7 @@ void AppController::openRom(const QUrl& url)
     } catch (const std::exception& error) {
         qWarning().noquote() << "Failed to load ROM:" << error.what();
         currentRomCgbOnly = false;
+        setFrameSize(160, 144);
         setWindowTitle(QStringLiteral("QNEmu"));
         setStatusText(QStringLiteral("Failed to load ROM: ") + error.what());
         if (showingGameValue) {

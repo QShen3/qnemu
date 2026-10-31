@@ -17,8 +17,8 @@ ApplicationWindow {
 
     function applyScale() {
         const factor = appController.scaleFactor;
-        width = Math.round(320 * factor);
-        height = Math.round(288 * factor) + (menuBar ? menuBar.height : 0);
+        width = Math.round(appController.frameWidth * 2 * factor);
+        height = Math.round(appController.frameHeight * 2 * factor) + (menuBar ? menuBar.height : 0);
     }
 
     function present() {
@@ -63,6 +63,10 @@ ApplicationWindow {
         }
 
         function onScaleFactorChanged() {
+            gameWindow.applyScale();
+        }
+
+        function onFrameSizeChanged() {
             gameWindow.applyScale();
         }
 
@@ -156,8 +160,9 @@ ApplicationWindow {
             id: viewport
 
             anchors.centerIn: parent
-            width: Math.min(parent.width, parent.height * 160 / 144)
-            height: width * 144 / 160
+            readonly property real frameAspect: appController.frameWidth / appController.frameHeight
+            width: Math.min(parent.width, parent.height * frameAspect)
+            height: width / frameAspect
 
             EmulatorItem {
                 id: emulator
