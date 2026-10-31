@@ -98,6 +98,33 @@ The Qt Quick runtime QML modules (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Dialogs`) are needed to run the GUI; on distros that split them out,
 install the `qml6-module-qtquick*` packages for your Qt version.
 
+## Boot ROMs
+
+qnemu ships one prebuilt, free boot ROM in
+`third_party/sameboy/bootroms/`:
+
+| File | Model | Notes |
+| --- | --- | --- |
+| `cgb_boot.bin` | CGB | SameBoy's CGB boot ROM with the QNEMU wordmark |
+
+It is derived from [SameBoy](https://github.com/LIJI32/SameBoy)'s
+Expat/MIT-licensed CGB boot ROM reimplementation. See
+`third_party/sameboy/README.md` and `third_party/sameboy/LICENSE` for
+provenance, the exact modifications, and the license notice.
+
+SameBoy's DMG and SGB boot ROMs are **not** shipped: they assemble to binaries
+that are byte-identical to Nintendo's official DMG/SGB boot ROMs. DMG and SGB
+modes keep using the HLE `--boot-model` path. Do not commit dumps of your own;
+use them locally only.
+
+The committed CGB binary means the normal build needs **no RGBDS dependency**.
+Rebuilding is optional and only documented in
+`third_party/sameboy/src/build.sh`. The emulator does not execute the CGB boot
+ROM yet; `--boot-model` still reproduces the post-boot state directly.
+
+CI runs `tests/rom/check_official_boot_roms.py`, which rejects tracked files
+matching known official DMG/MGB/SGB/SGB2/CGB/CGB0/AGB boot ROMs.
+
 ## Usage
 
 ```bash
@@ -703,9 +730,10 @@ fail when run directly:
   `MASK_EN` effects are not implemented yet. The command/palette/attribute
   protocol, default border, custom border transfers and colorization are
   implemented.
-- The CGB boot ROM is not executed: its logo animation, header checksum check
-  and boot hand-off are skipped. The compatibility palette selection and data
-  are implemented directly instead.
+- The CGB boot ROM is not executed yet: the QNEMU-logo boot ROM is staged in
+  `third_party/sameboy/bootroms/`, but its logo animation, header checksum
+  check and boot hand-off are skipped. The compatibility palette selection and
+  data are implemented directly instead.
 - The library uses references to the original ROM files. Copy/import into a
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
@@ -753,7 +781,7 @@ fail when run directly:
 ## Thanks
 
 - [Pan Docs](https://gbdev.io/pandocs/)
-- [SameBoy](https://github.com/LIJI32/SameBoy) (MIT-licensed CGB boot ROM reimplementation used to cross-check the compatibility palette tables)
+- [SameBoy](https://github.com/LIJI32/SameBoy) (Expat/MIT boot ROM reimplementation; qnemu ships a QNEMU-logo CGB variant and uses its compatibility palette data)
 - [The Cycle-Accurate Game Boy Docs](https://github.com/AntonioND/giibiiadvance/blob/master/docs/TCAGBD.pdf)
 - [gb-opcodes](https://gbdev.github.io/gb-opcodes/optables/)
 - [SingleStepTests/sm83](https://github.com/SingleStepTests/sm83)

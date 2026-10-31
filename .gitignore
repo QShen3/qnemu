@@ -14,3 +14,10 @@ coverage.*.html
 
 # macOS
 .DS_Store
+
+# Optional boot ROM rebuild artifacts
+third_party/sameboy/src/*.o
+third_party/sameboy/src/pb12
+
+# User-supplied boot ROM dumps (never commit these)
+local-bootroms/
