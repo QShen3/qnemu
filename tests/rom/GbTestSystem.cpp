@@ -106,6 +106,77 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
     return true;
 }
 
+void GbTestSystem::applyBootState(BootModel model)
+{
+    uint16_t divider = 0xABCD;
+    lcdc_ = 0x91;
+    stat_ = 0x80;
+    scy_ = 0;
+    scx_ = 0;
+    ly_ = 0x0A;
+    lyc_ = 0;
+    bgp_ = 0xFC;
+    obp0_ = 0xFF;
+    obp1_ = 0xFF;
+    wy_ = 0;
+    wx_ = 0;
+    joypad_ = 0xCF;
+    nr52_ = 0xF1;
+
+    switch (model) {
+    case BootModel::dmg0:
+        divider = 0x1831;
+        stat_ = 0x83;
+        ly_ = 0x01;
+        break;
+    case BootModel::dmgAbc:
+    case BootModel::mgb:
+        break;
+    case BootModel::sgb:
+        divider = 0xD861;
+        lcdc_ = 0xFF;
+        stat_ = 0xFF;
+        ly_ = 0x00;
+        lyc_ = 0x00;
+        joypad_ = 0xFF;
+        nr52_ = 0xF0;
+        break;
+    case BootModel::sgb2:
+        divider = 0xD851;
+        lcdc_ = 0xFF;
+        stat_ = 0xFF;
+        ly_ = 0x00;
+        lyc_ = 0x00;
+        joypad_ = 0xFF;
+        nr52_ = 0xF0;
+        break;
+    }
+
+    // The headless bus has no real PPU.  Keep the boot LY value stable for
+    // boot-state checks instead of running the tiny VBlank stub.
+    freezeLy_ = true;
+
+    timer->setDivider(divider);
+    serialData_ = 0;
+    serialControl_ = 0x7E;
+    serialTimingEnabled_ = true;
+    serialCyclesRemaining_ = 0;
+    serialClockPhase_ = 50;
+
+    // Post-boot APU register values, excluding the model-specific NR52.
+    static constexpr uint8_t apuBoot[0x18] = {
+        0x80, 0xBF, 0xF3, 0xFF, 0xBF, 0xFF, 0x3F, 0x00,
+        0xFF, 0xBF, 0x7F, 0xFF, 0x9F, 0xFF, 0xBF, 0xFF,
+        0xFF, 0x00, 0x00, 0xBF, 0x77, 0xF3, 0xF1, 0xFF,
+    };
+    for (std::size_t index = 0; index < sizeof(apuBoot); ++index) {
+        memory_[0xFF10 + index] = apuBoot[index];
+    }
+    for (uint16_t address = 0xFF28; address <= 0xFF3F; ++address) {
+        memory_[address] = 0xFF;
+    }
+}
+
 void GbTestSystem::reset()
 {
     memory_.fill(0);
@@ -123,9 +194,21 @@ void GbTestSystem::reset()
 
     lcdc_ = 0x91;
     stat_ = 0x80;
+    scy_ = 0xFF;
+    scx_ = 0xFF;
     ly_ = 0;
     lyc_ = 0;
+    bgp_ = 0xFF;
+    obp0_ = 0xFF;
+    obp1_ = 0xFF;
+    wy_ = 0xFF;
+    wx_ = 0xFF;
+    joypad_ = 0xCF;
     ppuDivider_ = 0;
+    freezeLy_ = false;
+    serialTimingEnabled_ = false;
+    serialCyclesRemaining_ = 0;
+    serialClockPhase_ = 50;
 
     if (ppu) {
         ppu->reset();
@@ -168,13 +251,15 @@ uint8_t GbTestSystem::read(uint16_t address)
     }
 
     if (address == 0xFF00) {
-        return 0xFF;
+        return joypad_;
     }
     if (address == serialDataAddress) {
         return serialData_;
     }
     if (address == serialControlAddress) {
-        return serialControl_;
+        // Bits 1-6 are unused and read as 1; bit 7 is the transfer flag and
+        // bit 0 is the clock select.
+        return static_cast<uint8_t>(0x7E | (serialControl_ & 0x81));
     }
     if (address >= dividerAddress && address <= tacAddress) {
         return timer->read(address);
@@ -188,16 +273,40 @@ uint8_t GbTestSystem::read(uint16_t address)
     if (address == statAddress) {
         return stat_;
     }
+    if (address == 0xFF42) {
+        return scy_;
+    }
+    if (address == 0xFF43) {
+        return scx_;
+    }
     if (address == lyAddress) {
         return ly_;
     }
     if (address == lycAddress) {
         return lyc_;
     }
+    if (address == 0xFF47) {
+        return bgp_;
+    }
+    if (address == 0xFF48) {
+        return obp0_;
+    }
+    if (address == 0xFF49) {
+        return obp1_;
+    }
+    if (address == 0xFF4A) {
+        return wy_;
+    }
+    if (address == 0xFF4B) {
+        return wx_;
+    }
     if (address == key0Address) {
-        return cgb_ ? 0x80 : 0x00;
+        return cgb_ ? 0x80 : 0xFF;
     }
     if (address == 0xFF4D) {
+        if (!cgb_) {
+            return 0xFF;
+        }
         return static_cast<uint8_t>(0x7E
             | (doubleSpeed_ ? 0x80 : 0x00)
             | (speedSwitchArmed_ ? 0x01 : 0x00));
@@ -259,11 +368,31 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
     if (address == serialControlAddress) {
+        if (!serialTimingEnabled_) {
+            if ((value & 0x80) != 0) {
+                serialOutput_.push_back(static_cast<char>(serialData_));
+                serialControl_ = 0x01;
+            } else {
+                serialControl_ = value;
+            }
+            return;
+        }
+
         if ((value & 0x80) != 0) {
-            serialOutput_.push_back(static_cast<char>(serialData_));
-            serialControl_ = 0x01;
+            // Internal clock: the first bit period starts at the next
+            // free-running clock edge, and completion is seven periods later.
+            const uint16_t now = static_cast<uint16_t>(cycles_ % 512);
+            uint16_t delay = static_cast<uint16_t>(
+                (serialClockPhase_ + 512 - now) % 512);
+            if (delay == 0) {
+                delay = 512;
+            }
+            serialCyclesRemaining_ = static_cast<uint16_t>(delay + 7 * 512);
+            serialControl_ = static_cast<uint8_t>(value & 0x01);
+            serialControl_ |= 0x80;
         } else {
-            serialControl_ = value;
+            serialControl_ = static_cast<uint8_t>(value & 0x01);
+            serialCyclesRemaining_ = 0;
         }
         return;
     }
@@ -290,12 +419,40 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         stat_ = static_cast<uint8_t>((stat_ & 0x04) | (value & 0x78) | 0x80);
         return;
     }
+    if (address == 0xFF42) {
+        scy_ = value;
+        return;
+    }
+    if (address == 0xFF43) {
+        scx_ = value;
+        return;
+    }
     if (address == lyAddress) {
         ly_ = 0;
         return;
     }
     if (address == lycAddress) {
         lyc_ = value;
+        return;
+    }
+    if (address == 0xFF47) {
+        bgp_ = value;
+        return;
+    }
+    if (address == 0xFF48) {
+        obp0_ = value;
+        return;
+    }
+    if (address == 0xFF49) {
+        obp1_ = value;
+        return;
+    }
+    if (address == 0xFF4A) {
+        wy_ = value;
+        return;
+    }
+    if (address == 0xFF4B) {
+        wx_ = value;
         return;
     }
     if (address == 0xFF4D) {
@@ -357,6 +514,16 @@ void GbTestSystem::tick(uint8_t cycles)
         } else {
             ppuTick();
         }
+
+        if (serialTimingEnabled_ && serialCyclesRemaining_ > 0) {
+            --serialCyclesRemaining_;
+            if (serialCyclesRemaining_ == 0) {
+                serialControl_ = static_cast<uint8_t>(serialControl_ & 0x01);
+                serialOutput_.push_back(static_cast<char>(serialData_));
+                interruptHandler->requestSerialInterrupt();
+            }
+        }
+
         ++cycles_;
     }
 }
@@ -396,6 +563,9 @@ bool GbTestSystem::onStop()
 
 void GbTestSystem::ppuTick()
 {
+    if (freezeLy_) {
+        return;
+    }
     if ((lcdc_ & 0x80) == 0) {
         ly_ = 0;
         ppuDivider_ = 0;

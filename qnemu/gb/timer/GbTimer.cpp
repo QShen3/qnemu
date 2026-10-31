@@ -146,6 +146,14 @@ void GbTimer::setDoubleSpeed(bool value)
     previousTimerBit = (timerControl & 0x04) != 0 ? selectedClockBit() : 0;
 }
 
+void GbTimer::setDivider(uint16_t value)
+{
+    divider = value;
+    previousTimerBit = (timerControl & 0x04) != 0 ? selectedClockBit() : 0;
+    previousDivApuBit = static_cast<uint8_t>((divider >> divApuBitIndex()) & 0x01);
+    divApuTickPending = false;
+}
+
 bool GbTimer::takeDivApuTick()
 {
     if (!divApuTickPending) {

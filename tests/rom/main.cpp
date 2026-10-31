@@ -82,6 +82,7 @@ void printUsage(const char* program)
               << "  --compare-image P   compare the final frame with a PNG\n"
               << "  --dump-frame P      write the final frame as a binary PPM\n"
               << "  --patch OFF=HEX     patch the ROM image before loading (repeatable)\n"
+              << "  --boot-model M      post-boot model: dmg0, dmgabc, mgb, sgb, sgb2\n"
               << "  --verbose           stream serial output as it is produced\n";
 }
 
@@ -145,6 +146,7 @@ int main(int argc, char** argv)
 {
     std::string romPath;
     std::string model = "cgb";
+    std::string bootModel;
     uint64_t maxCycles = 300000000;
     uint64_t maxSeconds = 60;
     uint64_t frames = 0;
@@ -187,6 +189,8 @@ int main(int argc, char** argv)
                     std::strtoul(hex.substr(position, 2).c_str(), nullptr, 16)));
             }
             patches.push_back(std::move(patch));
+        } else if (argument == "--boot-model" && index + 1 < argc) {
+            bootModel = argv[++index];
         } else if (argument == "--ppu") {
             enablePpu = true;
         } else if (argument == "--apu") {
@@ -211,6 +215,29 @@ int main(int argc, char** argv)
     if (romPath.empty() || (model != "dmg" && model != "cgb")) {
         printUsage(argv[0]);
         return 2;
+    }
+
+    qnemuTest::BootModel boot = qnemuTest::BootModel::dmgAbc;
+    const bool hasBootModel = !bootModel.empty();
+    if (hasBootModel) {
+        if (model != "dmg") {
+            std::cerr << "--boot-model requires --model dmg\n";
+            return 2;
+        }
+        if (bootModel == "dmg0") {
+            boot = qnemuTest::BootModel::dmg0;
+        } else if (bootModel == "dmgabc") {
+            boot = qnemuTest::BootModel::dmgAbc;
+        } else if (bootModel == "mgb") {
+            boot = qnemuTest::BootModel::mgb;
+        } else if (bootModel == "sgb") {
+            boot = qnemuTest::BootModel::sgb;
+        } else if (bootModel == "sgb2") {
+            boot = qnemuTest::BootModel::sgb2;
+        } else {
+            std::cerr << "Unknown boot model: " << bootModel << '\n';
+            return 2;
+        }
     }
 
     const bool frameMode = frames > 0 || !compareImage.empty() || !dumpFrame.empty();
@@ -256,6 +283,10 @@ int main(int argc, char** argv)
         return 2;
     }
 
+    if (hasBootModel) {
+        system.applyBootState(boot);
+    }
+
     qnemu::GbCpu cpu(system);
     if (model == "dmg") {
         auto& registers = cpu.registers();
@@ -267,6 +298,45 @@ int main(int argc, char** argv)
         registers.e = 0xD8;
         registers.h = 0x01;
         registers.l = 0x4D;
+        if (hasBootModel) {
+            switch (boot) {
+            case qnemuTest::BootModel::dmg0:
+                registers.a = 0x01;
+                registers.f = 0x00;
+                registers.b = 0xFF;
+                registers.c = 0x13;
+                registers.d = 0x00;
+                registers.e = 0xC1;
+                registers.h = 0x84;
+                registers.l = 0x03;
+                break;
+            case qnemuTest::BootModel::dmgAbc:
+                break;
+            case qnemuTest::BootModel::mgb:
+                registers.a = 0xFF;
+                break;
+            case qnemuTest::BootModel::sgb:
+                registers.a = 0x01;
+                registers.f = 0x00;
+                registers.b = 0x00;
+                registers.c = 0x14;
+                registers.d = 0x00;
+                registers.e = 0x00;
+                registers.h = 0xC0;
+                registers.l = 0x60;
+                break;
+            case qnemuTest::BootModel::sgb2:
+                registers.a = 0xFF;
+                registers.f = 0x00;
+                registers.b = 0x00;
+                registers.c = 0x14;
+                registers.d = 0x00;
+                registers.e = 0x00;
+                registers.h = 0xC0;
+                registers.l = 0x60;
+                break;
+            }
+        }
         registers.sp = 0xFFFE;
         registers.pc = 0x0100;
     }

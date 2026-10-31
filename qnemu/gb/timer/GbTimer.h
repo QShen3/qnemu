@@ -35,6 +35,10 @@ public:
 
     void setDoubleSpeed(bool value);
 
+    /// Override the internal divider, used to reproduce the post-boot DIV
+    /// phase when the test runner does not execute a boot ROM.
+    void setDivider(uint16_t value);
+
     /// Consume a pending DIV-APU clock (falling edge of DIV bit 4, or bit 5
     /// in double speed).  The APU remains at 512 Hz in both speed modes.
     bool takeDivApuTick();

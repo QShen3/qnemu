@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 361 CTest cases, including 146 curated test ROMs.
+- 375 CTest cases, including 160 curated test ROMs.
 
 ## Build
 
@@ -453,6 +453,10 @@ result protocols:
 
 # patch ROM bytes before loading (repeatable, offset=hex)
 ./build/tests/rom/gb_test_runner path/to/test.gb --patch 0x4401=000000
+
+# reproduce a model's post-boot CPU/DIV/I/O state without a boot ROM
+./build/tests/rom/gb_test_runner path/to/boot_test.gb \
+    --model dmg --boot-model dmgabc
 ```
 
 Without `--ppu`, the CPU-only bus keeps a tiny LY/VBlank stub. With `--ppu`,
@@ -515,7 +519,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **361/361 CTest cases**, including 146 ROM tests.
+The current set is **375/375 CTest cases**, including 160 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -624,6 +628,21 @@ checksum.  The OAM corruption and CRC behaviour are unchanged.
 </details>
 
 <details>
+<summary>Mooneye boot-state and unused I/O tests (<code>-L boot</code>)</summary>
+
+The runner reproduces the model-specific post-boot CPU registers, DIV phase,
+serial clock phase and I/O register values without executing a copyrighted
+boot ROM.  `--boot-model` selects `dmg0`, `dmgabc`, `mgb`, `sgb` or `sgb2`.
+
+- `bits/unused_hwio-GS` (DMG, with `--apu`)
+- `boot_div-dmg0`, `boot_div-dmgABCmgb`, `boot_div-S`, `boot_div2-S`
+- `boot_hwio-dmg0`, `boot_hwio-dmgABCmgb`, `boot_hwio-S`
+- `boot_regs-dmg0`, `boot_regs-dmgABC`, `boot_regs-mgb`, `boot_regs-sgb`, `boot_regs-sgb2`
+- `serial/boot_sclk_align-dmgABCmgb`
+
+</details>
+
+<details>
 <summary>Mooneye PPU/OAM/bus-timing tests (<code>-L ppu</code>, requires <code>--ppu</code>)</summary>
 
 - `add_sp_e_timing`
@@ -660,18 +679,10 @@ checksum.  The OAM corruption and CRC behaviour are unchanged.
 
 ### Known limitations
 
-The curated CTest set registers only passing ROMs; the current 146 registered
+The curated CTest set registers only passing ROMs; the current 160 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do
-  not reproduce the hardware values.
-- Boot-dependent Mooneye tests (`boot_div*`, `boot_hwio-*`,
-  `boot_regs-{dmg0,mgb,sgb,sgb2}` and
-  `serial/boot_sclk_align-dmgABCmgb`) fail because no boot ROM is executed and
-  the post-boot DIV/I/O state is not fully reproduced. `boot_regs-dmgABC`
-  happens to pass because the headless runner sets the DMG post-boot CPU
-  registers explicitly.
 - MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
 - SGB border, command protocol and palettes are not implemented.
 - The CGB boot ROM is not executed: its logo animation, header checksum check

@@ -23,6 +23,15 @@
 namespace qnemuTest
 {
 
+enum class BootModel
+{
+    dmg0,
+    dmgAbc,
+    mgb,
+    sgb,
+    sgb2,
+};
+
 /**
  * Minimal headless Game Boy system used to run test ROMs.
  *
@@ -40,6 +49,10 @@ public:
     /// Load a ROM image from memory, with optional test-specific patches.
     bool loadRomData(const std::vector<uint8_t>& romData, bool cgb,
         bool enablePpu = false, bool enableApu = false);
+
+    /// Reproduce the model-specific post-boot I/O state without executing a
+    /// boot ROM.  CPU registers are applied by the runner.
+    void applyBootState(BootModel model);
 
     uint8_t read(uint16_t address) override;
     void write(uint16_t address, uint8_t value) override;
@@ -84,9 +97,21 @@ private:
 
     uint8_t lcdc_ = 0x91;
     uint8_t stat_ = 0x80;
+    uint8_t scy_ = 0;
+    uint8_t scx_ = 0;
     uint8_t ly_ = 0;
     uint8_t lyc_ = 0;
+    uint8_t bgp_ = 0xFC;
+    uint8_t obp0_ = 0xFF;
+    uint8_t obp1_ = 0xFF;
+    uint8_t wy_ = 0;
+    uint8_t wx_ = 0;
+    uint8_t joypad_ = 0xCF;
     uint16_t ppuDivider_ = 0;
+    bool freezeLy_ = false;
+    bool serialTimingEnabled_ = false;
+    uint16_t serialCyclesRemaining_ = 0;
+    uint16_t serialClockPhase_ = 50;
 
     std::shared_ptr<MemoryDisplay> display;
     std::unique_ptr<qnemu::GbPpu> ppu;

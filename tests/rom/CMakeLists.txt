@@ -136,8 +136,8 @@ if(QNEMU_ENABLE_ROM_TESTS)
     set(MOONEYE_ROM_ROOT "${QNEMU_TEST_ROM_ROOT}/mooneye-test-roms")
     if(EXISTS "${MOONEYE_ROM_ROOT}/acceptance")
         # Curated subset that the CPU/timer/interrupt test bus is expected to
-        # pass.  Tests depending on OAM DMA, PPU modes, APU or boot state are
-        # intentionally not registered here.
+        # pass.  Tests needing the real PPU, APU, boot state or an MBC have
+        # their own lists below.
         set(MOONEYE_CPU_TESTS
             "acceptance/bits/reg_f.gb"
             "acceptance/div_timing.gb"
@@ -221,6 +221,38 @@ if(QNEMU_ENABLE_ROM_TESTS)
             qnemu_add_rom_test("mooneye_ppu_${RELATIVE}"
                 "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --model dmg --ppu)
         endforeach()
+
+        # Model-specific post-boot state.  The runner reproduces the boot CPU
+        # registers, DIV phase and I/O values without executing a boot ROM.
+        set(MOONEYE_BOOT_TESTS
+            "boot_div-dmg0|dmg0"
+            "boot_div-dmgABCmgb|dmgabc"
+            "boot_div-S|sgb"
+            "boot_div2-S|sgb2"
+            "boot_hwio-dmg0|dmg0"
+            "boot_hwio-dmgABCmgb|dmgabc"
+            "boot_hwio-S|sgb"
+            "boot_regs-dmg0|dmg0"
+            "boot_regs-dmgABC|dmgabc"
+            "boot_regs-mgb|mgb"
+            "boot_regs-sgb|sgb"
+            "boot_regs-sgb2|sgb2"
+            "serial/boot_sclk_align-dmgABCmgb|dmgabc"
+        )
+        foreach(ENTRY IN LISTS MOONEYE_BOOT_TESTS)
+            string(REPLACE "|" ";" PARTS "${ENTRY}")
+            list(GET PARTS 0 RELATIVE)
+            list(GET PARTS 1 BOOT_MODEL)
+            qnemu_add_rom_test("mooneye_${RELATIVE}"
+                "${MOONEYE_ROM_ROOT}/acceptance/${RELATIVE}.gb"
+                "mooneye;boot" --model dmg --boot-model "${BOOT_MODEL}")
+        endforeach()
+
+        # Unused I/O bits and unmapped FFxx addresses read as 1s on DMG/SGB.
+        # The APU is attached so its unused-bit masks are exercised too.
+        qnemu_add_rom_test("mooneye_bits_unused_hwio_gs"
+            "${MOONEYE_ROM_ROOT}/acceptance/bits/unused_hwio-GS.gb"
+            "mooneye;apu" --model dmg --apu)
 
         # The runner now uses the same GbCartridge/MBC code as the emulator.
         # MBC1M multi-cart wiring is not implemented yet, so that one is left
