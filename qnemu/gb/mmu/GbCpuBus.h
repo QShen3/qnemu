@@ -84,6 +84,11 @@ public:
         mmu.write(address, value);
     }
 
+    bool isStalled() const override
+    {
+        return mmu.isCpuStalled();
+    }
+
     void tick(uint8_t cycles) override
     {
         uint8_t peripheralCycles = cycles;

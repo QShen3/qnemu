@@ -43,6 +43,7 @@ public:
     void setDoubleSpeed(bool doubleSpeed) override;
     void setCgb(bool cgb) override;
     void setDmgCompatibilityMode(bool enabled) override;
+    bool isCpuStalled() const override;
     void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override;
     void triggerOamBugRead(uint16_t address) override;
     void triggerOamBugReadIncrease(uint16_t address) override;

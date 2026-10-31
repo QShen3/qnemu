@@ -22,6 +22,14 @@ public:
     bool onStop() override { return false; }
 };
 
+class StallingBus : public TestBus
+{
+public:
+    bool isStalled() const override { return stalled; }
+
+    bool stalled = true;
+};
+
 class GbCpuTest : public testing::Test
 {
 protected:
@@ -82,6 +90,21 @@ TEST_F(GbCpuTest, ResetToBootRomStartsAtZero)
     EXPECT_EQ(cpu.registers().pc, 0x0000);
     EXPECT_FALSE(cpu.interruptsEnabled());
     EXPECT_EQ(cpu.cycles(), 0U);
+}
+
+TEST_F(GbCpuTest, StalledBusIdlesWithoutExecuting)
+{
+    StallingBus stalledBus;
+    stalledBus.memory.at(0x0100) = 0x00;
+    qnemu::GbCpu stalledCpu(stalledBus);
+
+    stalledCpu.step();
+    EXPECT_EQ(stalledCpu.registers().pc, 0x0100);
+    EXPECT_EQ(stalledCpu.cycles(), 4U);
+
+    stalledBus.stalled = false;
+    stalledCpu.step();
+    EXPECT_EQ(stalledCpu.registers().pc, 0x0101);
 }
 
 TEST_F(GbCpuTest, NopAdvancesPcAndConsumesFourCycles)

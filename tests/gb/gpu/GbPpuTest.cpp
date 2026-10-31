@@ -127,6 +127,29 @@ TEST_F(GbPpuTest, HdmaCopiesAWholeBlock)
     EXPECT_EQ(cgbPpu.read(0xFF55), 0xFF);
 }
 
+TEST_F(GbPpuTest, HdmaSourceKeepsTheFullHighByte)
+{
+    qnemu::GbPpu cgbPpu(true, display, interruptHandler);
+    cgbPpu.write(0xFF40, 0x00);
+    uint16_t source = 0;
+    cgbPpu.setExternalRead([&source](uint16_t address) {
+        source = address;
+        return 0x5A;
+    });
+    cgbPpu.write(0xFF51, 0xD0);
+    cgbPpu.write(0xFF52, 0x00);
+    cgbPpu.write(0xFF53, 0x00);
+    cgbPpu.write(0xFF54, 0x00);
+    cgbPpu.write(0xFF55, 0x00);
+
+    for (int i = 0; i < 32; ++i) {
+        cgbPpu.step();
+    }
+
+    EXPECT_EQ(source, 0xD00F);
+    EXPECT_EQ(cgbPpu.read(0x8000), 0x5A);
+}
+
 TEST_F(GbPpuTest, LycInterruptIsRequestedOnCoincidence)
 {
     interruptHandler->write(0xFFFF, 0x02);

@@ -163,6 +163,11 @@ void GbMmu::setDmgCompatibilityMode(bool enabled)
     workRam->setCgb(!enabled);
 }
 
+bool GbMmu::isCpuStalled() const
+{
+    return gpu->isHdmaActive();
+}
+
 void GbMmu::triggerOamBugWrite(uint16_t address, int rowOffset)
 {
     gpu->triggerOamBugWrite(address, rowOffset);

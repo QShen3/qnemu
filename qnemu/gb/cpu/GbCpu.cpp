@@ -50,6 +50,11 @@ void GbCpu::reset(bool cgb, bool bootRom)
 
 void GbCpu::step()
 {
+    if (bus.isStalled()) {
+        tick(4);
+        return;
+    }
+
     if (locked_) {
         tick(4);
         return;

@@ -238,8 +238,11 @@ void GbPpu::write(uint16_t address, const uint8_t& value)
             return;
         case hdma1Address:
             if (cgb_) {
+                // Source can live in ROM/WRAM/echo RAM; keep the full high
+                // byte.  Masking it to 5 bits aliases 0xA000-0xDFFF to
+                // 0x0000-0x1FFF and reads the wrong data.
                 hdmaSource_ = static_cast<uint16_t>((hdmaSource_ & 0x00F0)
-                    | ((value & 0x1F) << 8));
+                    | (value << 8));
             }
             return;
         case hdma2Address:

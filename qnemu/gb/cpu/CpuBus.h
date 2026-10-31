@@ -26,6 +26,10 @@ public:
     virtual void write(uint16_t address, uint8_t value) = 0;
     virtual void tick(uint8_t cycles) = 0;
 
+    /// True while the CPU must idle for a bus master (currently CGB
+    /// general-purpose VRAM DMA).
+    virtual bool isStalled() const { return false; }
+
     /// DMG OAM corruption hooks (default no-op for test buses and CGB).
     virtual void triggerOamBugWrite(uint16_t /*address*/, int /*rowOffset*/ = 0) {}
     virtual void triggerOamBugRead(uint16_t /*address*/) {}

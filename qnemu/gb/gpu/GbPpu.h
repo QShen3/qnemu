@@ -50,6 +50,7 @@ public:
 
     uint8_t currentMode() const override;
     bool isLcdEnable() const override;
+    bool isHdmaActive() const override { return hdmaActive_ && !hdmaHblank_; }
 
     /// External memory used by OAM DMA/HDMA (ROM, cartridge RAM, WRAM).
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);

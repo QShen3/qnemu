@@ -25,6 +25,9 @@ public:
     /// remain accessible, but WRAM banking follows DMG behaviour.
     virtual void setDmgCompatibilityMode(bool /*enabled*/) {}
 
+    /// True while general-purpose VRAM DMA is holding the CPU.
+    virtual bool isCpuStalled() const { return false; }
+
     /// DMG OAM corruption hooks.
     virtual void triggerOamBugWrite(uint16_t /*address*/, int /*rowOffset*/ = 0) {}
     virtual void triggerOamBugRead(uint16_t /*address*/) {}

@@ -18,6 +18,7 @@ public:
 
     virtual uint8_t currentMode() const = 0;
     virtual bool isLcdEnable() const = 0;
+    virtual bool isHdmaActive() const { return false; }
 
     /// DMG OAM corruption hooks; no-op on GPUs without the quirk.
     virtual void triggerOamBugWrite(uint16_t /*address*/, int /*rowOffset*/ = 0) {}
