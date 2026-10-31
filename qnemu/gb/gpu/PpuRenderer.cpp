@@ -47,15 +47,15 @@ PpuRenderer::BackgroundPixel PpuRenderer::fetchBackgroundPixel(const PpuRegister
     const uint16_t tileMapOffset = static_cast<uint16_t>((highMap ? 0x1C00 : 0x1800)
         + (y / 8) * 32 + (x / 8));
     const uint8_t tileIndex = memory.readVramByte(0, tileMapOffset);
-    const uint8_t attributes = cgb_ ? memory.readVramByte(1, tileMapOffset) : 0x00;
+    const uint8_t attributes = cgbRendering() ? memory.readVramByte(1, tileMapOffset) : 0x00;
 
     BackgroundPixel pixel;
-    if (cgb_) {
+    if (cgbRendering()) {
         pixel.palette = static_cast<uint8_t>(attributes & 0x07);
         pixel.priority = (attributes & 0x80) != 0;
     }
 
-    const uint8_t bank = cgb_ && (attributes & 0x08) != 0 ? 1 : 0;
+    const uint8_t bank = cgbRendering() && (attributes & 0x08) != 0 ? 1 : 0;
     const uint8_t pixelX = static_cast<uint8_t>((attributes & 0x20) != 0 ? 7 - (x & 7) : (x & 7));
     const uint8_t pixelY = static_cast<uint8_t>((attributes & 0x40) != 0 ? 7 - (y & 7) : (y & 7));
     const uint16_t byteIndex = static_cast<uint16_t>(tileDataAddress(registers, tileIndex) + pixelY * 2);
@@ -76,13 +76,13 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
     std::array<bool, FrameBuffer::width> backgroundPriority{};
     bool windowVisible = false;
 
-    const bool backgroundVisible = cgb_ || registers.bgWindowEnabled();
-    if (!cgb_ && sgb_) {
+    const bool backgroundVisible = cgbRendering() || registers.bgWindowEnabled();
+    if (!cgbRendering() && sgb_) {
         for (int x = 0; x < FrameBuffer::width; ++x) {
             frame.at(x, line) = dmgPixelColor(memory, x, line, 0, registers.bgp);
         }
     } else {
-        const uint32_t backgroundOffColor = !cgb_ && memory.dmgCompatibility()
+        const uint32_t backgroundOffColor = !cgbRendering() && memory.dmgCompatibility()
             ? memory.dmgCompatibilityColor(false, 0, registers.bgp, 0)
             : memory.dmgColor(registers.bgp, 0);
         for (int x = 0; x < FrameBuffer::width; ++x) {
@@ -98,7 +98,7 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
                 registers, memory, backgroundX, backgroundY, false);
             backgroundColorIndex.at(x) = pixel.colorIndex;
             backgroundPriority.at(x) = pixel.priority;
-            if (cgb_) {
+            if (cgbRendering()) {
                 frame.at(x, line) = memory.cgbColor(false, pixel.palette, pixel.colorIndex);
             } else {
                 frame.at(x, line) = dmgPixelColor(
@@ -116,7 +116,7 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
                     registers, memory, windowX, windowY, true);
                 backgroundColorIndex.at(x) = pixel.colorIndex;
                 backgroundPriority.at(x) = pixel.priority;
-                if (cgb_) {
+                if (cgbRendering()) {
                     frame.at(x, line) = memory.cgbColor(false, pixel.palette, pixel.colorIndex);
                 } else {
                     frame.at(x, line) = dmgPixelColor(
@@ -158,7 +158,7 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
         ++spriteCount;
     }
 
-    const bool xPriority = !cgb_ || (registers.opri & 0x01) != 0;
+    const bool xPriority = !cgbRendering() || (registers.opri & 0x01) != 0;
     if (xPriority) {
         std::stable_sort(sprites.begin(), sprites.begin() + static_cast<std::ptrdiff_t>(spriteCount),
             [](const Sprite& left, const Sprite& right) {
@@ -174,7 +174,7 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
         const Sprite& sprite = sprites.at(spriteIndex);
         const uint8_t tile = memory.readOamByte(static_cast<uint8_t>(sprite.oamIndex + 2));
         const uint8_t attributes = memory.readOamByte(static_cast<uint8_t>(sprite.oamIndex + 3));
-        const uint8_t bank = cgb_ && (attributes & 0x08) != 0 ? 1 : 0;
+        const uint8_t bank = cgbRendering() && (attributes & 0x08) != 0 ? 1 : 0;
 
         int row = static_cast<int>(line) - sprite.y;
         if ((attributes & 0x40) != 0) {
@@ -208,7 +208,7 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
 
             if (backgroundColorIndex.at(x) != 0) {
                 const bool objectPriority = (attributes & 0x80) != 0;
-                const bool backgroundToObjectPriority = cgb_
+                const bool backgroundToObjectPriority = cgbRendering()
                     && (registers.lcdc & LcdcBits::bgWindowEnable) != 0
                     && backgroundPriority.at(x);
                 if (objectPriority || backgroundToObjectPriority) {
@@ -216,7 +216,7 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
                 }
             }
 
-            if (cgb_) {
+            if (cgbRendering()) {
                 frame.at(x, line) = memory.cgbColor(
                     true, static_cast<uint8_t>(attributes & 0x07), colorIndex);
             } else {

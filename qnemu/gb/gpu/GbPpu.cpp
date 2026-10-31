@@ -137,13 +137,11 @@ uint8_t GbPpu::read(uint16_t address) const
         case vramBankAddress:
             return cgb_ ? static_cast<uint8_t>(0xFE | memory_.vramBank()) : 0xFF;
         case hdma1Address:
-            return cgb_ ? static_cast<uint8_t>(0xE0 | ((hdmaSource_ >> 8) & 0x1F)) : 0xFF;
         case hdma2Address:
-            return cgb_ ? static_cast<uint8_t>(hdmaSource_ & 0xF0) : 0xFF;
         case hdma3Address:
-            return cgb_ ? static_cast<uint8_t>(0xE0 | ((hdmaDestination_ >> 8) & 0x1F)) : 0xFF;
         case hdma4Address:
-            return cgb_ ? static_cast<uint8_t>(hdmaDestination_ & 0xF0) : 0xFF;
+            // HDMA1-4 are write-only and read back as $FF.
+            return 0xFF;
         case hdma5Address:
             return cgb_ ? hdma5_ : 0xFF;
         case bgPaletteSpecAddress:
@@ -358,8 +356,16 @@ void GbPpu::setExternalRead(std::function<uint8_t(uint16_t)> reader)
 void GbPpu::setCgb(bool cgb)
 {
     cgb_ = cgb;
-    renderer_ = PpuRenderer(cgb, sgb_);
+    renderer_ = PpuRenderer(cgb, sgb_, dmgMode_);
     fifo_.setCgb(cgb);
+    fifo_.setDmgMode(dmgMode_);
+}
+
+void GbPpu::setDmgMode(bool dmgMode)
+{
+    dmgMode_ = dmgMode;
+    renderer_.setDmgMode(dmgMode);
+    fifo_.setDmgMode(dmgMode);
 }
 
 void GbPpu::setSgb(GbSgb* sgb)
@@ -377,6 +383,11 @@ void GbPpu::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
 void GbPpu::clearDmgCompatibilityPalette()
 {
     memory_.clearDmgCompatibilityPalette();
+}
+
+void GbPpu::enableDmgCompatibility()
+{
+    memory_.enableDmgCompatibility();
 }
 
 
@@ -830,7 +841,7 @@ void GbPpu::transferHdmaBlock()
     --hdmaRemaining_;
     if (hdmaRemaining_ == 0) {
         hdmaActive_ = false;
-        hdma5_ = static_cast<uint8_t>(hdma5_ | 0x80);
+        hdma5_ = 0xFF;
     } else {
         hdma5_ = static_cast<uint8_t>((hdma5_ & 0x80) | (hdmaRemaining_ - 1));
     }

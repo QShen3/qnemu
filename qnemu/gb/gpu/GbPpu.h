@@ -50,9 +50,11 @@ public:
     /// External memory used by OAM DMA/HDMA (ROM, cartridge RAM, WRAM).
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);
     void setCgb(bool cgb);
+    void setDmgMode(bool dmgMode);
     void setSgb(GbSgb* sgb);
     void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
     void clearDmgCompatibilityPalette();
+    void enableDmgCompatibility();
 
     /// DMG OAM corruption quirk.  CGB hardware and SGB models that use the
     /// CGB PPU path must leave this disabled.
@@ -90,6 +92,7 @@ private:
     void writeLy(uint8_t value);
 
     bool cgb_;
+    bool dmgMode_ = false;
     std::shared_ptr<DisplayInterface> display_;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler_;
     std::function<uint8_t(uint16_t)> externalRead_;

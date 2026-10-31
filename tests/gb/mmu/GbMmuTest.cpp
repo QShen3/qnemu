@@ -229,6 +229,41 @@ TEST_F(GbMmuTest, RoutesJoypadTimerApuAndInterrupts)
     EXPECT_EQ(mmu->read(0xFF0F), 0xEF);
 }
 
+TEST_F(GbMmuTest, MapsBootRomAndUnmapsOnFF50)
+{
+    std::array<uint8_t, 0x900> bootRom {};
+    for (std::size_t index = 0; index < bootRom.size(); ++index) {
+        bootRom.at(index) = static_cast<uint8_t>(index ^ 0x5A);
+    }
+    bootRom.at(0x0100) = 0xEE;
+    mmu->setBootRom(bootRom);
+    mmu->setBootRomActive(true);
+
+    EXPECT_EQ(mmu->read(0x0000), bootRom.at(0x0000));
+    EXPECT_EQ(mmu->read(0x00FF), bootRom.at(0x00FF));
+    EXPECT_EQ(mmu->read(0x0200), bootRom.at(0x0200));
+    EXPECT_EQ(mmu->read(0x08FF), bootRom.at(0x08FF));
+    // The header gap belongs to the cartridge, not the boot ROM.
+    EXPECT_EQ(mmu->read(0x0100), 0x00);
+    EXPECT_EQ(mmu->read(0x0900), 0x00);
+    EXPECT_EQ(mmu->read(0xFF50), 0xFF);
+
+    mmu->write(0xFF50, 0x11);
+    EXPECT_FALSE(mmu->isBootRomActive());
+    EXPECT_EQ(mmu->read(0x0000), 0x00);
+}
+
+TEST_F(GbMmuTest, DmgCompatibilityModeKeepsCgbHardwareRegisters)
+{
+    mmu->setCgb(true);
+    mmu->setDmgCompatibilityMode(true);
+
+    EXPECT_EQ(mmu->read(0xFF70), 0xFF);  // WRAM banking follows DMG
+    EXPECT_EQ(mmu->read(0xFF72), 0x00);  // CGB hardware registers remain
+    EXPECT_EQ(mmu->read(0xFF74), 0xFF);  // FF74 locks to FF in DMG mode
+    EXPECT_EQ(mmu->read(0xFF75), 0x8F);  // bits 7 and 3-0 read as 1
+}
+
 TEST_F(GbMmuTest, UnmappedReadsReturnFF)
 {
     EXPECT_EQ(mmu->read(0xFF03), 0xFF);

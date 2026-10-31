@@ -124,7 +124,7 @@ TEST_F(GbPpuTest, HdmaCopiesAWholeBlock)
     for (int i = 0; i < 16; ++i) {
         EXPECT_EQ(cgbPpu.read(static_cast<uint16_t>(0x8000 + i)), i);
     }
-    EXPECT_EQ(cgbPpu.read(0xFF55), 0x80);
+    EXPECT_EQ(cgbPpu.read(0xFF55), 0xFF);
 }
 
 TEST_F(GbPpuTest, LycInterruptIsRequestedOnCoincidence)

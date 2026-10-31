@@ -27,7 +27,7 @@ TEST(PpuMemoryTest, CgbPaletteAutoIncrementAndColor)
     memory.writePaletteData(false, 0x1F);
     memory.writePaletteData(false, 0x00);
 
-    EXPECT_EQ(memory.readPaletteSpec(false), 0x82);
+    EXPECT_EQ(memory.readPaletteSpec(false), 0xC2);
     EXPECT_EQ(memory.cgbColor(false, 0, 0), qnemu::rgb(255, 0, 0));
 
     memory.writePaletteSpec(true, 0x86);

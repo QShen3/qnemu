@@ -30,7 +30,7 @@ public:
     GbCpu(const GbCpu&) = delete;
     GbCpu& operator=(const GbCpu&) = delete;
 
-    void reset(bool cgb = true);
+    void reset(bool cgb = true, bool bootRom = false);
 
     /**
      * Execute one instruction, service a pending interrupt, or idle one

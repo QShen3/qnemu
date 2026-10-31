@@ -23,7 +23,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 389 CTest cases, including 160 curated test ROMs.
+- 398 CTest cases, including 163 curated test ROMs.
 
 ## Build
 
@@ -119,8 +119,19 @@ use them locally only.
 
 The committed CGB binary means the normal build needs **no RGBDS dependency**.
 Rebuilding is optional and only documented in
-`third_party/sameboy/src/build.sh`. The emulator does not execute the CGB boot
-ROM yet; `--boot-model` still reproduces the post-boot state directly.
+`third_party/sameboy/src/build.sh`.
+
+Enable it in **Settings → Game Boy Color → Load CGB boot ROM** (default off).
+When enabled, CGB hardware starts by executing the QNEMU boot ROM: CGB-capable
+cartridges stay in CGB mode, while DMG-only cartridges switch to DMG
+compatibility through KEY0 and keep the CGB PPU registers available. Reopen the
+game after changing the setting. DMG/SGB models still use the HLE
+`--boot-model` path.
+
+The boot ROM passes Mooneye `boot_regs-cgb` and `boot_hwio-C`. `boot_div-cgb*`
+is not registered as a test: it asserts the official CGB boot ROM's exact cycle
+count, which SameBoy's reimplementation (and this QNEMU-logo variant) does not
+reproduce.
 
 CI runs `tests/rom/check_official_boot_roms.py`, which rejects tracked files
 matching known official DMG/MGB/SGB/SGB2/CGB/CGB0/AGB boot ROMs.
@@ -561,7 +572,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **389/389 CTest cases**, including 160 ROM tests.
+The current set is **398/398 CTest cases**, including 163 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -730,10 +741,11 @@ fail when run directly:
   `MASK_EN` effects are not implemented yet. The command/palette/attribute
   protocol, default border, custom border transfers and colorization are
   implemented.
-- The CGB boot ROM is not executed yet: the QNEMU-logo boot ROM is staged in
-  `third_party/sameboy/bootroms/`, but its logo animation, header checksum
-  check and boot hand-off are skipped. The compatibility palette selection and
-  data are implemented directly instead.
+- The CGB boot ROM is optional (Settings → Game Boy Color → Load CGB boot
+  ROM). When enabled, it runs the QNEMU-logo image and performs the real boot
+  hand-off; when disabled, the emulator applies the post-boot state directly.
+  DMG/SGB models always use the HLE `--boot-model` path. `boot_div-cgb*` is not
+  a pass criterion because it expects the official ROM's exact cycle count.
 - The library uses references to the original ROM files. Copy/import into a
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
@@ -769,6 +781,7 @@ fail when run directly:
 | Key profiles     | ✅          | manual smoke test |
 | Model selection  | ✅          | CLI + settings |
 | CGB DMG colorization | ✅      | unit + manual |
+| CGB boot ROM     | ✅ (optional) | Mooneye boot_regs/hwio |
 | Pause / resume   | ✅          | manual |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |

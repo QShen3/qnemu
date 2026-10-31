@@ -66,6 +66,8 @@ public:
 
     void setSaveDirectory(std::string directory) { saveDirectory = std::move(directory); }
     void setSoundEnabled(bool enabled);
+    void setBootRomEnabled(bool enabled) { bootRomEnabled = enabled; }
+    bool isBootRomEnabled() const { return bootRomEnabled; }
 
     const FrameBuffer& frameBuffer() const;
 
@@ -75,6 +77,8 @@ private:
 
     GbModel model;
     bool cgbMode = false;
+    bool bootRomEnabled = false;
+    bool bootRomActive = false;
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GbSgb> sgb;
     std::unique_ptr<GbMmu> mmu;

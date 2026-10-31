@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <memory>
+#include <span>
 
 #include "qnemu/gb/apu/GbApu.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
@@ -40,9 +42,16 @@ public:
     void reset() override;
     void setDoubleSpeed(bool doubleSpeed) override;
     void setCgb(bool cgb) override;
+    void setDmgCompatibilityMode(bool enabled) override;
     void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override;
     void triggerOamBugRead(uint16_t address) override;
     void triggerOamBugReadIncrease(uint16_t address) override;
+
+    /// Boot ROM mapping.  The image uses the standard CGB layout, so the
+    /// 0x0100-0x01FF cartridge-header gap is never served from it.
+    void setBootRom(std::span<const uint8_t> rom) { bootRom = rom; }
+    void setBootRomActive(bool active) { bootRomActive = active; }
+    bool isBootRomActive() const { return bootRomActive; }
 
 private:
     std::unique_ptr<GbApu> apu;
@@ -53,6 +62,11 @@ private:
     std::unique_ptr<GbJoypad> joypad;
     std::unique_ptr<GbWorkRam> workRam;
     std::unique_ptr<GbTimer> timer;
+    std::span<const uint8_t> bootRom;
+    bool bootRomActive = false;
+    bool cgbHardware = false;
+    bool dmgMode = false;
+    std::array<uint8_t, 4> cgbUnmappedRegisters {};
 };
 
 }  // namespace qnemu

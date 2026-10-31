@@ -16,6 +16,7 @@
 #include "qnemu/gb/apu/GbChannel2.h"
 #include "qnemu/gb/apu/GbChannel3.h"
 #include "qnemu/gb/apu/GbChannel4.h"
+#include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
@@ -93,6 +94,16 @@ Gb::Gb(GbModel model,
     });
     bus = std::make_unique<GbCpuBus>(
         *mmu, model == GbModel::cgb && cartridge->isGbcCartridge());
+    bus->setCgbModeCallback([this](bool mode) {
+        // The PPU stays on CGB hardware registers in DMG compatibility mode;
+        // only its rendering mode switches to the DMG path.
+        ppu->setDmgMode(!mode);
+        if (mode) {
+            ppu->clearDmgCompatibilityPalette();
+        } else {
+            ppu->enableDmgCompatibility();
+        }
+    });
     cpu = std::make_unique<GbCpu>(*bus);
 }
 
@@ -129,13 +140,21 @@ void Gb::loadCartridge(const char* filePath)
     if (sgb) {
         sgb->setHeader(header);
     }
-    const bool cgb = model == GbModel::cgb && header.cgb;
-    cgbMode = cgb;
+    const bool hardwareCgb = model == GbModel::cgb;
+    const bool cgb = hardwareCgb && (header.cgb || bootRomEnabled);
+    cgbMode = hardwareCgb && header.cgb;
+    // The bundled image is a CGB boot ROM.  It runs on CGB hardware even for
+    // DMG-only cartridges: the ROM switches to DMG compatibility by writing
+    // KEY0=$04, and the CPU/PPU follow that write.
+    bootRomActive = bootRomEnabled && hardwareCgb;
     bus->setCgb(cgb);
     bus->reset();
     ppu->setCgb(cgb);
+    mmu->setBootRom(cgbBootRom());
+    mmu->setBootRomActive(bootRomActive);
     mmu->reset();
-    if (model == GbModel::cgb && !header.cgb) {
+    ppu->setDmgMode(false);
+    if (!bootRomActive && model == GbModel::cgb && !header.cgb) {
         ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
             header.titleBytes,
             header.oldLicensee,
@@ -144,7 +163,7 @@ void Gb::loadCartridge(const char* filePath)
     } else {
         ppu->clearDmgCompatibilityPalette();
     }
-    cpu->reset(cgb);
+    cpu->reset(cgb, bootRomActive);
 
     saveManager = std::make_unique<SaveManager>(
         saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, filePath);

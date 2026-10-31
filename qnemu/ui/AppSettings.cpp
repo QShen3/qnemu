@@ -94,6 +94,8 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
         && gbLaunchModelValue != QStringLiteral("sgb")) {
         gbLaunchModelValue = QStringLiteral("cgb");
     }
+    loadCgbBootRomValue = settings.value(QStringLiteral("platforms/gb/loadCgbBootRom"), false)
+                              .toBool();
 
     loadKeyProfiles();
 }
@@ -232,6 +234,16 @@ void AppSettings::setGbLaunchModel(const QString& value)
     gbLaunchModelValue = model;
     settings.setValue(QStringLiteral("platforms/gb/launchModel"), model);
     emit gbLaunchModelChanged();
+}
+
+void AppSettings::setLoadCgbBootRom(bool value)
+{
+    if (value == loadCgbBootRomValue) {
+        return;
+    }
+    loadCgbBootRomValue = value;
+    settings.setValue(QStringLiteral("platforms/gb/loadCgbBootRom"), value);
+    emit loadCgbBootRomChanged();
 }
 
 QString AppSettings::keyName(int key) const

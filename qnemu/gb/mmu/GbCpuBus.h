@@ -5,6 +5,8 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <utility>
 
 #include "qnemu/gb/cpu/CpuBus.h"
 #include "qnemu/gb/mmu/GbMmuInterface.h"
@@ -26,12 +28,20 @@ public:
 
     void setCgb(bool value) { cgb = value; mmu.setCgb(value); }
 
+    /// Called when the CGB boot ROM switches the CPU to DMG compatibility via
+    /// KEY0.  The complete system uses this to switch the PPU renderer too.
+    void setCgbModeCallback(std::function<void(bool)> callback)
+    {
+        cgbModeCallback = std::move(callback);
+    }
+
     /// Returns the bus to normal speed.  Used when a cartridge is (re)loaded.
     void reset()
     {
         doubleSpeed = false;
         speedSwitchArmed = false;
         speedRemainder = 0;
+        key0Locked = false;
         mmu.setDoubleSpeed(false);
     }
 
@@ -50,7 +60,19 @@ public:
 
     void write(uint16_t address, uint8_t value) override
     {
+        if (address == 0xFF50) {
+            key0Locked = true;
+            mmu.write(address, value);
+            return;
+        }
         if (address == 0xFF4C) {
+            if (cgb && !key0Locked && (value & 0x04) != 0) {
+                cgb = false;
+                mmu.setDmgCompatibilityMode(true);
+                if (cgbModeCallback) {
+                    cgbModeCallback(false);
+                }
+            }
             return;
         }
         if (address == 0xFF4D) {
@@ -110,7 +132,9 @@ private:
     bool cgb = false;
     bool doubleSpeed = false;
     bool speedSwitchArmed = false;
+    bool key0Locked = false;
     uint8_t speedRemainder = 0;
+    std::function<void(bool)> cgbModeCallback;
 };
 
 }  // namespace qnemu

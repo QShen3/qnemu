@@ -1,0 +1,32 @@
+/*
+ *  Copyright [2026] <qazxdrcssc2006@163.com>
+ *
+ * Generated from third_party/sameboy/bootroms/cgb_boot.bin. The boot ROM is
+ * derived from SameBoy's Expat/MIT CGB boot ROM; see
+ * third_party/sameboy/LICENSE and third_party/sameboy/README.md.
+ */
+
+#include <array>
+#include <cstdint>
+#include <span>
+
+#include "qnemu/gb/boot/GbCgbBootRom.h"
+
+namespace qnemu
+{
+
+namespace
+{
+
+constexpr std::array<uint8_t, 2304> cgbBootRomData = {
+@QNEMU_CGB_BOOT_ROM_BYTES@
+};
+
+}  // namespace
+
+std::span<const uint8_t> cgbBootRom()
+{
+    return cgbBootRomData;
+}
+
+}  // namespace qnemu

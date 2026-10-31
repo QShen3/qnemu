@@ -49,6 +49,11 @@ AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* p
             setStatusText(QStringLiteral("GB launch mode changed; reopen the game to apply."));
         }
     });
+    connect(settingsValue, &AppSettings::loadCgbBootRomChanged, this, [this]() {
+        if (gb) {
+            setStatusText(QStringLiteral("CGB boot ROM setting changed; reopen the game to apply."));
+        }
+    });
     connect(settingsValue, &AppSettings::activeKeyBindingsChanged, this, &AppController::applyKeyBindings);
     connect(settingsValue, &AppSettings::activeKeyProfileChanged, this, &AppController::applyKeyBindings);
 }
@@ -142,6 +147,7 @@ void AppController::openRom(const QUrl& url)
             std::move(sound), input);
         system->setSaveDirectory(settingsValue->savePath().toStdString());
         system->setSoundEnabled(settingsValue->soundEnabled());
+        system->setBootRomEnabled(settingsValue->loadCgbBootRom());
         system->loadCartridge(path.toStdString().c_str());
 
         gb = std::move(system);

@@ -76,9 +76,18 @@ assembles the ROM, checks its size, and updates `bootroms/`. Update
 
 ## Validation
 
-The CGB ROM was checked with SameBoy's tester against Mooneye's
-`misc/boot_regs-cgb.gb` (all register assertions pass), and the QNEMU wordmark
-was verified visually.
+qnemu's `gb_test_runner --boot-rom` passes Mooneye's `misc/boot_regs-cgb.gb`
+(all register assertions pass) and `misc/boot_hwio-C.gb` (I/O values), and
+`cgb-acid2` still matches its reference image after booting through the QNEMU
+ROM. The QNEMU wordmark was verified visually.
+
+`boot_div-cgb*` is intentionally not registered: it asserts the official CGB
+boot ROM's exact cycle count. SameBoy's original CGB boot ROM also fails that
+test under SameBoy's tester, and this QNEMU-logo variant has different timing.
+
+DMG-only cartridges run through the CGB boot ROM's compatibility path: KEY0
+switches the CPU/WRAM to DMG mode while the CGB PPU registers (VBK, HDMA,
+palette index/data, OPRI) remain available, matching CGB hardware.
 
 ## Official boot ROMs
 

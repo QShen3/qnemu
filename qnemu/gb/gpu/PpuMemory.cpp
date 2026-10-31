@@ -22,7 +22,9 @@ void PpuMemory::reset()
     }
     oam_.fill(0x00);
     backgroundPalette_.fill(0x00);
-    objectPalette_.fill(0x00);
+    // Object palette CRAM is not initialized by the boot ROM (except the
+    // unused OBJ0 color 0 byte); hardware reads the rest as $FF.
+    objectPalette_.fill(0xFF);
     vramBank_ = 0x00;
     backgroundPaletteSpec_ = 0x00;
     objectPaletteSpec_ = 0x00;
@@ -71,7 +73,8 @@ void PpuMemory::writeOamByte(uint8_t offset, uint8_t value)
 
 uint8_t PpuMemory::readPaletteSpec(bool object) const
 {
-    return object ? objectPaletteSpec_ : backgroundPaletteSpec_;
+    // Bit 6 is unused and reads as 1; bit 7 is auto-increment.
+    return static_cast<uint8_t>(0x40 | (object ? objectPaletteSpec_ : backgroundPaletteSpec_));
 }
 
 void PpuMemory::writePaletteSpec(bool object, uint8_t value)

@@ -26,9 +26,11 @@ class GbSgb;
 class PpuRenderer
 {
 public:
-    explicit PpuRenderer(bool cgb, GbSgb* sgb = nullptr) : cgb_(cgb), sgb_(sgb) {}
+    explicit PpuRenderer(bool cgb, GbSgb* sgb = nullptr, bool dmgMode = false)
+        : cgb_(cgb), sgb_(sgb), dmgMode_(dmgMode) {}
 
     void setSgb(GbSgb* sgb) { sgb_ = sgb; }
+    void setDmgMode(bool dmgMode) { dmgMode_ = dmgMode; }
 
     /// Returns true when the window contributed at least one pixel to the line.
     bool renderLine(const PpuRegisters& registers,
@@ -75,8 +77,11 @@ private:
 
     static uint16_t tileDataAddress(const PpuRegisters& registers, uint8_t tileIndex);
 
+    bool cgbRendering() const { return cgb_ && !dmgMode_; }
+
     bool cgb_;
     GbSgb* sgb_ = nullptr;
+    bool dmgMode_ = false;
 };
 
 }  // namespace qnemu

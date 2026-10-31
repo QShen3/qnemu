@@ -7,6 +7,7 @@ set_target_properties(gb_test_runner PROPERTIES
 target_include_directories(gb_test_runner PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(gb_test_runner PRIVATE
     qnemu_warnings
+    gb_bootrom
     gb_cpu
     gb_interrupt
     gb_ppu
@@ -248,6 +249,19 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "mooneye;boot" --model dmg --boot-model "${BOOT_MODEL}")
         endforeach()
 
+        # CGB boot ROM execution, instead of the HLE post-boot state.
+        # boot_div-* is intentionally not registered: it asserts the official
+        # CGB boot ROM's exact cycle count, which SameBoy's reimplementation
+        # (and this QNEMU-logo variant) does not reproduce.
+        foreach(RELATIVE IN ITEMS
+            "misc/boot_regs-cgb.gb"
+            "misc/boot_hwio-C.gb"
+        )
+            qnemu_add_rom_test("mooneye_bootrom_${RELATIVE}"
+                "${MOONEYE_ROM_ROOT}/${RELATIVE}"
+                "mooneye;boot" --model cgb --ppu --apu --boot-rom)
+        endforeach()
+
         # Unused I/O bits and unmapped FFxx addresses read as 1s on DMG/SGB.
         # The APU is attached so its unused-bit masks are exercised too.
         qnemu_add_rom_test("mooneye_bits_unused_hwio_gs"
@@ -326,6 +340,15 @@ if(QNEMU_ENABLE_ROM_TESTS)
         set_tests_properties(rom_acid2_cgb PROPERTIES
             TIMEOUT 120
             LABELS "rom;acid2;ppu")
+
+        add_test(
+            NAME rom_acid2_cgb_boot_rom
+            COMMAND gb_test_runner "${ACID2_CGB_ROM}"
+                --model cgb --boot-rom --frames 240
+                --compare-image "${ACID2_CGB_REFERENCE}")
+        set_tests_properties(rom_acid2_cgb_boot_rom PROPERTIES
+            TIMEOUT 120
+            LABELS "rom;acid2;ppu;boot")
     endif()
 
     if(EXISTS "${QNEMU_TEST_ROM_ROOT}/dmg-acid2"

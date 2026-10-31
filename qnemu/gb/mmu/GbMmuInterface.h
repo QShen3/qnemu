@@ -21,6 +21,10 @@ public:
     /// Selects CGB or DMG compatibility behavior for model-specific registers.
     virtual void setCgb(bool /*cgb*/) {}
 
+    /// CPU entered DMG compatibility mode via KEY0.  CGB hardware registers
+    /// remain accessible, but WRAM banking follows DMG behaviour.
+    virtual void setDmgCompatibilityMode(bool /*enabled*/) {}
+
     /// DMG OAM corruption hooks.
     virtual void triggerOamBugWrite(uint16_t /*address*/, int /*rowOffset*/ = 0) {}
     virtual void triggerOamBugRead(uint16_t /*address*/) {}

@@ -41,7 +41,7 @@ void PpuFifo::startLine(const PpuRegisters& registers,
     }
     startupTicks_ = static_cast<uint16_t>(14 + scrollPenalty);
 
-    const bool backgroundVisible = cgb_ || registers.bgWindowEnabled();
+    const bool backgroundVisible = cgbRendering() || registers.bgWindowEnabled();
     windowStartX_ = -1;
     if (backgroundVisible && registers.windowEnabled()
         && registers.wx >= 7 && registers.wx <= 166
@@ -76,7 +76,7 @@ void PpuFifo::fillFifo(const PpuRegisters& registers, const PpuMemory& memory)
         return;
     }
 
-    const bool backgroundVisible = cgb_ || registers.bgWindowEnabled();
+    const bool backgroundVisible = cgbRendering() || registers.bgWindowEnabled();
     const int backgroundBase = outputX_ + static_cast<int>(fifoSize_);
     for (int index = 0; index < 8; ++index) {
         Pixel pixel;
@@ -106,13 +106,13 @@ void PpuFifo::outputPixel(const PpuRegisters& registers,
     FrameBuffer& frame)
 {
     const Pixel pixel = popPixel();
-    const bool backgroundVisible = cgb_ || registers.bgWindowEnabled();
+    const bool backgroundVisible = cgbRendering() || registers.bgWindowEnabled();
     const uint8_t colorIndex = backgroundVisible ? pixel.colorIndex : 0;
 
     backgroundColorIndex_.at(static_cast<std::size_t>(outputX_)) = colorIndex;
     backgroundPriority_.at(static_cast<std::size_t>(outputX_)) = backgroundVisible && pixel.priority;
 
-    if (cgb_) {
+    if (cgbRendering()) {
         frame.at(outputX_, line_) = memory.cgbColor(false, pixel.palette, colorIndex);
     } else if (sgb_) {
         frame.at(outputX_, line_) = renderer_.dmgPixelColor(

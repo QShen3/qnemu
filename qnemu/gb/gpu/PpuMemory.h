@@ -50,6 +50,9 @@ public:
     /// BGP/OBP0/OBP1 then select among these CGB palette entries.
     void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
     void clearDmgCompatibilityPalette() { dmgCompatibility_ = false; }
+    /// Keep the CGB palette RAM as-is and use it for DMG rendering.  Used
+    /// after a real CGB boot ROM has written the compatibility palettes.
+    void enableDmgCompatibility() { dmgCompatibility_ = true; }
     bool dmgCompatibility() const { return dmgCompatibility_; }
     uint32_t dmgCompatibilityColor(bool object, uint8_t palette, uint8_t dmgPalette,
         uint8_t colorIndex) const;

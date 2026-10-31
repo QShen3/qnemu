@@ -9,6 +9,25 @@ function(qnemu_add_gb_library target)
     target_link_libraries(${target} PRIVATE qnemu_warnings)
 endfunction()
 
+# Bundled QNEMU CGB boot ROM.  The binary is committed under third_party and
+# embedded here at configure time, so the normal build does not need RGBDS.
+set(QNEMU_CGB_BOOT_ROM_BIN
+    "${PROJECT_SOURCE_DIR}/third_party/sameboy/bootroms/cgb_boot.bin")
+if(NOT EXISTS "${QNEMU_CGB_BOOT_ROM_BIN}")
+    message(FATAL_ERROR "Missing CGB boot ROM: ${QNEMU_CGB_BOOT_ROM_BIN}")
+endif()
+file(READ "${QNEMU_CGB_BOOT_ROM_BIN}" QNEMU_CGB_BOOT_ROM_HEX HEX)
+string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1, "
+    QNEMU_CGB_BOOT_ROM_BYTES "${QNEMU_CGB_BOOT_ROM_HEX}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/boot/GbCgbBootRom.cpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GbCgbBootRom.cpp"
+    @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${QNEMU_CGB_BOOT_ROM_BIN}")
+qnemu_add_gb_library(gb_bootrom
+    "${CMAKE_CURRENT_BINARY_DIR}/GbCgbBootRom.cpp")
+
 # SM83 CPU core.
 qnemu_add_gb_library(gb_cpu
     ${CMAKE_CURRENT_SOURCE_DIR}/cpu/GbCpu.cpp)
@@ -80,6 +99,7 @@ qnemu_add_gb_library(gb
     ${CMAKE_CURRENT_SOURCE_DIR}/Gb.cpp)
 target_link_libraries(gb
     PUBLIC
+        gb_bootrom
         gb_cpu
         gb_interrupt
         gb_ppu

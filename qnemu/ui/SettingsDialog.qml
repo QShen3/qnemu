@@ -629,6 +629,35 @@ ApplicationWindow {
                                 font.pixelSize: 11
                                 wrapMode: Text.WordWrap
                             }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Load CGB boot ROM")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Run the bundled QNEMU CGB boot ROM instead of initializing the post-boot state directly. Applies on CGB hardware, including DMG-only cartridges in compatibility mode. Reopen the game after changing.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Switch {
+                                    checked: settings.loadCgbBootRom
+                                    onToggled: settings.loadCgbBootRom = checked
+                                }
+                            }
                         }
 
                         SettingsCard {

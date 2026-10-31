@@ -34,6 +34,10 @@ GbMmu::GbMmu(std::unique_ptr<GbApu> apu,
 
 uint8_t GbMmu::read(uint16_t address) const
 {
+    if (bootRomActive && bootRom.size() >= 0x0900
+        && (address <= 0x00FF || (address >= 0x0200 && address <= 0x08FF))) {
+        return bootRom[address];
+    }
     if (address <= MemoryRomBank01End) {
         return cartridge->read(address);
     } else if (address <= VideoRamEnd) {
@@ -50,12 +54,23 @@ uint8_t GbMmu::read(uint16_t address) const
         return timer->read(address);
     } else if (address >= 0xFF10 && address <= 0xFF26) {
         return apu->read(address);
+    } else if (address == 0xFF76 || address == 0xFF77) {
+        return apu->read(address);
     } else if (address >= 0xFF30 && address <= 0xFF3F) {
         return apu->read(address);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
         return gpu->read(address);
     } else if (address == 0xFF4F) {
         return gpu->read(address);
+    } else if (address == 0xFF50) {
+        return 0xFF;
+    } else if (address >= 0xFF72 && address <= 0xFF75) {
+        if (!cgbHardware || (address == 0xFF74 && dmgMode)) {
+            return 0xFF;
+        }
+        return address == 0xFF75
+            ? static_cast<uint8_t>(0x8F | (cgbUnmappedRegisters.at(3) & 0x70))
+            : cgbUnmappedRegisters.at(address - 0xFF72);
     } else if (address >= 0xFF51 && address <= 0xFF55) {
         return gpu->read(address);
     } else if (address >= 0xFF68 && address <= 0xFF6C) {
@@ -73,6 +88,10 @@ uint8_t GbMmu::read(uint16_t address) const
 
 void GbMmu::write(uint16_t address, const uint8_t& value)
 {
+    if (address == 0xFF50) {
+        bootRomActive = false;
+        return;
+    }
     if (address <= MemoryRomBank01End) {
         cartridge->write(address, value);
     } else if (address <= VideoRamEnd) {
@@ -106,6 +125,11 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
         gpu->write(address, value);
     } else if (address == 0xFF4F) {
         gpu->write(address, value);
+    } else if (address >= 0xFF72 && address <= 0xFF75) {
+        if (cgbHardware) {
+            cgbUnmappedRegisters.at(address - 0xFF72) =
+                address == 0xFF75 ? static_cast<uint8_t>(value & 0x70) : value;
+        }
     } else if (address >= 0xFF51 && address <= 0xFF55) {
         gpu->write(address, value);
     } else if (address >= 0xFF68 && address <= 0xFF6C) {
@@ -126,9 +150,17 @@ void GbMmu::setDoubleSpeed(bool doubleSpeed)
     timer->setDoubleSpeed(doubleSpeed);
 }
 
-void GbMmu::setCgb(bool cgb)
+void GbMmu::setCgb(bool value)
 {
-    workRam->setCgb(cgb);
+    cgbHardware = value;
+    dmgMode = !value;
+    workRam->setCgb(value);
+}
+
+void GbMmu::setDmgCompatibilityMode(bool enabled)
+{
+    dmgMode = enabled;
+    workRam->setCgb(!enabled);
 }
 
 void GbMmu::triggerOamBugWrite(uint16_t address, int rowOffset)
@@ -171,6 +203,7 @@ void GbMmu::reset()
     timer->reset();
     joypad->reset();
     interruptHandler->reset();
+    cgbUnmappedRegisters.fill(0);
 }
 
 }  // namespace qnemu

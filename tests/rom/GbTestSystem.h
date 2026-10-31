@@ -7,6 +7,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,10 @@ public:
     bool loadRomData(const std::vector<uint8_t>& romData, bool cgb,
         bool enablePpu = false, bool enableApu = false);
 
+    /// Execute the bundled QNEMU CGB boot ROM instead of applying post-boot
+    /// state.  Call before loadRom()/loadRomData().
+    void enableBootRom();
+
     /// Reproduce the model-specific post-boot I/O state without executing a
     /// boot ROM.  CPU registers are applied by the runner.
     void applyBootState(BootModel model);
@@ -88,6 +93,10 @@ private:
     std::array<uint8_t, 0x10000> memory_{};
 
     bool cgb_ = true;
+    bool cgbHardware_ = true;
+    std::span<const uint8_t> bootRom_;
+    bool bootRomEnabled_ = false;
+    bool bootRomActive_ = false;
     const qnemu::GbMbcFactory mbcFactory;
     std::unique_ptr<qnemu::GbCartridge> cartridge;
 

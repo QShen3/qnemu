@@ -31,12 +31,19 @@ class GbSgb;
 class PpuFifo
 {
 public:
-    explicit PpuFifo(bool cgb) : renderer_(cgb), cgb_(cgb) {}
+    explicit PpuFifo(bool cgb, bool dmgMode = false)
+        : renderer_(cgb, nullptr, dmgMode), cgb_(cgb), dmgMode_(dmgMode) {}
 
     void setCgb(bool cgb)
     {
         cgb_ = cgb;
-        renderer_ = PpuRenderer(cgb, sgb_);
+        renderer_ = PpuRenderer(cgb, sgb_, dmgMode_);
+    }
+
+    void setDmgMode(bool dmgMode)
+    {
+        dmgMode_ = dmgMode;
+        renderer_.setDmgMode(dmgMode);
     }
 
     void setSgb(GbSgb* sgb)
@@ -88,9 +95,11 @@ private:
     void outputPixel(const PpuRegisters& registers, const PpuMemory& memory, FrameBuffer& frame);
     void prepareSpritePenalties(const PpuRegisters& registers, const PpuMemory& memory);
     void applySpritePenalties();
+    bool cgbRendering() const { return cgb_ && !dmgMode_; }
 
     PpuRenderer renderer_;
     bool cgb_;
+    bool dmgMode_ = false;
     GbSgb* sgb_ = nullptr;
 
     uint8_t line_ = 0;

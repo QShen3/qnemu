@@ -34,6 +34,7 @@ class AppSettings : public QObject
     Q_PROPERTY(int scalePercent READ scalePercent WRITE setScalePercent NOTIFY scalePercentChanged)
     Q_PROPERTY(bool soundEnabled READ soundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
     Q_PROPERTY(QString gbLaunchModel READ gbLaunchModel WRITE setGbLaunchModel NOTIFY gbLaunchModelChanged)
+    Q_PROPERTY(bool loadCgbBootRom READ loadCgbBootRom WRITE setLoadCgbBootRom NOTIFY loadCgbBootRomChanged)
 
     Q_PROPERTY(QString activeKeyProfile READ activeKeyProfile WRITE setActiveKeyProfile NOTIFY activeKeyProfileChanged)
     Q_PROPERTY(QStringList profileNames READ profileNames NOTIFY keyProfilesChanged)
@@ -52,6 +53,7 @@ public:
     int scalePercent() const { return scalePercentValue; }
     bool soundEnabled() const { return soundEnabledValue; }
     QString gbLaunchModel() const { return gbLaunchModelValue; }
+    bool loadCgbBootRom() const { return loadCgbBootRomValue; }
 
     QString activeKeyProfile() const { return activeKeyProfileValue; }
     QStringList profileNames() const;
@@ -66,6 +68,7 @@ public:
     void setScalePercent(int value);
     void setSoundEnabled(bool value);
     void setGbLaunchModel(const QString& value);
+    void setLoadCgbBootRom(bool value);
     void setActiveKeyProfile(const QString& value);
 
     Q_INVOKABLE QString keyName(int key) const;
@@ -82,6 +85,7 @@ signals:
     void scalePercentChanged();
     void soundEnabledChanged();
     void gbLaunchModelChanged();
+    void loadCgbBootRomChanged();
     void activeKeyProfileChanged();
     void keyProfilesChanged();
     void activeKeyBindingsChanged();
@@ -108,6 +112,7 @@ private:
     int scalePercentValue = 200;
     bool soundEnabledValue = true;
     QString gbLaunchModelValue = QStringLiteral("cgb");
+    bool loadCgbBootRomValue = false;
 
     QVariantList keyProfilesValue;
     QString activeKeyProfileValue;

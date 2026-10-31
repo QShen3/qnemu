@@ -15,6 +15,7 @@
 #include "qnemu/gb/apu/GbChannel2.h"
 #include "qnemu/gb/apu/GbChannel3.h"
 #include "qnemu/gb/apu/GbChannel4.h"
+#include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "tests/rom/GbTestSystem.h"
 #include "tests/support/NullSound.h"
@@ -63,9 +64,17 @@ bool GbTestSystem::loadRomData(const std::vector<uint8_t>& romData, bool cgb,
     return finishLoad(cgb, enablePpu, enableApu);
 }
 
+void GbTestSystem::enableBootRom()
+{
+    bootRom_ = qnemu::cgbBootRom();
+    bootRomEnabled_ = true;
+}
+
 bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
 {
     cgb_ = cgb;
+    cgbHardware_ = cgb;
+    bootRomActive_ = bootRomEnabled_ && cgb;
 
     ppu.reset();
     display.reset();
@@ -76,10 +85,10 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
     if (enablePpu) {
         display = std::make_shared<MemoryDisplay>();
         const auto header = cartridge->cartridgeHeader();
-        const bool ppuCgb = cgb && header.cgb;
+        const bool ppuCgb = cgb && (bootRomActive_ || header.cgb);
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
         ppu->setOamBugEnabled(!cgb);
-        if (cgb && !header.cgb) {
+        if (!bootRomActive_ && cgb && !header.cgb) {
             ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
                 header.titleBytes,
                 header.oldLicensee,
@@ -232,6 +241,11 @@ uint8_t GbTestSystem::read(uint16_t address)
         address = static_cast<uint16_t>(address - 0x2000);
     }
 
+    if (bootRomActive_ && bootRom_.size() >= 0x0900
+        && (address <= 0x00FF || (address >= 0x0200 && address <= 0x08FF))) {
+        return bootRom_[address];
+    }
+
     if (address < 0x8000 || (address >= 0xA000 && address <= 0xBFFF)) {
         return cartridge->read(address);
     }
@@ -251,7 +265,7 @@ uint8_t GbTestSystem::read(uint16_t address)
     }
 
     if (address == 0xFF00) {
-        return joypad_;
+        return static_cast<uint8_t>(0xCF | (joypad_ & 0x30));
     }
     if (address == serialDataAddress) {
         return serialData_;
@@ -303,6 +317,20 @@ uint8_t GbTestSystem::read(uint16_t address)
     if (address == key0Address) {
         return cgb_ ? 0x80 : 0xFF;
     }
+    if (address == 0xFF50) {
+        return 0xFF;
+    }
+    if (address == 0xFF70) {
+        return cgb_ ? static_cast<uint8_t>(0xF8 | (memory_[address] & 0x07)) : 0xFF;
+    }
+    if (address >= 0xFF72 && address <= 0xFF75) {
+        if (!cgbHardware_ || (address == 0xFF74 && !cgb_)) {
+            return 0xFF;
+        }
+        return address == 0xFF75
+            ? static_cast<uint8_t>(0x8F | (memory_[address] & 0x70))
+            : memory_[address];
+    }
     if (address == 0xFF4D) {
         if (!cgb_) {
             return 0xFF;
@@ -313,6 +341,12 @@ uint8_t GbTestSystem::read(uint16_t address)
     }
     if (address == 0xFF26) {
         return nr52_;
+    }
+    if (address == 0xFF76 || address == 0xFF77) {
+        if (apu) {
+            return apu->read(address);
+        }
+        return cgbHardware_ ? 0x00 : 0xFF;
     }
     if (address >= 0xFF10 && address <= 0xFF3F) {
         return memory_[address];
@@ -331,6 +365,40 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
 {
     if (address >= 0xE000 && address <= 0xFDFF) {
         address = static_cast<uint16_t>(address - 0x2000);
+    }
+
+    if (address == 0xFF50) {
+        bootRomActive_ = false;
+        return;
+    }
+
+    if (address == key0Address) {
+        if (cgb_ && (value & 0x04) != 0) {
+            cgb_ = false;
+            if (ppu) {
+                ppu->setDmgMode(true);
+                ppu->enableDmgCompatibility();
+            }
+        }
+        return;
+    }
+
+    if (address == 0xFF70) {
+        memory_[address] = value;
+        return;
+    }
+    if (address >= 0xFF72 && address <= 0xFF75) {
+        if (cgbHardware_) {
+            memory_[address] = address == 0xFF75
+                ? static_cast<uint8_t>(value & 0x70)
+                : value;
+        }
+        return;
+    }
+
+    if (address == 0xFF00) {
+        joypad_ = static_cast<uint8_t>(value & 0x30);
+        return;
     }
 
     if (address < 0x8000 || (address >= 0xA000 && address <= 0xBFFF)) {

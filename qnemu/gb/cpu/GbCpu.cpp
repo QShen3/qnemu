@@ -21,12 +21,14 @@ GbCpu::GbCpu(CpuBus& bus) : bus(bus)
     reset();
 }
 
-void GbCpu::reset(bool cgb)
+void GbCpu::reset(bool cgb, bool bootRom)
 {
-    // Post-boot register values.  The emulator has no boot ROM, so the first
-    // fetched instruction is the cartridge entry point at 0x0100.
+    // Post-boot register values.  With bootRom, the CPU starts at $0000 and
+    // the boot ROM builds the hand-off state itself.
     registers_ = Registers{};
-    if (!cgb) {
+    if (bootRom) {
+        registers_.pc = 0x0000;
+    } else if (!cgb) {
         registers_.a = 0x01;
         registers_.f = 0xB0;
         registers_.b = 0x00;

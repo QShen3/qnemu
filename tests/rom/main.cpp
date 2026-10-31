@@ -83,6 +83,7 @@ void printUsage(const char* program)
               << "  --dump-frame P      write the final frame as a binary PPM\n"
               << "  --patch OFF=HEX     patch the ROM image before loading (repeatable)\n"
               << "  --boot-model M      post-boot model: dmg0, dmgabc, mgb, sgb, sgb2\n"
+              << "  --boot-rom          execute the bundled QNEMU CGB boot ROM\n"
               << "  --verbose           stream serial output as it is produced\n";
 }
 
@@ -154,6 +155,7 @@ int main(int argc, char** argv)
     std::string dumpFrame;
     bool enablePpu = false;
     bool enableApu = false;
+    bool enableBootRom = false;
     bool verbose = false;
     std::vector<RomPatch> patches;
 
@@ -191,6 +193,8 @@ int main(int argc, char** argv)
             patches.push_back(std::move(patch));
         } else if (argument == "--boot-model" && index + 1 < argc) {
             bootModel = argv[++index];
+        } else if (argument == "--boot-rom") {
+            enableBootRom = true;
         } else if (argument == "--ppu") {
             enablePpu = true;
         } else if (argument == "--apu") {
@@ -240,13 +244,25 @@ int main(int argc, char** argv)
         }
     }
 
+    if (hasBootModel && enableBootRom) {
+        std::cerr << "--boot-rom and --boot-model are mutually exclusive\n";
+        return 2;
+    }
+    if (enableBootRom && model != "cgb") {
+        std::cerr << "--boot-rom requires --model cgb\n";
+        return 2;
+    }
+
     const bool frameMode = frames > 0 || !compareImage.empty() || !dumpFrame.empty();
-    const bool attachPpu = frameMode || enablePpu;
+    const bool attachPpu = frameMode || enablePpu || enableBootRom;
     if (frameMode && frames == 0) {
         frames = 10;
     }
 
     qnemuTest::GbTestSystem system;
+    if (enableBootRom) {
+        system.enableBootRom();
+    }
     bool loaded = false;
     if (patches.empty()) {
         loaded = system.loadRom(romPath, model == "cgb", attachPpu, enableApu);
@@ -288,6 +304,11 @@ int main(int argc, char** argv)
     }
 
     qnemu::GbCpu cpu(system);
+    if (enableBootRom) {
+        auto& registers = cpu.registers();
+        registers.pc = 0x0000;
+        registers.sp = 0xFFFE;
+    }
     if (model == "dmg") {
         auto& registers = cpu.registers();
         registers.a = 0x01;

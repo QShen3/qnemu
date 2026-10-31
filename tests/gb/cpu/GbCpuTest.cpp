@@ -74,6 +74,16 @@ TEST_F(GbCpuTest, ResetStateForDmg)
     EXPECT_EQ(cpu.registers().pc, 0x0100);
 }
 
+TEST_F(GbCpuTest, ResetToBootRomStartsAtZero)
+{
+    cpu.reset(true, true);
+
+    EXPECT_EQ(cpu.registers().sp, 0xFFFE);
+    EXPECT_EQ(cpu.registers().pc, 0x0000);
+    EXPECT_FALSE(cpu.interruptsEnabled());
+    EXPECT_EQ(cpu.cycles(), 0U);
+}
+
 TEST_F(GbCpuTest, NopAdvancesPcAndConsumesFourCycles)
 {
     load({0x00, 0x00});

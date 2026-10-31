@@ -22,10 +22,12 @@ public:
     void reset() override {}
     void setDoubleSpeed(bool value) override { doubleSpeed = value; }
     void setCgb(bool value) override { cgb = value; }
+    void setDmgCompatibilityMode(bool value) override { dmgMode = value; }
 
     int steps = 0;
     bool doubleSpeed = false;
     bool cgb = false;
+    bool dmgMode = false;
 };
 }  // namespace
 
@@ -90,6 +92,36 @@ TEST(GbCpuBusTest, SetCgbForwardsModelToMmu)
     EXPECT_TRUE(mmu.cgb);
     bus.setCgb(false);
     EXPECT_FALSE(mmu.cgb);
+}
+
+TEST(GbCpuBusTest, Key0SwitchesToDmgCompatibility)
+{
+    FakeMmu mmu;
+    qnemu::GbCpuBus bus(mmu, true);
+
+    bus.write(0xFF4C, 0x80);
+    EXPECT_EQ(bus.read(0xFF4C), 0x80);
+    EXPECT_FALSE(mmu.dmgMode);
+
+    bool callbackMode = true;
+    bus.setCgbModeCallback([&callbackMode](bool mode) { callbackMode = mode; });
+
+    bus.write(0xFF4C, 0x04);
+    EXPECT_EQ(bus.read(0xFF4C), 0xFF);
+    EXPECT_TRUE(mmu.dmgMode);
+    EXPECT_FALSE(callbackMode);
+}
+
+TEST(GbCpuBusTest, Key0IsLockedAfterBootRomUnmap)
+{
+    FakeMmu mmu;
+    qnemu::GbCpuBus bus(mmu, true);
+
+    bus.write(0xFF50, 0x11);
+    bus.write(0xFF4C, 0x04);
+
+    EXPECT_EQ(bus.read(0xFF4C), 0x80);
+    EXPECT_FALSE(mmu.dmgMode);
 }
 
 }  // namespace qnemuTest
