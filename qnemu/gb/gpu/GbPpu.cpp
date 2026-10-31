@@ -764,6 +764,12 @@ uint8_t GbPpu::readDmaSource(uint16_t address) const
     if (source >= 0xE000 && source <= 0xFDFF) {
         source = static_cast<uint16_t>(source - 0x2000);
     }
+    // On DMG hardware, OAM DMA sources in $FE00-$FFFF read the
+    // corresponding WRAM echo at $DE00-$DFFF.  CGB hardware behaves
+    // differently (Mooneye's sources-GS is a DMG-only pass).
+    if (oamBugEnabled_ && source >= 0xFE00) {
+        source = static_cast<uint16_t>(source - 0x2000);
+    }
     if (source >= VideoRamStart && source <= VideoRamEnd) {
         return memory_.readVram(source);
     }

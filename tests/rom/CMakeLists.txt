@@ -204,13 +204,13 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --ppu)
         endforeach()
 
-        # LCD enable/disable timing is verified on DMG only (the CGB has a
-        # different first-line sequence).
-        set(MOONEYE_LCD_TESTS
+        # DMG-only timing and OAM DMA source semantics.
+        set(MOONEYE_DMG_PPU_TESTS
             "acceptance/ppu/lcdon_timing-GS.gb"
             "acceptance/ppu/lcdon_write_timing-GS.gb"
+            "acceptance/oam_dma/sources-GS.gb"
         )
-        foreach(RELATIVE IN LISTS MOONEYE_LCD_TESTS)
+        foreach(RELATIVE IN LISTS MOONEYE_DMG_PPU_TESTS)
             qnemu_add_rom_test("mooneye_ppu_${RELATIVE}"
                 "${MOONEYE_ROM_ROOT}/${RELATIVE}" "mooneye;ppu" --model dmg --ppu)
         endforeach()

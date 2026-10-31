@@ -21,7 +21,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 358 CTest cases, including 143 curated test ROMs.
+- 359 CTest cases, including 144 curated test ROMs.
 
 ## Build
 
@@ -512,7 +512,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **358/358 CTest cases**, including 143 ROM tests.
+The current set is **359/359 CTest cases**, including 144 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -626,7 +626,7 @@ being worked on.
 - `push_timing`
 - `ret_timing`, `ret_cc_timing`, `reti_timing`, `rst_timing`
 - `bits/mem_oam`
-- `oam_dma/basic`, `oam_dma/reg_read`
+- `oam_dma/basic`, `oam_dma/reg_read`, `oam_dma/sources-GS` (DMG)
 - `oam_dma_start`, `oam_dma_restart`, `oam_dma_timing`
 - `ppu/hblank_ly_scx_timing-GS`
 - `ppu/intr_1_2_timing-GS`
@@ -659,8 +659,6 @@ fail when run directly:
 - Blargg `oam_bug` 1-6 pass, but the effect-pattern tests
   `7-timing_effect` and `8-instr_effect` do not match the hardware patterns
   yet and are not registered.
-- Mooneye `acceptance/oam_dma/sources-GS` fails at `$FE00`; OAM DMA source
-  selection is not fully accurate.
 - Mooneye `acceptance/bits/unused_hwio-GS` fails because unused I/O reads do
   not reproduce the hardware values.
 - Boot-dependent Mooneye tests (`boot_div*`, `boot_hwio-*`,
