@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include "qnemu/gb/gpu/CgbPpu.h"
+#include "qnemu/gb/gpu/DmgPpu.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/sgb/GbSgb.h"
@@ -21,7 +23,7 @@ class GbPpuTest : public testing::Test
 protected:
     void SetUp() override
     {
-        ppu = std::make_unique<qnemu::GbPpu>(false, display, interruptHandler);
+        ppu = std::make_unique<qnemu::DmgPpu>(display, interruptHandler);
     }
 
     std::shared_ptr<MemoryDisplay> display = std::make_shared<MemoryDisplay>();
@@ -108,9 +110,24 @@ TEST_F(GbPpuTest, OamDmaCopiesOneBytePerFourCycles)
     EXPECT_EQ(ppu->read(0xFE9F), 0x9F);
 }
 
+TEST_F(GbPpuTest, DmgDoesNotExposeCgbVideoRegisters)
+{
+    EXPECT_EQ(ppu->read(0xFF4F), 0xFF);
+    EXPECT_EQ(ppu->read(0xFF55), 0xFF);
+    EXPECT_EQ(ppu->read(0xFF68), 0xFF);
+    EXPECT_EQ(ppu->read(0xFF6C), 0xFF);
+
+    ppu->write(0xFF4F, 0x01);
+    ppu->write(0xFF68, 0x80);
+    ppu->write(0xFF6C, 0x01);
+    EXPECT_EQ(ppu->read(0xFF4F), 0xFF);
+    EXPECT_EQ(ppu->read(0xFF68), 0xFF);
+    EXPECT_EQ(ppu->read(0xFF6C), 0xFF);
+}
+
 TEST_F(GbPpuTest, HdmaCopiesAWholeBlock)
 {
-    qnemu::GbPpu cgbPpu(true, display, interruptHandler);
+    qnemu::CgbPpu cgbPpu(display, interruptHandler);
     cgbPpu.write(0xFF40, 0x00);
     cgbPpu.setExternalRead([](uint16_t address) {
         return static_cast<uint8_t>(address & 0xFF);
@@ -133,7 +150,7 @@ TEST_F(GbPpuTest, HdmaCopiesAWholeBlock)
 
 TEST_F(GbPpuTest, HdmaSourceKeepsTheFullHighByte)
 {
-    qnemu::GbPpu cgbPpu(true, display, interruptHandler);
+    qnemu::CgbPpu cgbPpu(display, interruptHandler);
     cgbPpu.write(0xFF40, 0x00);
     uint16_t source = 0;
     cgbPpu.setExternalRead([&source](uint16_t address) {

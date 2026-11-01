@@ -17,7 +17,7 @@
 #include "qnemu/gb/boot/GbDmgBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cpu/GbCpu.h"
-#include "qnemu/gb/gpu/GbPpu.h"
+#include "qnemu/gb/gpu/DmgPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/DmgWorkRam.h"
@@ -63,7 +63,7 @@ DmgPlatform::DmgPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         });
     }
 
-    auto ppu = std::make_unique<GbPpu>(false, display_, interruptHandler_);
+    auto ppu = std::make_unique<DmgPpu>(display_, interruptHandler_);
     ppu_ = ppu.get();
     ppu_->setOamBugEnabled(true);
     mmu_ = std::make_unique<DmgMmu>(std::move(apu), cartridge_, std::move(ppu),
@@ -93,12 +93,10 @@ void DmgPlatform::reset(const GbCartridgeHeader& /*header*/)
 void DmgPlatform::resetWithBootRom(std::span<const uint8_t> bootRom)
 {
     bus_->reset();
-    ppu_->setCgb(false);
     mmu_->setBootRom(bootRom);
     mmu_->setBootRomActive(true);
     mmu_->reset();
     ppu_->resetForBootRom();
-    ppu_->setDmgMode(false);
     cpu_->reset(false, true);
 }
 

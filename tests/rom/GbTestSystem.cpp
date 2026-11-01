@@ -18,6 +18,8 @@
 #include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/boot/GbDmgBootRom.h"
 #include "qnemu/gb/boot/GbSgbBootRom.h"
+#include "qnemu/gb/gpu/CgbPpu.h"
+#include "qnemu/gb/gpu/DmgPpu.h"
 #include "tests/rom/GbTestSystem.h"
 #include "tests/support/NullSound.h"
 
@@ -97,7 +99,11 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu, bool sgb
         display = std::make_shared<MemoryDisplay>();
         const auto header = cartridge->cartridgeHeader();
         const bool ppuCgb = cgb && (bootRomActive_ || header.cgb);
-        ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
+        if (ppuCgb) {
+            ppu = std::make_unique<qnemu::CgbPpu>(display, interruptHandler);
+        } else {
+            ppu = std::make_unique<qnemu::DmgPpu>(display, interruptHandler);
+        }
         if (sgbMode) {
             sgbColorizer = std::make_unique<qnemu::SgbColorizer>(*sgb);
             sgbFrameSink = std::make_unique<qnemu::SgbFrameSink>(*sgb, *display);

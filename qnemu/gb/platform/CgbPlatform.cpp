@@ -17,7 +17,7 @@
 #include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cpu/GbCpu.h"
-#include "qnemu/gb/gpu/GbPpu.h"
+#include "qnemu/gb/gpu/CgbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/CgbWorkRam.h"
@@ -63,7 +63,7 @@ CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         });
     }
 
-    auto ppu = std::make_unique<GbPpu>(true, display_, interruptHandler_);
+    auto ppu = std::make_unique<CgbPpu>(display_, interruptHandler_);
     ppu_ = ppu.get();
     ppu_->setOamBugEnabled(false);
     mmu_ = std::make_unique<CgbMmu>(std::move(apu), cartridge_, std::move(ppu),
@@ -96,7 +96,6 @@ void CgbPlatform::reset(const GbCartridgeHeader& header)
     cgbMode_ = header.cgb;
     bus_->setCgb(true);
     bus_->reset();
-    ppu_->setCgb(true);
     mmu_->setBootRom(cgbBootRom());
     mmu_->setBootRomActive(true);
     mmu_->reset();

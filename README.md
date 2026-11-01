@@ -292,13 +292,13 @@ qnemu/
 └── gb/                 Game Boy implementation
     ├── cpu/            SM83 core
     ├── interrupt/      IF/IE and interrupt priority
-    ├── gpu/            PPU, pixel FIFO, CGB palette RAM
+    ├── gpu/            PPU timing core, DMG/CGB video paths, FIFO, renderer
     ├── apu/            APU and four channels
     ├── timer/          DIV/TIMA timer
     ├── cartridge/      cartridge header, MBCs
-    ├── memory/         work RAM and high RAM
+    ├── memory/         DMG/CGB work RAM and high RAM
     ├── joypad/         FF00 joypad matrix
-    ├── mmu/            address decoding and CPU bus adapter
+    ├── mmu/            DMG/CGB address decoding and CPU bus adapters
     ├── platform/       DMG/SGB/CGB platform assemblies
     ├── sgb/            SGB command receiver, colorizer and frame sink
     └── Gb.cpp          host-side system facade
@@ -328,12 +328,19 @@ Platform selection is separate from cartridge capability. `Gb` owns the
 emulation thread, pause/save service and host interfaces, while
 `GameBoyPlatform` owns an assembled device graph:
 
-- `DmgPlatform` builds the DMG CPU, PPU, APU, timer, memory map and bus.
+- `DmgPlatform` builds `DmgMmu`/`DmgCpuBus`/`DmgWorkRam` and the `DmgPpu`
+  timing/video path.
 - `SgbPlatform` extends `DmgPlatform` with `GbSgb` and installs
   `SgbColorizer`/`SgbFrameSink`. The PPU itself only knows `PpuColorizer` and
   `PpuFrameSink`, so `gb_ppu` no longer depends on `gb_sgb`.
-- `CgbPlatform` builds the CGB variant and keeps the CGB boot ROM's DMG
-  compatibility path for grey cartridges.
+- `CgbPlatform` builds `CgbMmu`/`CgbCpuBus`/`CgbWorkRam` and `CgbPpu`, keeping
+  the CGB boot ROM's DMG compatibility path for grey cartridges.
+
+The PPU is split into a shared timing core (`GbPpu`) and a `PpuVideo`
+implementation: `DmgPpuVideo` owns the monochrome path, while
+`CgbPpuVideo` owns VRAM banking, palette RAM, HDMA and DMG-compatibility
+rendering. The dot clock, mode transitions, OAM DMA and interrupts remain
+shared, so the timing-sensitive code is not duplicated.
 
 Cartridge type is derived from the header, not the file extension: `0xC0` is
 CGB-only, `0x80` is dual-mode, and anything else is DMG-only. The two General

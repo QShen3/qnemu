@@ -28,17 +28,6 @@ constexpr uint16_t obp0Address = 0xFF48;
 constexpr uint16_t obp1Address = 0xFF49;
 constexpr uint16_t wyAddress = 0xFF4A;
 constexpr uint16_t wxAddress = 0xFF4B;
-constexpr uint16_t vramBankAddress = 0xFF4F;
-constexpr uint16_t hdma1Address = 0xFF51;
-constexpr uint16_t hdma2Address = 0xFF52;
-constexpr uint16_t hdma3Address = 0xFF53;
-constexpr uint16_t hdma4Address = 0xFF54;
-constexpr uint16_t hdma5Address = 0xFF55;
-constexpr uint16_t bgPaletteSpecAddress = 0xFF68;
-constexpr uint16_t bgPaletteDataAddress = 0xFF69;
-constexpr uint16_t objPaletteSpecAddress = 0xFF6A;
-constexpr uint16_t objPaletteDataAddress = 0xFF6B;
-constexpr uint16_t objectPriorityAddress = 0xFF6C;
 }  // namespace
 
 namespace
@@ -82,14 +71,12 @@ uint8_t bitwiseGlitchReadIncrease(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 
 }  // namespace
 
-GbPpu::GbPpu(bool cgb,
+GbPpu::GbPpu(std::unique_ptr<PpuVideo> video,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler) :
-    cgb_(cgb),
     display_(std::move(display)),
     interruptHandler_(std::move(interruptHandler)),
-    renderer_(cgb),
-    fifo_(cgb)
+    video_(std::move(video))
 {
     GbPpu::reset();
 }
@@ -132,34 +119,13 @@ uint8_t GbPpu::read(uint16_t address) const
         case obp1Address: return registers_.obp1;
         case wyAddress: return registers_.wy;
         case wxAddress: return registers_.wx;
-        case vramBankAddress:
-            return cgb_ ? static_cast<uint8_t>(0xFE | memory_.vramBank()) : 0xFF;
-        case hdma1Address:
-        case hdma2Address:
-        case hdma3Address:
-        case hdma4Address:
-            // HDMA1-4 are write-only and read back as $FF.
-            return 0xFF;
-        case hdma5Address:
-            return cgb_ ? hdma5_ : 0xFF;
-        case bgPaletteSpecAddress:
-            return cgb_ ? memory_.readPaletteSpec(false) : 0xFF;
-        case bgPaletteDataAddress:
-            if (!cgb_ || (registers_.mode() == 3 && registers_.lcdEnabled())) {
-                return 0xFF;
-            }
-            return memory_.readPaletteData(false);
-        case objPaletteSpecAddress:
-            return cgb_ ? memory_.readPaletteSpec(true) : 0xFF;
-        case objPaletteDataAddress:
-            if (!cgb_ || (registers_.mode() == 3 && registers_.lcdEnabled())) {
-                return 0xFF;
-            }
-            return memory_.readPaletteData(true);
-        case objectPriorityAddress:
-            return cgb_ ? static_cast<uint8_t>(0xFE | (registers_.opri & 0x01)) : 0xFF;
         default:
             break;
+    }
+
+    uint8_t value = 0xFF;
+    if (video_->readRegister(address, registers_, memory_, value)) {
+        return value;
     }
 
     assert(false && "Wrong PPU address");
@@ -229,70 +195,12 @@ void GbPpu::write(uint16_t address, const uint8_t& value)
         case wxAddress:
             registers_.wx = value;
             return;
-        case vramBankAddress:
-            if (cgb_) {
-                memory_.setVramBank(value);
-            }
-            return;
-        case hdma1Address:
-            if (cgb_) {
-                // Source can live in ROM/WRAM/echo RAM; keep the full high
-                // byte.  Masking it to 5 bits aliases 0xA000-0xDFFF to
-                // 0x0000-0x1FFF and reads the wrong data.
-                hdmaSource_ = static_cast<uint16_t>((hdmaSource_ & 0x00F0)
-                    | (value << 8));
-            }
-            return;
-        case hdma2Address:
-            if (cgb_) {
-                hdmaSource_ = static_cast<uint16_t>((hdmaSource_ & 0xFF00)
-                    | (value & 0xF0));
-            }
-            return;
-        case hdma3Address:
-            if (cgb_) {
-                hdmaDestination_ = static_cast<uint16_t>(0x8000
-                    | ((value & 0x1F) << 8) | (hdmaDestination_ & 0x00F0));
-            }
-            return;
-        case hdma4Address:
-            if (cgb_) {
-                hdmaDestination_ = static_cast<uint16_t>((hdmaDestination_ & 0xFF00)
-                    | (value & 0xF0));
-            }
-            return;
-        case hdma5Address:
-            if (cgb_) {
-                writeHdma5(value);
-            }
-            return;
-        case bgPaletteSpecAddress:
-            if (cgb_) {
-                memory_.writePaletteSpec(false, value);
-            }
-            return;
-        case bgPaletteDataAddress:
-            if (cgb_ && !(registers_.mode() == 3 && registers_.lcdEnabled())) {
-                memory_.writePaletteData(false, value);
-            }
-            return;
-        case objPaletteSpecAddress:
-            if (cgb_) {
-                memory_.writePaletteSpec(true, value);
-            }
-            return;
-        case objPaletteDataAddress:
-            if (cgb_ && !(registers_.mode() == 3 && registers_.lcdEnabled())) {
-                memory_.writePaletteData(true, value);
-            }
-            return;
-        case objectPriorityAddress:
-            if (cgb_) {
-                registers_.opri = static_cast<uint8_t>(value & 0x01);
-            }
-            return;
         default:
             break;
+    }
+
+    if (video_->writeRegister(address, value, registers_, memory_)) {
+        return;
     }
 
     assert(false && "Wrong PPU address");
@@ -301,7 +209,7 @@ void GbPpu::write(uint16_t address, const uint8_t& value)
 void GbPpu::step()
 {
     stepOamDma();
-    stepHdma();
+    video_->stepHdma(memory_);
     stepTiming();
 }
 
@@ -344,13 +252,7 @@ void GbPpu::reset()
     oamDmaTicks_ = 0;
     oamDmaStartupTicks_ = 0;
 
-    hdmaActive_ = false;
-    hdmaHblank_ = false;
-    hdma5_ = 0xFF;
-    hdmaRemaining_ = 0;
-    hdmaTicks_ = 0;
-    hdmaSource_ = 0x0000;
-    hdmaDestination_ = 0x8000;
+    video_->reset();
 }
 
 uint8_t GbPpu::currentMode() const
@@ -366,40 +268,18 @@ bool GbPpu::isLcdEnable() const
 void GbPpu::setExternalRead(std::function<uint8_t(uint16_t)> reader)
 {
     externalRead_ = std::move(reader);
-}
-
-void GbPpu::setCgb(bool cgb)
-{
-    cgb_ = cgb;
-    renderer_ = PpuRenderer(cgb, colorizer_, dmgMode_);
-    fifo_.setCgb(cgb);
-    fifo_.setDmgMode(dmgMode_);
-}
-
-void GbPpu::setDmgMode(bool dmgMode)
-{
-    dmgMode_ = dmgMode;
-    renderer_.setDmgMode(dmgMode);
-    fifo_.setDmgMode(dmgMode);
+    video_->setExternalRead(externalRead_);
 }
 
 void GbPpu::setColorizer(PpuColorizer* colorizer)
 {
-    colorizer_ = colorizer;
-    renderer_.setColorizer(colorizer);
-    fifo_.setColorizer(colorizer);
+    video_->setColorizer(colorizer);
 }
 
 void GbPpu::setFrameSink(PpuFrameSink* frameSink)
 {
     frameSink_ = frameSink;
 }
-
-void GbPpu::enableDmgCompatibility()
-{
-    memory_.enableDmgCompatibility();
-}
-
 
 void GbPpu::triggerOamBugWrite(uint16_t address, int rowOffset)
 {
@@ -568,19 +448,6 @@ void GbPpu::stepOamDma()
     }
 }
 
-void GbPpu::stepHdma()
-{
-    if (!hdmaActive_ || hdmaHblank_) {
-        return;
-    }
-
-    ++hdmaTicks_;
-    if (hdmaTicks_ >= 32) {
-        hdmaTicks_ = 0;
-        transferHdmaBlock();
-    }
-}
-
 void GbPpu::stepTiming()
 {
     if (!registers_.lcdEnabled()) {
@@ -603,7 +470,7 @@ void GbPpu::stepTiming()
             if (dot_ == 79) {
                 setMode(3);
                 mode3Dots_ = 0;
-                fifo_.startLine(registers_, memory_, registers_.ly, windowLine_);
+                video_->startLine(registers_, memory_, registers_.ly, windowLine_);
             }
         } else if (dot_ == 0) {
             setMode(2);
@@ -612,15 +479,15 @@ void GbPpu::stepTiming()
         } else if (dot_ == 80) {
             setMode(3);
             mode3Dots_ = 0;
-            fifo_.startLine(registers_, memory_, registers_.ly, windowLine_);
+            video_->startLine(registers_, memory_, registers_.ly, windowLine_);
         }
 
         if (registers_.mode() == 3) {
-            fifo_.step(registers_, memory_, frame_);
+            video_->step(registers_, memory_, frame_);
             if (mode3Dots_ < 255) {
                 ++mode3Dots_;
             }
-            if (fifo_.finished()) {
+            if (video_->finished()) {
                 finishMode3();
             }
         }
@@ -685,10 +552,9 @@ bool GbPpu::vramReadBlocked() const
 void GbPpu::finishMode3()
 {
     if (registers_.objEnabled()) {
-        renderer_.renderSprites(registers_, memory_, registers_.ly,
-            fifo_.backgroundColorIndex(), fifo_.backgroundPriority(), frame_);
+        video_->renderSprites(registers_, memory_, registers_.ly, frame_);
     }
-    if (fifo_.windowUsed()) {
+    if (video_->windowUsed()) {
         ++windowLine_;
     }
     setMode(0);
@@ -705,7 +571,7 @@ bool GbPpu::firstLineAccessBlocked() const
     // The PPU grabs the VRAM/OAM bus two dots before mode 3 starts on the
     // first line; once the first mode 3 has finished, access follows the
     // normal mode rules.
-    return registers_.mode() == 0 && !fifo_.finished() && dot_ >= 78;
+    return registers_.mode() == 0 && !video_->finished() && dot_ >= 78;
 }
 
 bool GbPpu::oamAccessBlocked() const
@@ -756,8 +622,8 @@ bool GbPpu::vramAccessBlocked() const
 void GbPpu::setMode(uint8_t mode)
 {
     registers_.setMode(mode);
-    if (mode == 0 && hdmaActive_ && hdmaHblank_) {
-        transferHdmaBlock();
+    if (mode == 0) {
+        video_->onMode0(memory_);
     }
     updateStatIrq();
 }
@@ -824,48 +690,6 @@ uint8_t GbPpu::readDmaSource(uint16_t address) const
         return externalRead_(source);
     }
     return 0xFF;
-}
-
-void GbPpu::transferHdmaBlock()
-{
-    if (!hdmaActive_ || hdmaRemaining_ == 0) {
-        return;
-    }
-
-    for (uint8_t index = 0; index < 0x10; ++index) {
-        const uint16_t source = static_cast<uint16_t>(hdmaSource_ + index);
-        const uint16_t destination = static_cast<uint16_t>(
-            0x8000 | ((hdmaDestination_ + index) & 0x1FFF));
-        memory_.writeVram(destination, readDmaSource(source));
-    }
-
-    hdmaSource_ = static_cast<uint16_t>(hdmaSource_ + 0x10);
-    hdmaDestination_ = static_cast<uint16_t>(0x8000 | ((hdmaDestination_ + 0x10) & 0x1FFF));
-    --hdmaRemaining_;
-    if (hdmaRemaining_ == 0) {
-        hdmaActive_ = false;
-        hdma5_ = 0xFF;
-    } else {
-        hdma5_ = static_cast<uint8_t>((hdma5_ & 0x80) | (hdmaRemaining_ - 1));
-    }
-}
-
-void GbPpu::writeHdma5(uint8_t value)
-{
-    if (hdmaActive_ && (value & 0x80) == 0) {
-        hdmaActive_ = false;
-        hdma5_ = 0xFF;
-        return;
-    }
-    if (hdmaActive_) {
-        return;
-    }
-
-    hdmaRemaining_ = static_cast<uint8_t>((value & 0x7F) + 1);
-    hdmaHblank_ = (value & 0x80) != 0;
-    hdma5_ = static_cast<uint8_t>(value & 0x7F);
-    hdmaActive_ = true;
-    hdmaTicks_ = 0;
 }
 
 void GbPpu::writeLcdc(uint8_t value)

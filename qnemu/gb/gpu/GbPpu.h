@@ -11,30 +11,27 @@
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/display/FrameBuffer.h"
 #include "qnemu/gb/gpu/GbGpuInterface.h"
-#include "qnemu/gb/gpu/PpuFifo.h"
-#include "qnemu/gb/gpu/PpuMemory.h"
 #include "qnemu/gb/gpu/PpuColorizer.h"
 #include "qnemu/gb/gpu/PpuFrameSink.h"
+#include "qnemu/gb/gpu/PpuMemory.h"
 #include "qnemu/gb/gpu/PpuRegisters.h"
-#include "qnemu/gb/gpu/PpuRenderer.h"
+#include "qnemu/gb/gpu/PpuVideo.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
 
 /**
- * Game Boy PPU.
+ * Game Boy PPU timing core.
  *
- * The PPU owns VRAM/OAM/palette RAM, register state, the dot/line clock and
- * the framebuffer.  It exposes only the memory-mapped interface expected by
- * the MMU, pushes finished frames to DisplayInterface, and reads external
- * memory (ROM/WRAM) through a callback for OAM DMA/HDMA.  It has no Qt or
- * cartridge dependency.
+ * The PPU owns VRAM/OAM, register state, the dot/line clock and the
+ * framebuffer.  Platform-specific video behavior (DMG palettes, CGB palette
+ * RAM/HDMA or SGB colorization) lives in a PpuVideo object.
  */
 class GbPpu : public GbGpuInterface
 {
 public:
-    GbPpu(bool cgb,
+    GbPpu(std::unique_ptr<PpuVideo> video,
         std::shared_ptr<DisplayInterface> display,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler);
     ~GbPpu() override = default;
@@ -50,15 +47,16 @@ public:
 
     uint8_t currentMode() const override;
     bool isLcdEnable() const override;
-    bool isHdmaActive() const override { return hdmaActive_ && !hdmaHblank_; }
+    bool isHdmaActive() const override { return video_->isHdmaActive(); }
 
     /// External memory used by OAM DMA/HDMA (ROM, cartridge RAM, WRAM).
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);
-    void setCgb(bool cgb);
-    void setDmgMode(bool dmgMode);
     void setColorizer(PpuColorizer* colorizer);
     void setFrameSink(PpuFrameSink* frameSink);
-    void enableDmgCompatibility();
+
+    /// CGB compatibility rendering mode.  The DMG PPU ignores it.
+    virtual void setDmgMode(bool /*dmgMode*/) {}
+    virtual void enableDmgCompatibility() {}
 
     /// DMG OAM corruption quirk.  CGB hardware and SGB models that use the
     /// CGB PPU path must leave this disabled.
@@ -71,9 +69,12 @@ public:
     const FrameBuffer& frameBuffer() const { return frame_; }
     uint64_t frameCount() const { return frameCount_; }
 
+protected:
+    PpuVideo& video() const { return *video_; }
+    PpuMemory& memory() { return memory_; }
+
 private:
     void stepOamDma();
-    void stepHdma();
     void stepTiming();
     void setMode(uint8_t mode);
     void updateLyc();
@@ -88,23 +89,18 @@ private:
 
     void startOamDma(uint8_t source);
     uint8_t readDmaSource(uint16_t address) const;
-    void transferHdmaBlock();
-    void writeHdma5(uint8_t value);
 
     void writeLcdc(uint8_t value);
     void writeStat(uint8_t value);
     void writeLy(uint8_t value);
 
-    bool cgb_;
-    bool dmgMode_ = false;
     std::shared_ptr<DisplayInterface> display_;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler_;
     std::function<uint8_t(uint16_t)> externalRead_;
 
     PpuRegisters registers_;
     PpuMemory memory_;
-    PpuRenderer renderer_;
-    PpuFifo fifo_;
+    std::unique_ptr<PpuVideo> video_;
 
     FrameBuffer frame_;
     uint16_t dot_ = 0;
@@ -113,7 +109,6 @@ private:
     uint16_t windowLine_ = 0;
     uint64_t frameCount_ = 0;
     bool oamBugEnabled_ = false;
-    PpuColorizer* colorizer_ = nullptr;
     PpuFrameSink* frameSink_ = nullptr;
     int accessedOamRow_ = -1;
     bool statIrqLine_ = false;
@@ -126,14 +121,6 @@ private:
     uint16_t oamDmaIndex_ = 0;
     uint8_t oamDmaTicks_ = 0;
     uint8_t oamDmaStartupTicks_ = 0;
-
-    bool hdmaActive_ = false;
-    bool hdmaHblank_ = false;
-    uint8_t hdma5_ = 0xFF;
-    uint8_t hdmaRemaining_ = 0;
-    uint8_t hdmaTicks_ = 0;
-    uint16_t hdmaSource_ = 0x0000;
-    uint16_t hdmaDestination_ = 0x8000;
 };
 
 }  // namespace qnemu

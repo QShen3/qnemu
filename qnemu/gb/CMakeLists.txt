@@ -74,6 +74,10 @@ qnemu_add_gb_library(gb_interrupt
 # PPU: dot clock, VRAM/OAM/palette memory, pixel FIFO and the reference
 # scanline renderer.
 qnemu_add_gb_library(gb_ppu
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/CgbPpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/CgbPpuVideo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/DmgPpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpu/DmgPpuVideo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/GbPpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuFifo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpu/PpuMemory.cpp
