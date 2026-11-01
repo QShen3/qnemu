@@ -28,9 +28,9 @@ official Nintendo boot ROMs**:
 
 Even though SameBoy publishes those files under the Expat license, a
 byte-identical copy is still Nintendo's copyrighted ROM. qnemu therefore does
-**not** redistribute them. DMG and SGB modes continue to use the existing
-HLE `--boot-model` path. If you want a DMG boot animation, use a dump from
-your own hardware locally and do not commit it.
+**not** redistribute them. DMG uses the separate CC0 Bootix ROM in
+`third_party/bootix/`; SGB keeps using the HLE `--boot-model` path. If you want
+a SameBoy DMG/SGB dump, use your own hardware locally and do not commit it.
 
 The CGB image is different: it is SameBoy's CGB boot ROM reimplementation,
 not a byte copy. Its pre-modification SHA-1 is not an official CGB hash, and
