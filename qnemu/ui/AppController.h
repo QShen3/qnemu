@@ -18,6 +18,7 @@
 #include "qnemu/ui/GameLibrary.h"
 #include "qnemu/gb/Gb.h"
 #include "qnemu/gb/cartridge/GbCartridgeHeader.h"
+#include "qnemu/gb/infrared/GbInfraredLink.h"
 #include "qnemu/gb/serial/GbSerialLink.h"
 
 namespace qnemu
@@ -46,6 +47,7 @@ class AppController : public QObject
         NOTIFY currentGamePathChanged)
     Q_PROPERTY(bool linkActive READ linkActive NOTIFY linkActiveChanged)
     Q_PROPERTY(bool linkPaused READ linkPaused NOTIFY linkPausedChanged)
+    Q_PROPERTY(bool linkInfrared READ linkInfrared NOTIFY linkInfraredChanged)
     Q_PROPERTY(int linkPlayerCount READ linkPlayerCount NOTIFY linkPlayerCountChanged)
     Q_PROPERTY(QString linkTitle1 READ linkTitle1 NOTIFY linkTitlesChanged)
     Q_PROPERTY(QString linkTitle2 READ linkTitle2 NOTIFY linkTitlesChanged)
@@ -69,6 +71,7 @@ public:
     QString currentGamePath() const { return currentRomPath; }
     bool linkActive() const { return linkActiveValue; }
     bool linkPaused() const { return linkPausedValue; }
+    bool linkInfrared() const { return linkInfraredValue; }
     int linkPlayerCount() const { return linkPlayerCountValue; }
     QString linkTitle1() const { return linkTitles.at(0); }
     QString linkTitle2() const { return linkTitles.at(1); }
@@ -82,6 +85,8 @@ public:
     Q_INVOKABLE void openRom(const QUrl& url);
     Q_INVOKABLE void openLinkGame(const QUrl& first, const QUrl& second);
     Q_INVOKABLE void startLinkGame(const QStringList& paths,
+        const QVariantList& saveSlots);
+    Q_INVOKABLE void startInfraredGame(const QStringList& paths,
         const QVariantList& saveSlots);
     Q_INVOKABLE QVariantList saveSlots(const QString& romPath) const;
     Q_INVOKABLE QString saveDataBlockedReason(const QString& romPath) const;
@@ -126,6 +131,7 @@ signals:
     void currentGamePathChanged();
     void linkActiveChanged();
     void linkPausedChanged();
+    void linkInfraredChanged();
     void linkPlayerCountChanged();
     void linkTitlesChanged();
 
@@ -135,6 +141,7 @@ private:
         std::unique_ptr<Gb> system;
         QString displayName;
         bool cgbOnly = false;
+        bool cgbCapable = false;
     };
 
     void setWindowTitle(const QString& newTitle);
@@ -146,7 +153,9 @@ private:
     GbPlatform launchPlatform(const GbCartridgeHeader& header) const;
     LoadedGame loadGame(const QString& path, EmulatorItem* item,
         const QString& saveDirectory,
-        std::shared_ptr<GbSerialLink> serialLink = nullptr);
+        std::shared_ptr<GbSerialLink> serialLink = nullptr,
+        std::shared_ptr<GbInfraredLink> infraredLink = nullptr,
+        std::optional<GbPlatform> platformOverride = std::nullopt);
     void openGamePath(const QString& path, int slot);
     void closeCurrentGame();
     void startLinkGamePair(const QString& firstPath, const QString& secondPath,
@@ -169,6 +178,7 @@ private:
     std::array<QString, linkPlayerLimit> linkTitles;
     bool linkActiveValue = false;
     bool linkPausedValue = false;
+    bool linkInfraredValue = false;
     int linkPlayerCountValue = 2;
     QString title = QStringLiteral("QNEmu");
     QString status;

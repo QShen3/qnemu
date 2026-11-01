@@ -7,6 +7,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/memory GB_MEMORYTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/mmu GB_MMUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/apu GB_APUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/joypad GB_JOYPADTEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/infrared GB_INFRAREDTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/serial GB_SERIALTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/timer GB_TIMERTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/gpu GB_GPUTEST_SRCS)
@@ -26,6 +27,7 @@ add_executable(
     ${GB_MMUTEST_SRCS}
     ${GB_APUTEST_SRCS}
     ${GB_JOYPADTEST_SRCS}
+    ${GB_INFRAREDTEST_SRCS}
     ${GB_SERIALTEST_SRCS}
     ${GB_TIMERTEST_SRCS}
     ${GB_GPUTEST_SRCS}
@@ -45,7 +47,9 @@ set_target_properties(qnemu_test PROPERTIES
 target_include_directories(qnemu_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_compile_definitions(qnemu_test PRIVATE
     QNEMU_ROMDB_PATH="${PROJECT_SOURCE_DIR}/qnemu/data/romdb.json"
-    QNEMU_FOUR_PLAYER_TEST_ROM="${PROJECT_SOURCE_DIR}/tests/rom/four_player/four_player_test.gb")
+    QNEMU_FOUR_PLAYER_TEST_ROM="${PROJECT_SOURCE_DIR}/tests/rom/four_player/four_player_test.gb"
+    QNEMU_IR_SENDER_ROM="${PROJECT_SOURCE_DIR}/tests/rom/infrared/ir_sender.gb"
+    QNEMU_IR_RECEIVER_ROM="${PROJECT_SOURCE_DIR}/tests/rom/infrared/ir_receiver.gb")
 target_link_libraries(
     qnemu_test
     PRIVATE

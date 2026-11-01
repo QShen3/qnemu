@@ -25,6 +25,7 @@
 #include "qnemu/ui/RomArchive.h"
 #include "qnemu/ui/SavePaths.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
+#include "qnemu/gb/infrared/GbLocalInfraredLink.h"
 #include "qnemu/gb/serial/GbFourPlayerAdapter.h"
 #include "qnemu/gb/serial/GbLocalSerialLink.h"
 #include "qnemu/display/DisplayInterface.h"
@@ -330,6 +331,68 @@ void AppController::startLinkGame(const QStringList& paths,
         stopLink();
         qWarning().noquote() << "Failed to start link play:" << error.what();
         setStatusText(QStringLiteral("Failed to start link play: ") + error.what());
+    }
+}
+
+void AppController::startInfraredGame(const QStringList& paths,
+    const QVariantList& saveSlots)
+{
+    if (paths.size() != 2 || saveSlots.size() != 2) {
+        return;
+    }
+    for (int player = 0; player < 2; ++player) {
+        const int slot = saveSlots.at(player).toInt();
+        if (!linkDisplayItems.at(player) || paths.at(player).isEmpty()
+            || slot < 0 || slot > 3) {
+            return;
+        }
+    }
+
+    if (linkSavePath(paths.at(0), saveSlots.at(0).toInt())
+        == linkSavePath(paths.at(1), saveSlots.at(1).toInt())) {
+        setStatusText(tr("Infrared link needs a different save file for each player"));
+        return;
+    }
+
+    stopLink();
+    closeCurrentGame();
+
+    try {
+        const auto [firstIr, secondIr] = createLocalInfraredLinkPair();
+        auto firstGame = loadGame(paths.at(0), linkDisplayItems.at(0),
+            saveDirectoryForSlot(saveSlots.at(0).toInt()), nullptr, firstIr,
+            GbPlatform::gbc);
+        auto secondGame = loadGame(paths.at(1), linkDisplayItems.at(1),
+            saveDirectoryForSlot(saveSlots.at(1).toInt()), nullptr, secondIr,
+            GbPlatform::gbc);
+
+        if (!firstGame.cgbCapable || !secondGame.cgbCapable) {
+            setStatusText(tr("Infrared link requires Game Boy Color games"));
+            return;
+        }
+
+        linkSystems.at(0) = std::move(firstGame.system);
+        linkSystems.at(1) = std::move(secondGame.system);
+        linkTitles.at(0) = firstGame.displayName;
+        linkTitles.at(1) = secondGame.displayName;
+        linkPlayerCountValue = 2;
+        linkInfraredValue = true;
+        linkActiveValue = true;
+        linkPausedValue = false;
+        emit linkInfraredChanged();
+        emit linkPlayerCountChanged();
+        emit linkTitlesChanged();
+        emit linkPausedChanged();
+        emit linkActiveChanged();
+
+        libraryValue->addOpenedGame(paths.at(0));
+        libraryValue->addOpenedGame(paths.at(1));
+        setStatusText(tr("Infrared link started"));
+    } catch (const std::exception& error) {
+        stopLink();
+        qWarning().noquote() << "Failed to start infrared link:" << error.what();
+        setStatusText(QStringLiteral("Failed to start infrared link: ")
+            + error.what());
     }
 }
 
@@ -655,6 +718,10 @@ void AppController::stopLink()
         linkPausedValue = false;
         emit linkPausedChanged();
     }
+    if (linkInfraredValue) {
+        linkInfraredValue = false;
+        emit linkInfraredChanged();
+    }
     if (linkPlayerCountValue != 2) {
         linkPlayerCountValue = 2;
         emit linkPlayerCountChanged();
@@ -683,7 +750,9 @@ void AppController::toggleLinkPause()
 }
 
 AppController::LoadedGame AppController::loadGame(const QString& path, EmulatorItem* item,
-    const QString& saveDirectory, std::shared_ptr<GbSerialLink> serialLink)
+    const QString& saveDirectory, std::shared_ptr<GbSerialLink> serialLink,
+    std::shared_ptr<GbInfraredLink> infraredLink,
+    std::optional<GbPlatform> platformOverride)
 {
     if (!item) {
         throw std::runtime_error("No display attached");
@@ -711,11 +780,11 @@ AppController::LoadedGame AppController::loadGame(const QString& path, EmulatorI
         header = GbCartridge::readHeader(path.toStdString());
     }
 
-    const GbPlatform targetPlatform = launchPlatform(header);
+    const GbPlatform targetPlatform = platformOverride.value_or(launchPlatform(header));
 
     auto sound = std::make_unique<DefaultSound>();
     auto system = std::make_unique<Gb>(targetPlatform, display,
-        std::move(sound), input, std::move(serialLink));
+        std::move(sound), input, std::move(serialLink), std::move(infraredLink));
     system->setSaveDirectory(saveDirectory.toStdString());
     system->setSoundEnabled(settingsValue->soundEnabled());
     if (archived) {
@@ -724,7 +793,7 @@ AppController::LoadedGame AppController::loadGame(const QString& path, EmulatorI
         system->loadCartridge(path.toStdString().c_str());
     }
 
-    return {std::move(system), displayName, header.cgbOnly};
+    return {std::move(system), displayName, header.cgbOnly, header.cgb};
 }
 
 void AppController::closeCurrentGame()

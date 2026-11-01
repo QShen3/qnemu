@@ -1,9 +1,9 @@
 # Serial link
 
 QNEmu implements the Game Boy serial port (`FF01` SB / `FF02` SC), a
-two-player link cable and a four-player DMG-07 adapter.  This is the foundation
-for local multiplayer; a socket transport for network play can be added behind
-the same interface.
+two-player link cable, a four-player DMG-07 adapter and the Game Boy Color
+infrared port (`FF56` RP).  This is the foundation for local multiplayer; a
+socket transport for network play can be added behind the same interface.
 
 ## Registers and timing
 
@@ -61,12 +61,34 @@ byte, so a slow ISR stretches the packet instead of dropping data.  The fixed
 byte and packet timings come from Pan Docs and are rounded to peripheral
 T-cycles; this is enough for games that use the adapter as a byte transport.
 
+## Game Boy Color infrared
+
+`GbInfrared` implements the CGB IR port at `FF56`:
+
+| Bits | Behaviour |
+| --- | --- |
+| 0 | Local LED on/off (read/write) |
+| 1 | Peer signal: 0 when IR is detected, 1 when it is not |
+| 2-5 | Unused, read as 1 |
+| 6-7 | Read enable; bit 1 only reflects the sensor when both bits are set |
+
+The GBC IR port is a raw LED/phototransistor pair, not a protocol engine.
+Games implement their own pulse encoding.  `GbLocalInfraredLink` exposes each
+endpoint's LED to the other, and the sensor fades after roughly 3 ms of
+continuous light, matching the Pan Docs signal-fade behaviour.  The IR register
+is only routed in native CGB mode; DMG compatibility mode reads `0xFF`.
+
+The UI offers **Link cable** or **Infrared** in the library's Link banner.
+Infrared forces two players and launches both ROMs on the CGB platform; a
+DMG-only ROM is rejected.  `--rom A --ir-rom B` starts the same mode directly.
+
 ## UI
 
 - The library header has a **Link** button; a row's `⋯` menu also has
-  **Link Play...**.  Choose 2 or 4 players, then select Player 1 through
-  Player N, or use **Same game** for all players.  `LinkWindow.qml` lays out
-  two or four `EmulatorItem`s; click a screen to give it keyboard focus.
+  **Link Play...** and **Infrared Link Play...**.  Choose 2 or 4 players, then
+  select Player 1 through Player N, or use **Same game** for all players.
+  `LinkWindow.qml` lays out two or four `EmulatorItem`s; click a screen to
+  give it keyboard focus.
 - A setup dialog shows which save each player will use.  **Game save** is the
   normal single-player save, so progress made while linked carries over.
   **Link save 1/2/3** are persistent per-ROM slots for cases where several
@@ -74,6 +96,8 @@ T-cycles; this is enough for games that use the adapter as a byte transport.
 - For a Pokémon trade between Red and Blue, leave both players on **Game save**:
   the trade is written back to `Red.sav` and `Blue.sav`.  For multiple copies
   of the same ROM, give each additional player a link save.
+- Infrared link uses the GBC IR port, so both games must be CGB-capable.  The
+  same save-slot setup applies.
 - A row's `⋯` menu also has **Save data...**, a save manager for that ROM:
   play any slot in single-player, rename the four slots, copy between slots,
   create a backup, restore or delete backups, import or export a `.sav`, or
@@ -83,7 +107,8 @@ T-cycles; this is enough for games that use the adapter as a byte transport.
   keep a link-save playthrough as the normal save, copy it to **Game save**.
 - `--rom A --link-rom B` starts two-player link play directly.  Repeat
   `--link-rom` up to three times for three or four players; save slots are
-  assigned automatically to avoid sharing a file.
+  assigned automatically to avoid sharing a file.  `--rom A --ir-rom B` starts
+  a two-player infrared session.
 - Space / Ctrl+P pauses all sessions, and Back to Library destroys them after
   flushing their saves.
 
@@ -103,6 +128,11 @@ T-cycles; this is enough for games that use the adapter as a byte transport.
   with the adapter and `tests/rom/four_player/four_player_test.gb`.  The ROM
   pings, enters transmission mode, sends each player's id and checks the next
   broadcast packet for `1,2,3,4`; each system writes its result to SRAM.
+- `tests/gb/infrared/GbInfraredTest.cpp` covers the RP register mask, read
+  enable, peer LED visibility, signal fade and reset.
+- `tests/gb/infrared/GbInfraredLinkTest.cpp` runs two CGB systems with
+  `tests/rom/infrared/ir_sender.gb` and `ir_receiver.gb`; the sender pulses the
+  LED, the receiver acknowledges, and both write a pass to SRAM.
 - `tests/ui/SavePathsTest.cpp` checks that the path shown in the link setup
   dialog is the same path `SaveManager` will actually read and write, and
   covers copying saves with and without a sibling `.rtc`.
@@ -113,6 +143,9 @@ T-cycles; this is enough for games that use the adapter as a byte transport.
   adapters and the 16-player FaceBall cable are not implemented.
 - The adapter's packet timing is rounded from Pan Docs.  Games that depend on
   exact DMG-07 microsecond timing may need further calibration.
+- Infrared supports two GBCs only.  External IR devices (Pokémon Pikachu 2,
+  Pocket Sakura, TV remotes) and the RP ambient-light/read-enable quirk are not
+  emulated.
 - SB writes during an active two-player transfer are not blended into the
   outgoing byte; games normally write SB before starting the transfer.
 - The start of an internally clocked transfer is not phase-aligned to DIV, so

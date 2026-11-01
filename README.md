@@ -18,7 +18,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - Four-channel APU with a DIV-APU frame sequencer, mixer, DC filter and
   low-pass output stage.
 - Timer/divider, joypad and OAM DMA/HDMA.
-- Serial data transfer with an in-process link cable for two- and four-player games (DMG-07 protocol).
+- Serial data transfer with an in-process link cable for two- and four-player games (DMG-07 protocol), plus two-player Game Boy Color infrared.
 - Super Game Boy command protocol, palette/attribute colorization, the
   default 256×224 border and custom border transfers.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
@@ -26,7 +26,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
 - Parallel background library scan with a loading overlay, plus text search and region/language/status filters.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 464 CTest cases, including 168 curated test ROMs.
+- 471 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -253,6 +253,11 @@ focus; Space or Ctrl+P pauses all players.  Two-player sessions use a direct
 link cable; four-player sessions emulate the DMG-07 adapter (ping phase,
 transmission phase, per-player ports and the one-packet broadcast delay).
 
+The Link banner also offers **Infrared**, which forces two players and launches
+both ROMs on the CGB platform; a DMG-only ROM is rejected.  Infrared uses the
+GBC RP register (`FF56`), a local LED/sensor pair and the ~3 ms signal fade
+described by Pan Docs.
+
 Before starting, a setup dialog chooses the save for each player.  The default
 **Game save** is the file used in single-player, so Pokémon trades and other
 linked progress carry straight back into normal play.  **Link save 1/2/3** are
@@ -261,8 +266,9 @@ the dialog warns instead of letting two running games share one save file.
 
 `--rom game1.gb --link-rom game2.gb` starts two-player link play directly.
 Repeat `--link-rom` up to three times for a three- or four-player session.
-See [`doc/serial-link.md`](doc/serial-link.md) for the transport interface,
-test coverage and current limitations.
+`--rom game1.gbc --ir-rom game2.gbc` starts a two-player Game Boy Color
+infrared session.  See [`doc/serial-link.md`](doc/serial-link.md) for the
+transport interface, test coverage and current limitations.
 
 Each game's `⋯` menu also has **Save data...**: play any slot in single-player,
 rename the four slots, copy between slots, create a timestamped backup,
@@ -694,7 +700,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **464/464 CTest cases**, including 168 ROM tests.
+The current set is **471/471 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -889,6 +895,7 @@ fail when run directly:
 | Interrupts       | ✅          | unit + Mooneye |
 | Joypad           | ✅          | unit |
 | Serial link      | ✅          | unit + 2/4-instance + ROM test |
+| Infrared link    | ✅          | unit + two-instance ROM test |
 | Timer / divider  | ✅          | unit + Mooneye |
 | OAM DMA / HDMA   | ✅          | unit + Mooneye |
 | No MBC           | ✅          | ROM tests |

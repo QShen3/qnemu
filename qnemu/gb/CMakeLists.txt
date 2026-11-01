@@ -118,6 +118,11 @@ qnemu_add_gb_library(gb_memory
 qnemu_add_gb_library(gb_joypad
     ${CMAKE_CURRENT_SOURCE_DIR}/joypad/GbJoypad.cpp)
 
+# Game Boy Color infrared port and local IR pair.
+qnemu_add_gb_library(gb_infrared
+    ${CMAKE_CURRENT_SOURCE_DIR}/infrared/GbInfrared.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/infrared/GbLocalInfraredLink.cpp)
+
 # Serial port (SB/SC) and the local link transport.
 qnemu_add_gb_library(gb_serial
     ${CMAKE_CURRENT_SOURCE_DIR}/serial/GbFourPlayerAdapter.cpp
@@ -134,6 +139,7 @@ qnemu_add_gb_library(gb_mmu
 target_link_libraries(gb_mmu
     PRIVATE
         gb_apu
+        gb_infrared
         gb_joypad
         gb_memory
         gb_serial
@@ -154,6 +160,7 @@ target_link_libraries(gb
         gb_bootrom
         gb_cpu
         gb_interrupt
+        gb_infrared
         gb_ppu
         gb_apu
         gb_timer

@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "qnemu/gb/GbPlatform.h"
+#include "qnemu/gb/infrared/GbInfraredLink.h"
 #include "qnemu/gb/platform/GameBoyPlatform.h"
 #include "qnemu/gb/serial/GbSerialLink.h"
 
@@ -23,6 +24,7 @@ std::unique_ptr<GameBoyPlatform> createPlatform(GbPlatform platform,
     std::shared_ptr<DisplayInterface> display,
     std::unique_ptr<SoundInterface> sound,
     std::shared_ptr<InputInterface> input,
-    std::shared_ptr<GbSerialLink> serialLink);
+    std::shared_ptr<GbSerialLink> serialLink,
+    std::shared_ptr<GbInfraredLink> infraredLink);
 
 }  // namespace qnemu

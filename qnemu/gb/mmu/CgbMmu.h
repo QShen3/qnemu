@@ -11,6 +11,7 @@
 
 #include "qnemu/gb/memory/CgbWorkRam.h"
 #include "qnemu/gb/mmu/DmgMmu.h"
+#include "qnemu/gb/infrared/GbInfrared.h"
 
 namespace qnemu
 {
@@ -33,11 +34,13 @@ public:
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<CgbWorkRam> workRam,
         std::unique_ptr<GbTimer> timer,
-        std::unique_ptr<GbSerial> serial);
+        std::unique_ptr<GbSerial> serial,
+        std::unique_ptr<GbInfrared> infrared);
     ~CgbMmu() override = default;
 
     uint8_t read(uint16_t address) const override;
     void write(uint16_t address, const uint8_t& value) override;
+    void step() override;
     void reset() override;
 
     void setCgb(bool cgb) override;
@@ -48,6 +51,7 @@ private:
     CgbWorkRam& cgbWorkRam() const;
 
     std::array<uint8_t, 4> cgbUnmappedRegisters_ {};
+    std::unique_ptr<GbInfrared> infrared_;
     bool dmgMode_ = false;
 };
 

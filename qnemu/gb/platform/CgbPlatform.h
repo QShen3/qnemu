@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "qnemu/gb/platform/GameBoyPlatform.h"
+#include "qnemu/gb/infrared/GbInfraredLink.h"
 #include "qnemu/gb/serial/GbSerialLink.h"
 
 namespace qnemu
@@ -40,7 +41,8 @@ public:
         std::shared_ptr<DisplayInterface> display,
         std::unique_ptr<SoundInterface> sound,
         std::shared_ptr<InputInterface> input,
-        std::shared_ptr<GbSerialLink> serialLink);
+        std::shared_ptr<GbSerialLink> serialLink,
+        std::shared_ptr<GbInfraredLink> infraredLink);
     ~CgbPlatform() override;
 
     void reset(const GbCartridgeHeader& header) override;

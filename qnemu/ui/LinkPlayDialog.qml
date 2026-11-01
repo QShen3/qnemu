@@ -10,6 +10,7 @@ Dialog {
     property int playerCount: 0
     property var playerOptions: []
     property var selectedSlots: []
+    property bool infrared: false
     property var theme: null
     property var controller: null
 
@@ -22,21 +23,30 @@ Dialog {
     modal: true
     padding: 18
     width: Math.min(600, (Overlay.overlay ? Overlay.overlay.width : 800) - 64)
-    title: dialog.playerCount > 0
-        ? qsTr("Link Play (%1 players)").arg(dialog.playerCount)
-        : qsTr("Link Play")
+    title: dialog.infrared
+        ? qsTr("Infrared Link (%1 players)").arg(dialog.playerCount)
+        : (dialog.playerCount > 0
+            ? qsTr("Link Play (%1 players)").arg(dialog.playerCount)
+            : qsTr("Link Play"))
 
-    function openForGames(paths, titles) {
-        const options = paths.map(function (path) {
+    function openForGames(paths, titles, infrared) {
+        // Tear down the old delegates before changing the option arrays so a
+        // shrink from 4 to 2 players never leaves an index pointing past the
+        // new arrays.
+        dialog.playerCount = 0;
+        dialog.infrared = infrared === true;
+        const activePaths = dialog.infrared ? paths.slice(0, 2) : paths;
+        const activeTitles = dialog.infrared ? titles.slice(0, 2) : titles;
+        const options = activePaths.map(function (path) {
             return controller.saveSlots(path);
         });
-        dialog.playerPaths = paths;
-        dialog.playerTitles = titles;
-        dialog.selectedSlots = dialog.defaultSlots(options, paths.length);
+        dialog.playerPaths = activePaths;
+        dialog.playerTitles = activeTitles;
+        dialog.selectedSlots = dialog.defaultSlots(options, activePaths.length);
         dialog.playerOptions = options;
         // Set the count last so delegates are created with options and slots
         // already populated.
-        dialog.playerCount = paths.length;
+        dialog.playerCount = activePaths.length;
         open();
     }
 
@@ -132,7 +142,12 @@ Dialog {
         if (dialog.hasConflict()) {
             return;
         }
-        controller.startLinkGame(dialog.playerPaths, dialog.selectedSlots);
+        if (dialog.infrared) {
+            controller.startInfraredGame(dialog.playerPaths,
+                dialog.selectedSlots);
+        } else {
+            controller.startLinkGame(dialog.playerPaths, dialog.selectedSlots);
+        }
         dialog.accept();
     }
 
@@ -141,7 +156,9 @@ Dialog {
 
         Label {
             Layout.fillWidth: true
-            text: qsTr("Choose the save each player uses. “Game save” is the file used in single-player, so progress carries over. Use a “Link save” when several players share the same ROM.")
+            text: dialog.infrared
+                ? qsTr("Choose the save each player uses. Infrared link needs two Game Boy Color games; keep both screens close.")
+                : qsTr("Choose the save each player uses. “Game save” is the file used in single-player, so progress carries over. Use a “Link save” when several players share the same ROM.")
             color: dialog.textColor
             font.pixelSize: 11
             wrapMode: Text.Wrap
@@ -210,7 +227,9 @@ Dialog {
         Label {
             Layout.fillWidth: true
             Layout.topMargin: 2
-            text: qsTr("Four-player games use the DMG-07 adapter protocol; two-player games use a direct link cable.")
+            text: dialog.infrared
+                ? qsTr("Infrared uses the Game Boy Color IR port; both games must be CGB-capable.")
+                : qsTr("Four-player games use the DMG-07 adapter protocol; two-player games use a direct link cable.")
             color: dialog.faintColor
             font.pixelSize: 10
             wrapMode: Text.Wrap

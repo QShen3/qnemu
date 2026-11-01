@@ -55,6 +55,11 @@ int main(int argc, char* argv[])
         "Load another ROM for link play; repeat up to three times. Requires --rom.",
         "path");
     parser.addOption(linkRomOption);
+    const QCommandLineOption irRomOption(
+        QStringList {"ir-rom"},
+        "Load a second ROM and start GBC infrared link play. Requires --rom.",
+        "path");
+    parser.addOption(irRomOption);
     parser.process(app);
 
     std::optional<qnemu::GbPlatform> platformOverride;
@@ -114,7 +119,27 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (parser.isSet(linkRomOption)) {
+    if (parser.isSet(irRomOption)) {
+        if (!parser.isSet(romOption)) {
+            qCritical().noquote() << "--ir-rom requires --rom";
+            return 1;
+        }
+        if (parser.isSet(linkRomOption)) {
+            qCritical().noquote() << "--ir-rom cannot be combined with --link-rom";
+            return 1;
+        }
+
+        QStringList paths;
+        paths << parser.value(romOption);
+        paths << parser.value(irRomOption);
+        QVariantList saveSlots;
+        saveSlots.append(0);
+        saveSlots.append(controller.linkSavePath(paths.at(0), 0)
+                == controller.linkSavePath(paths.at(1), 0)
+            ? 2
+            : 0);
+        controller.startInfraredGame(paths, saveSlots);
+    } else if (parser.isSet(linkRomOption)) {
         if (!parser.isSet(romOption)) {
             qCritical().noquote() << "--link-rom requires --rom";
             return 1;

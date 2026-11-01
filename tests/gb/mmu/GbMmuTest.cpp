@@ -20,6 +20,7 @@
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
+#include "qnemu/gb/infrared/GbInfrared.h"
 #include "qnemu/gb/memory/CgbWorkRam.h"
 #include "qnemu/gb/memory/DmgWorkRam.h"
 #include "qnemu/gb/memory/GbHighRam.h"
@@ -151,11 +152,12 @@ protected:
         auto workRam = std::make_unique<qnemu::CgbWorkRam>();
         auto timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
         auto serial = std::make_unique<qnemu::GbSerial>(interruptHandler, nullptr, true);
+        auto infrared = std::make_unique<qnemu::GbInfrared>(nullptr);
 
         mmu = std::make_unique<qnemu::CgbMmu>(
             std::move(apu), cartridge, std::move(gpu), std::move(highRam),
             interruptHandler, std::move(joypad), std::move(workRam), std::move(timer),
-            std::move(serial));
+            std::move(serial), std::move(infrared));
         mmu->setCgb(true);
     }
 
@@ -246,6 +248,30 @@ TEST_F(CgbMmuTest, RoutesSerialRegisters)
 
     mmu->step();
     EXPECT_EQ(mmu->read(0xFF02), 0x7F);
+}
+
+TEST_F(CgbMmuTest, RoutesInfraredRegisterOnlyInCgbMode)
+{
+    EXPECT_EQ(mmu->read(0xFF56), 0x3E);
+
+    mmu->write(0xFF56, 0xC1);
+    EXPECT_EQ(mmu->read(0xFF56), 0xFF);
+
+    mmu->setDmgCompatibilityMode(true);
+    mmu->write(0xFF56, 0x00);
+    EXPECT_EQ(mmu->read(0xFF56), 0xFF);
+
+    mmu->setDmgCompatibilityMode(false);
+    // The write above was ignored in DMG compatibility mode, so the LED and
+    // read-enable bits are still set.
+    EXPECT_EQ(mmu->read(0xFF56), 0xFF);
+}
+
+TEST_F(DmgMmuTest, HidesInfraredRegister)
+{
+    EXPECT_EQ(mmu->read(0xFF56), 0xFF);
+    mmu->write(0xFF56, 0xC1);
+    EXPECT_EQ(mmu->read(0xFF56), 0xFF);
 }
 
 TEST_F(DmgMmuTest, UsesFixedUpperWorkRam)

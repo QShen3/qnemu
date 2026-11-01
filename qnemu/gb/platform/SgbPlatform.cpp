@@ -19,9 +19,10 @@ SgbPlatform::SgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<DisplayInterface> displayInterface,
         std::unique_ptr<SoundInterface> sound,
         std::shared_ptr<InputInterface> input,
-        std::shared_ptr<GbSerialLink> serialLink) :
+        std::shared_ptr<GbSerialLink> serialLink,
+        std::shared_ptr<GbInfraredLink> infraredLink) :
     DmgPlatform(std::move(cartridge), std::move(displayInterface), std::move(sound),
-        std::move(input), std::move(serialLink)),
+        std::move(input), std::move(serialLink), std::move(infraredLink)),
     colorizer_(sgb_),
     frameSink_(sgb_, display())
 {

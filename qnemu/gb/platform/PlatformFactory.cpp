@@ -19,18 +19,22 @@ std::unique_ptr<GameBoyPlatform> createPlatform(GbPlatform platform,
     std::shared_ptr<DisplayInterface> display,
     std::unique_ptr<SoundInterface> sound,
     std::shared_ptr<InputInterface> input,
-    std::shared_ptr<GbSerialLink> serialLink)
+    std::shared_ptr<GbSerialLink> serialLink,
+    std::shared_ptr<GbInfraredLink> infraredLink)
 {
     switch (platform) {
         case GbPlatform::gb:
             return std::make_unique<DmgPlatform>(std::move(cartridge), std::move(display),
-                std::move(sound), std::move(input), std::move(serialLink));
+                std::move(sound), std::move(input), std::move(serialLink),
+                std::move(infraredLink));
         case GbPlatform::sgb:
             return std::make_unique<SgbPlatform>(std::move(cartridge), std::move(display),
-                std::move(sound), std::move(input), std::move(serialLink));
+                std::move(sound), std::move(input), std::move(serialLink),
+                std::move(infraredLink));
         case GbPlatform::gbc:
             return std::make_unique<CgbPlatform>(std::move(cartridge), std::move(display),
-                std::move(sound), std::move(input), std::move(serialLink));
+                std::move(sound), std::move(input), std::move(serialLink),
+                std::move(infraredLink));
     }
     return nullptr;
 }

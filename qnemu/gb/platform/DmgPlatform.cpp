@@ -36,7 +36,8 @@ DmgPlatform::DmgPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::unique_ptr<SoundInterface> sound,
         std::shared_ptr<InputInterface> input,
-        std::shared_ptr<GbSerialLink> serialLink) :
+        std::shared_ptr<GbSerialLink> serialLink,
+        std::shared_ptr<GbInfraredLink> /*infraredLink*/) :
     cartridge_(std::move(cartridge)),
     display_(std::move(display)),
     input_(std::move(input))

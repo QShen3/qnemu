@@ -18,6 +18,7 @@
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/CgbPpu.h"
+#include "qnemu/gb/infrared/GbInfrared.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
 #include "qnemu/gb/memory/CgbWorkRam.h"
@@ -36,7 +37,8 @@ CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::unique_ptr<SoundInterface> sound,
         std::shared_ptr<InputInterface> input,
-        std::shared_ptr<GbSerialLink> serialLink) :
+        std::shared_ptr<GbSerialLink> serialLink,
+        std::shared_ptr<GbInfraredLink> infraredLink) :
     cartridge_(std::move(cartridge)),
     display_(std::move(display)),
     input_(std::move(input))
@@ -69,9 +71,10 @@ CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
     ppu_ = ppu.get();
     ppu_->setOamBugEnabled(false);
     auto serial = std::make_unique<GbSerial>(interruptHandler_, std::move(serialLink), true);
+    auto infrared = std::make_unique<GbInfrared>(std::move(infraredLink));
     mmu_ = std::make_unique<CgbMmu>(std::move(apu), cartridge_, std::move(ppu),
         std::move(highRam), interruptHandler_, std::move(joypad), std::move(workRam),
-        std::move(timer), std::move(serial));
+        std::move(timer), std::move(serial), std::move(infrared));
     ppu_->setExternalRead([mmuPointer = mmu_.get()](uint16_t address) {
         return mmuPointer->read(address);
     });

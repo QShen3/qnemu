@@ -23,14 +23,15 @@ Gb::Gb(GbPlatform platformKind,
         std::shared_ptr<DisplayInterface> displayInterface,
         std::unique_ptr<SoundInterface> soundInterface,
         std::shared_ptr<InputInterface> inputInterface,
-        std::shared_ptr<GbSerialLink> serialLink) :
+        std::shared_ptr<GbSerialLink> serialLink,
+        std::shared_ptr<GbInfraredLink> infraredLink) :
     display(std::move(displayInterface)),
     input(std::move(inputInterface))
 {
     sound = soundInterface.get();
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     platform = createPlatform(platformKind, cartridge, display, std::move(soundInterface),
-        input, std::move(serialLink));
+        input, std::move(serialLink), std::move(infraredLink));
 }
 
 Gb::~Gb()

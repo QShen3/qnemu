@@ -6,8 +6,11 @@ ApplicationWindow {
     id: linkWindow
 
     visible: false
-    title: qsTr("QNEmu Link Play (%1 players)")
-        .arg(appController.linkPlayerCount)
+    title: appController.linkInfrared
+        ? qsTr("QNEmu Infrared Link (%1 players)")
+            .arg(appController.linkPlayerCount)
+        : qsTr("QNEmu Link Play (%1 players)")
+            .arg(appController.linkPlayerCount)
     color: "black"
 
     readonly property int playerCount: appController.linkPlayerCount

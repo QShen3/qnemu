@@ -7,7 +7,7 @@ Item {
 
     signal addGameRequested
     signal settingsRequested(string platform)
-    signal linkPlayRequested(var paths, var titles)
+    signal linkPlayRequested(var paths, var titles, bool infrared)
     signal saveDataRequested(string path, string title)
 
     /// Application palette passed from the main window so custom labels follow
@@ -17,10 +17,14 @@ Item {
     property var linkSelectedPaths: []
     property var linkSelectedTitles: []
     property int linkPlayerCount: 2
+    property bool linkInfrared: false
     property bool linkSelecting: false
 
-    function beginLinkSelection(firstPath, firstTitle, playerCount) {
-        page.linkPlayerCount = playerCount === 4 ? 4 : 2;
+    function beginLinkSelection(firstPath, firstTitle, playerCount, infrared) {
+        page.linkInfrared = infrared === true;
+        page.linkPlayerCount = page.linkInfrared
+            ? 2
+            : (playerCount === 4 ? 4 : 2);
         page.linkSelectedPaths = firstPath === "" ? [] : [firstPath];
         page.linkSelectedTitles = firstTitle === "" ? [] : [firstTitle];
         page.linkSelecting = true;
@@ -32,8 +36,17 @@ Item {
         page.linkSelectedTitles = [];
     }
 
+    function setLinkInfrared(infrared) {
+        page.linkInfrared = infrared === true;
+        if (page.linkInfrared) {
+            page.linkPlayerCount = 2;
+        }
+    }
+
     function setLinkPlayerCount(count) {
-        page.linkPlayerCount = count === 4 ? 4 : 2;
+        page.linkPlayerCount = page.linkInfrared
+            ? 2
+            : (count === 4 ? 4 : 2);
         if (page.linkSelectedPaths.length > page.linkPlayerCount) {
             page.linkSelectedPaths =
                 page.linkSelectedPaths.slice(0, page.linkPlayerCount);
@@ -44,8 +57,9 @@ Item {
             && page.linkPlayerCount > 0) {
             const paths = page.linkSelectedPaths.slice();
             const titles = page.linkSelectedTitles.slice();
+            const infrared = page.linkInfrared;
             page.cancelLinkSelection();
-            page.linkPlayRequested(paths, titles);
+            page.linkPlayRequested(paths, titles, infrared);
         }
     }
 
@@ -62,8 +76,9 @@ Item {
         if (paths.length >= page.linkPlayerCount) {
             const selectedPaths = paths.slice(0, page.linkPlayerCount);
             const selectedTitles = titles.slice(0, page.linkPlayerCount);
+            const infrared = page.linkInfrared;
             page.cancelLinkSelection();
-            page.linkPlayRequested(selectedPaths, selectedTitles);
+            page.linkPlayRequested(selectedPaths, selectedTitles, infrared);
         } else {
             page.linkSelectedPaths = paths;
             page.linkSelectedTitles = titles;
@@ -83,8 +98,9 @@ Item {
             paths.push(firstPath);
             titles.push(firstTitle);
         }
+        const infrared = page.linkInfrared;
         page.cancelLinkSelection();
-        page.linkPlayRequested(paths, titles);
+        page.linkPlayRequested(paths, titles, infrared);
     }
 
     function gameCountText() {
@@ -192,7 +208,7 @@ Item {
                     if (page.linkSelecting) {
                         page.cancelLinkSelection();
                     } else {
-                        page.beginLinkSelection("", "", 2);
+                        page.beginLinkSelection("", "", 2, false);
                     }
                 }
             }
@@ -324,23 +340,33 @@ Item {
 
                 Label {
                     Layout.fillWidth: true
-                    text: page.linkSelectedPaths.length === 0
-                        ? qsTr("Link Play — select Player 1 of %1")
-                            .arg(page.linkPlayerCount)
-                        : qsTr("Link Play — %1 selected; select Player %2 of %3")
-                            .arg(page.linkSelectedTitles[
-                                page.linkSelectedPaths.length - 1])
-                            .arg(page.linkSelectedPaths.length + 1)
-                            .arg(page.linkPlayerCount)
+                    text: (page.linkInfrared ? qsTr("Infrared — ") : qsTr("Link Play — "))
+                        + (page.linkSelectedPaths.length === 0
+                            ? qsTr("select Player 1 of %1")
+                                .arg(page.linkPlayerCount)
+                            : qsTr("%1 selected; select Player %2 of %3")
+                                .arg(page.linkSelectedTitles[
+                                    page.linkSelectedPaths.length - 1])
+                                .arg(page.linkSelectedPaths.length + 1)
+                                .arg(page.linkPlayerCount))
                     color: page.theme.windowText
                     font.pixelSize: 12
                     elide: Text.ElideRight
                 }
 
                 ComboBox {
+                    model: [qsTr("Link cable"), qsTr("Infrared")]
+                    currentIndex: page.linkInfrared ? 1 : 0
+                    implicitWidth: 104
+                    enabled: page.linkSelectedPaths.length === 0
+                    onActivated: page.setLinkInfrared(currentIndex === 1)
+                }
+
+                ComboBox {
                     model: [qsTr("2 players"), qsTr("4 players")]
                     currentIndex: page.linkPlayerCount === 4 ? 1 : 0
-                    implicitWidth: 112
+                    implicitWidth: 104
+                    enabled: !page.linkInfrared
                     onActivated: page.setLinkPlayerCount(
                         currentIndex === 1 ? 4 : 2)
                 }
@@ -681,7 +707,13 @@ Item {
                         MenuItem {
                             text: qsTr("Link Play...")
                             enabled: !model.missing
-                            onTriggered: page.beginLinkSelection(model.path, model.title, 2)
+                            onTriggered: page.beginLinkSelection(model.path, model.title, 2, false)
+                        }
+
+                        MenuItem {
+                            text: qsTr("Infrared Link Play...")
+                            enabled: !model.missing
+                            onTriggered: page.beginLinkSelection(model.path, model.title, 2, true)
                         }
 
                         MenuItem {

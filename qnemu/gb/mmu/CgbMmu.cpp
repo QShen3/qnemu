@@ -19,15 +19,20 @@ CgbMmu::CgbMmu(std::unique_ptr<GbApu> apu,
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<CgbWorkRam> workRam,
         std::unique_ptr<GbTimer> timer,
-        std::unique_ptr<GbSerial> serial) :
+        std::unique_ptr<GbSerial> serial,
+        std::unique_ptr<GbInfrared> infrared) :
     DmgMmu(std::move(apu), cartridge, std::move(gpu), std::move(highRam),
         interruptHandler, std::move(joypad), std::move(workRam), std::move(timer),
-        std::move(serial))
+        std::move(serial)),
+    infrared_(std::move(infrared))
 {
 }
 
 uint8_t CgbMmu::read(uint16_t address) const
 {
+    if (address == 0xFF56) {
+        return dmgMode_ ? 0xFF : infrared_->read(address);
+    }
     if (address == 0xFF4F || (address >= 0xFF51 && address <= 0xFF55)
         || (address >= 0xFF68 && address <= 0xFF6C)) {
         return gpu().read(address);
@@ -48,6 +53,12 @@ uint8_t CgbMmu::read(uint16_t address) const
 
 void CgbMmu::write(uint16_t address, const uint8_t& value)
 {
+    if (address == 0xFF56) {
+        if (!dmgMode_) {
+            infrared_->write(address, value);
+        }
+        return;
+    }
     if (address == 0xFF4F || (address >= 0xFF51 && address <= 0xFF55)
         || (address >= 0xFF68 && address <= 0xFF6C)) {
         gpu().write(address, value);
@@ -65,9 +76,16 @@ void CgbMmu::write(uint16_t address, const uint8_t& value)
     DmgMmu::write(address, value);
 }
 
+void CgbMmu::step()
+{
+    DmgMmu::step();
+    infrared_->step();
+}
+
 void CgbMmu::reset()
 {
     DmgMmu::reset();
+    infrared_->reset();
     cgbUnmappedRegisters_.fill(0);
     dmgMode_ = false;
     cgbWorkRam().setDmgCompatibility(false);

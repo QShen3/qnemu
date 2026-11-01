@@ -38,7 +38,15 @@ ApplicationWindow {
                 text: qsTr("&Link Play...")
                 action: Action {
                     text: qsTr("&Link Play...")
-                    onTriggered: libraryPage.beginLinkSelection("", "", 2)
+                    onTriggered: libraryPage.beginLinkSelection("", "", 2, false)
+                }
+            }
+
+            MenuItem {
+                text: qsTr("&Infrared Link Play...")
+                action: Action {
+                    text: qsTr("&Infrared Link Play...")
+                    onTriggered: libraryPage.beginLinkSelection("", "", 2, true)
                 }
             }
 
@@ -151,8 +159,8 @@ ApplicationWindow {
         onSettingsRequested: function (platform) {
             settingsDialog.showPage(platform === "GBC" ? 2 : 1, window);
         }
-        onLinkPlayRequested: function (paths, titles) {
-            linkPlayDialog.openForGames(paths, titles);
+        onLinkPlayRequested: function (paths, titles, infrared) {
+            linkPlayDialog.openForGames(paths, titles, infrared);
         }
         onSaveDataRequested: function (path, title) {
             saveManagerDialog.openForGame(path, title);
