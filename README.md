@@ -180,8 +180,8 @@ attribute commands, the default SGB border and custom border transfers
 The library and the game view are separate windows. The library window keeps a
 comfortable fixed layout independent of the game scale; the game window opens
 at the configured scale and can be resized. Closing the game window pauses
-emulation; use **Game → Resume** (Ctrl+P) or Space from the game window to
-continue.
+emulation; click the same library row again to resume, or use
+**Game → Resume** (Ctrl+P) or Space from the game window.
 
 The home page is a per-platform library:
 
@@ -189,8 +189,9 @@ The home page is a per-platform library:
   configured library folders are added to the library as references; the
   original file is never copied or moved.
 - **Add Game...** adds a ROM to the library without starting it.
-- Click a library row to run it. The row menu can remove it from the library
-  without deleting the file.
+- Click a library row to run it. Clicking the already-loaded game resumes it
+  instead of reloading; the row shows a **Running** or **Paused** badge. The row
+  menu can remove it from the library without deleting the file.
 - **Settings...** opens the settings window with the GB launch mode, library
   paths, save path, screenshots, game scale, audio and key profiles.
 - **Screenshot** saves the current frame (160×144, or 256×224 with the SGB
@@ -337,8 +338,10 @@ platforms.
 The library window has a fixed comfortable size and is not affected by the
 game scale. The game window is resized to the 100/150/200% preset. Closing the
 game window or returning to the library pauses the emulator; the paused frame
-stays visible behind a **Paused** overlay, and **Game → Resume** (Ctrl+P or
-Space in the game window) continues. **View → Game** raises the window again.
+stays visible behind a **Paused** overlay. Clicking the same library row, or
+**Game → Resume** (Ctrl+P or Space in the game window), continues. The library
+row shows **Running** or **Paused** for the current game. **View → Game** raises
+the window again.
 The settings window is positioned once when it opens and stays put when the game
 window is resized.
 

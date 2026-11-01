@@ -27,6 +27,27 @@
 namespace qnemu
 {
 
+namespace
+{
+
+bool sameFile(const QString& left, const QString& right)
+{
+    if (left.isEmpty() || right.isEmpty()) {
+        return false;
+    }
+    const QFileInfo leftInfo(left);
+    const QFileInfo rightInfo(right);
+    const QString leftPath = leftInfo.canonicalFilePath().isEmpty()
+        ? leftInfo.absoluteFilePath()
+        : leftInfo.canonicalFilePath();
+    const QString rightPath = rightInfo.canonicalFilePath().isEmpty()
+        ? rightInfo.absoluteFilePath()
+        : rightInfo.canonicalFilePath();
+    return leftPath == rightPath;
+}
+
+}  // namespace
+
 AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* parent) :
     QObject(parent),
     modelOverride(cliModelOverride)
@@ -65,7 +86,7 @@ void AppController::shutdown()
 {
     gb.reset();
     displayItem = nullptr;
-    currentRomPath.clear();
+    setCurrentRomPath(QString());
     currentRomCgbOnly = false;
     setFrameSize(160, 144);
     pausedValue = false;
@@ -129,6 +150,7 @@ void AppController::openRom(const QUrl& url)
     }
     gb.reset();
     emit hasGameChanged();
+    setCurrentRomPath(QString());
 
     try {
         auto display = std::shared_ptr<DisplayInterface>(displayItem,
@@ -170,19 +192,17 @@ void AppController::openRom(const QUrl& url)
         gb = std::move(system);
         setFrameSize(targetModel == GbModel::sgb ? 256 : 160,
             targetModel == GbModel::sgb ? 224 : 144);
-        currentRomPath = path;
+        setCurrentRomPath(path);
         libraryValue->addOpenedGame(path);
 
         setWindowTitle(displayName + QStringLiteral(" - QNEmu"));
         setStatusText(QStringLiteral("Loaded ") + displayName);
-        if (!showingGameValue) {
-            showingGameValue = true;
-            emit showingGameChanged();
-        }
+        showGame();
         emit hasGameChanged();
     } catch (const std::exception& error) {
         qWarning().noquote() << "Failed to load ROM:" << error.what();
         currentRomCgbOnly = false;
+        setCurrentRomPath(QString());
         setFrameSize(160, 144);
         setWindowTitle(QStringLiteral("QNEmu"));
         setStatusText(QStringLiteral("Failed to load ROM: ") + error.what());
@@ -195,6 +215,16 @@ void AppController::openRom(const QUrl& url)
 
 void AppController::openGame(const QString& path)
 {
+    if (gb && sameFile(path, currentRomPath)) {
+        const bool wasPaused = pausedValue;
+        if (wasPaused) {
+            resume();
+            setStatusText(QStringLiteral("Resumed ")
+                + QFileInfo(currentRomPath).fileName());
+        }
+        showGame();
+        return;
+    }
     openRom(QUrl::fromLocalFile(path));
 }
 
@@ -235,7 +265,7 @@ void AppController::showLibrary()
 
 void AppController::showGame()
 {
-    if (!gb || showingGameValue) {
+    if (!gb) {
         return;
     }
     showingGameValue = true;
@@ -265,6 +295,22 @@ void AppController::setPaused(bool value)
     pausedValue = value;
     gb->setPaused(value);
     emit pausedChanged();
+}
+
+void AppController::setCurrentRomPath(const QString& path)
+{
+    QString normalized;
+    if (!path.isEmpty()) {
+        const QFileInfo info(path);
+        normalized = info.canonicalFilePath().isEmpty()
+            ? info.absoluteFilePath()
+            : info.canonicalFilePath();
+    }
+    if (currentRomPath == normalized) {
+        return;
+    }
+    currentRomPath = normalized;
+    emit currentGamePathChanged();
 }
 
 QString AppController::localPath(const QUrl& url) const

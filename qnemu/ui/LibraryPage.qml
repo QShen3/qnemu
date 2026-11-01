@@ -455,6 +455,28 @@ Item {
                         }
 
                         Rectangle {
+                            id: runningBadge
+
+                            visible: appController.hasGame
+                                && model.path === appController.currentGamePath
+                            Layout.alignment: Qt.AlignVCenter
+                            implicitWidth: runningBadgeLabel.implicitWidth + 12
+                            implicitHeight: 18
+                            radius: 9
+                            color: appController.paused ? page.theme.warning : page.theme.gb
+
+                            Label {
+                                id: runningBadgeLabel
+
+                                anchors.centerIn: parent
+                                text: appController.paused ? qsTr("Paused") : qsTr("Running")
+                                color: appController.paused ? "#1b1b1b" : page.theme.gbText
+                                font.pixelSize: 9
+                                font.weight: Font.DemiBold
+                            }
+                        }
+
+                        Rectangle {
                             id: statusBadge
 
                             visible: model.status !== "" && model.status !== "unknown"
