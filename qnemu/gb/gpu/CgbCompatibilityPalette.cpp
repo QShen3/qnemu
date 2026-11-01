@@ -152,6 +152,11 @@ DmgCompatibilityPalette paletteForCombination(std::uint8_t combination)
 
 }  // namespace
 
+DmgCompatibilityPalette cgbCompatibilityPaletteForCombination(uint8_t combination)
+{
+    return paletteForCombination(combination);
+}
+
 DmgCompatibilityPalette cgbCompatibilityPalette(const CgbCompatibilityHeader& header)
 {
     const bool nintendo = header.oldLicensee == 0x33

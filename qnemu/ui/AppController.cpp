@@ -64,6 +64,11 @@ AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* p
             setStatusText(QStringLiteral("SGB boot ROM setting changed; reopen the game to apply."));
         }
     });
+    connect(settingsValue, &AppSettings::cgbPaletteChanged, this, [this]() {
+        if (gb) {
+            setStatusText(QStringLiteral("CGB palette setting changed; reopen the game to apply."));
+        }
+    });
     connect(settingsValue, &AppSettings::activeKeyBindingsChanged, this, &AppController::applyKeyBindings);
     connect(settingsValue, &AppSettings::activeKeyProfileChanged, this, &AppController::applyKeyBindings);
 }
@@ -160,6 +165,7 @@ void AppController::openRom(const QUrl& url)
         system->setCgbBootRomEnabled(settingsValue->loadCgbBootRom());
         system->setDmgBootRomEnabled(settingsValue->loadDmgBootRom());
         system->setSgbBootRomEnabled(settingsValue->loadSgbBootRom());
+        system->setCgbPalette(settingsValue->cgbPalette());
         system->loadCartridge(path.toStdString().c_str());
 
         gb = std::move(system);

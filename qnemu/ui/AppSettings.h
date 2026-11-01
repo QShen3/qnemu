@@ -37,6 +37,7 @@ class AppSettings : public QObject
     Q_PROPERTY(bool loadCgbBootRom READ loadCgbBootRom WRITE setLoadCgbBootRom NOTIFY loadCgbBootRomChanged)
     Q_PROPERTY(bool loadDmgBootRom READ loadDmgBootRom WRITE setLoadDmgBootRom NOTIFY loadDmgBootRomChanged)
     Q_PROPERTY(bool loadSgbBootRom READ loadSgbBootRom WRITE setLoadSgbBootRom NOTIFY loadSgbBootRomChanged)
+    Q_PROPERTY(int cgbPalette READ cgbPalette WRITE setCgbPalette NOTIFY cgbPaletteChanged)
 
     Q_PROPERTY(QString activeKeyProfile READ activeKeyProfile WRITE setActiveKeyProfile NOTIFY activeKeyProfileChanged)
     Q_PROPERTY(QStringList profileNames READ profileNames NOTIFY keyProfilesChanged)
@@ -58,6 +59,7 @@ public:
     bool loadCgbBootRom() const { return loadCgbBootRomValue; }
     bool loadDmgBootRom() const { return loadDmgBootRomValue; }
     bool loadSgbBootRom() const { return loadSgbBootRomValue; }
+    int cgbPalette() const { return cgbPaletteValue; }
 
     QString activeKeyProfile() const { return activeKeyProfileValue; }
     QStringList profileNames() const;
@@ -75,6 +77,7 @@ public:
     void setLoadCgbBootRom(bool value);
     void setLoadDmgBootRom(bool value);
     void setLoadSgbBootRom(bool value);
+    void setCgbPalette(int value);
     void setActiveKeyProfile(const QString& value);
 
     Q_INVOKABLE QString keyName(int key) const;
@@ -94,6 +97,7 @@ signals:
     void loadCgbBootRomChanged();
     void loadDmgBootRomChanged();
     void loadSgbBootRomChanged();
+    void cgbPaletteChanged();
     void activeKeyProfileChanged();
     void keyProfilesChanged();
     void activeKeyBindingsChanged();
@@ -123,6 +127,7 @@ private:
     bool loadCgbBootRomValue = false;
     bool loadDmgBootRomValue = false;
     bool loadSgbBootRomValue = false;
+    int cgbPaletteValue = -1;
 
     QVariantList keyProfilesValue;
     QString activeKeyProfileValue;

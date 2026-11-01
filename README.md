@@ -23,7 +23,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 410 CTest cases, including 167 curated test ROMs.
+- 412 CTest cases, including 167 curated test ROMs.
 
 ## Build
 
@@ -133,6 +133,12 @@ enabled:
 - SGB runs the clean-room header forwarder, then hands off to the HLE SGB
   BIOS. The border/palette menus remain HLE; this ROM does not add a fake
   SNES-side boot animation.
+
+For DMG-only cartridges on CGB with the CGB boot ROM **off**, use
+**Settings → Game Boy Color → DMG compatibility palette** to choose Automatic
+(per-game) or one of the boot ROM's manual combinations. The setting is
+disabled while the CGB boot ROM is on; boot ROM mode reads the buttons during
+startup instead.
 
 Reopen the game after changing a setting.
 
@@ -581,7 +587,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **410/410 CTest cases**, including 167 ROM tests.
+The current set is **412/412 CTest cases**, including 167 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>

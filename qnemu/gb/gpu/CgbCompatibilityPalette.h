@@ -34,4 +34,8 @@ struct CgbCompatibilityHeader
 /// the fourth title character; unknown or non-Nintendo games use combination 0.
 DmgCompatibilityPalette cgbCompatibilityPalette(const CgbCompatibilityHeader& header);
 
+/// Returns one of the 55 palette combinations directly.  The boot ROM's
+/// manual button combinations index this same table (values 0-54).
+DmgCompatibilityPalette cgbCompatibilityPaletteForCombination(uint8_t combination);
+
 }  // namespace qnemu

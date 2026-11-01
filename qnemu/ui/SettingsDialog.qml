@@ -43,6 +43,25 @@ ApplicationWindow {
             label: qsTr("CGB compatibility (color)")
         }
     ]
+    readonly property var cgbPaletteOptions: [
+        { value: -1, label: qsTr("Automatic (per game)") },
+        { value: 1, label: qsTr("Right") },
+        { value: 48, label: qsTr("Left") },
+        { value: 5, label: qsTr("Up") },
+        { value: 8, label: qsTr("Down") },
+        { value: 0, label: qsTr("Right + A") },
+        { value: 40, label: qsTr("Left + A") },
+        { value: 43, label: qsTr("Up + A") },
+        { value: 3, label: qsTr("Down + A") },
+        { value: 6, label: qsTr("Right + B") },
+        { value: 7, label: qsTr("Left + B") },
+        { value: 28, label: qsTr("Up + B") },
+        { value: 49, label: qsTr("Down + B") },
+        { value: 51, label: qsTr("Right + A + B") },
+        { value: 52, label: qsTr("Left + A + B") },
+        { value: 53, label: qsTr("Up + A + B") },
+        { value: 54, label: qsTr("Down + A + B") }
+    ]
     readonly property var keyActions: [
         {
             name: "up",
@@ -125,6 +144,15 @@ ApplicationWindow {
             }
         }
         return launchModels.length - 1;
+    }
+
+    function cgbPaletteIndex(value) {
+        for (let i = 0; i < cgbPaletteOptions.length; ++i) {
+            if (cgbPaletteOptions[i].value === value) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     function buttonLabel(name) {
@@ -686,6 +714,39 @@ ApplicationWindow {
                                 color: uiTheme.mutedText
                                 font.pixelSize: 11
                                 wrapMode: Text.WordWrap
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("DMG compatibility palette")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Used for DMG-only cartridges on CGB when the CGB boot ROM is disabled. Manual entries match the boot ROM's button combinations; this setting is ignored while Load CGB boot ROM is on.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 210
+                                    model: settingsWindow.cgbPaletteOptions
+                                    textRole: "label"
+                                    enabled: !settings.loadCgbBootRom
+                                    currentIndex: settingsWindow.cgbPaletteIndex(settings.cgbPalette)
+                                    onActivated: settings.cgbPalette = settingsWindow.cgbPaletteOptions[currentIndex].value
+                                }
                             }
 
                             RowLayout {

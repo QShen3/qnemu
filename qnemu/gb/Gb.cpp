@@ -168,11 +168,16 @@ void Gb::loadCartridge(const char* filePath)
     }
     ppu->setDmgMode(false);
     if (!bootRomActive && model == GbModel::cgb && !header.cgb) {
-        ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
-            header.titleBytes,
-            header.oldLicensee,
-            header.newLicensee,
-        }));
+        const qnemu::DmgCompatibilityPalette palette =
+            cgbPaletteSelection >= 0 && cgbPaletteSelection <= 54
+            ? qnemu::cgbCompatibilityPaletteForCombination(
+                static_cast<uint8_t>(cgbPaletteSelection))
+            : qnemu::cgbCompatibilityPalette({
+                header.titleBytes,
+                header.oldLicensee,
+                header.newLicensee,
+            });
+        ppu->setDmgCompatibilityPalette(palette);
     } else {
         ppu->clearDmgCompatibilityPalette();
     }

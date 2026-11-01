@@ -91,6 +91,24 @@ TEST_F(AppSettingsTest, SgbBootRomDefaultsToOffAndPersists)
     EXPECT_TRUE(reloaded.loadSgbBootRom());
 }
 
+TEST_F(AppSettingsTest, CgbPaletteDefaultsToAutoAndPersistsManual)
+{
+    qnemu::AppSettings settings;
+    EXPECT_EQ(settings.cgbPalette(), -1);
+
+    settings.setCgbPalette(48);
+    EXPECT_EQ(settings.cgbPalette(), 48);
+
+    QSettings stored;
+    EXPECT_EQ(stored.value(QStringLiteral("platforms/gbc/compatibilityPalette")).toInt(), 48);
+
+    qnemu::AppSettings reloaded;
+    EXPECT_EQ(reloaded.cgbPalette(), 48);
+
+    settings.setCgbPalette(999);
+    EXPECT_EQ(settings.cgbPalette(), -1);
+}
+
 TEST_F(AppSettingsTest, CgbBootRomDefaultsToOffAndPersists)
 {
     qnemu::AppSettings settings;

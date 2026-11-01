@@ -100,6 +100,11 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
                               .toBool();
     loadSgbBootRomValue = settings.value(QStringLiteral("platforms/gb/loadSgbBootRom"), false)
                               .toBool();
+    cgbPaletteValue = settings.value(QStringLiteral("platforms/gbc/compatibilityPalette"), -1)
+                          .toInt();
+    if (cgbPaletteValue < -1 || cgbPaletteValue > 54) {
+        cgbPaletteValue = -1;
+    }
 
     loadKeyProfiles();
 }
@@ -268,6 +273,19 @@ void AppSettings::setLoadSgbBootRom(bool value)
     loadSgbBootRomValue = value;
     settings.setValue(QStringLiteral("platforms/gb/loadSgbBootRom"), value);
     emit loadSgbBootRomChanged();
+}
+
+void AppSettings::setCgbPalette(int value)
+{
+    if (value < -1 || value > 54) {
+        value = -1;
+    }
+    if (value == cgbPaletteValue) {
+        return;
+    }
+    cgbPaletteValue = value;
+    settings.setValue(QStringLiteral("platforms/gbc/compatibilityPalette"), value);
+    emit cgbPaletteChanged();
 }
 
 QString AppSettings::keyName(int key) const

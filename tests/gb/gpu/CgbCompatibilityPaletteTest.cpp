@@ -42,6 +42,17 @@ TEST(CgbCompatibilityPaletteTest, TetrisUsesItsBootRomPalette)
     EXPECT_EQ(palette.object1, expected);
 }
 
+TEST(CgbCompatibilityPaletteTest, ManualCombinationUsesTheSharedTable)
+{
+    const qnemu::DmgCompatibilityPalette palette =
+        qnemu::cgbCompatibilityPaletteForCombination(1);
+    const std::array<uint16_t, 4> expected {0x7FFF, 0x03EA, 0x011F, 0x0000};
+
+    EXPECT_EQ(palette.background, expected);
+    EXPECT_EQ(palette.object0, expected);
+    EXPECT_EQ(palette.object1, expected);
+}
+
 TEST(CgbCompatibilityPaletteTest, NonNintendoGamesUseTheDefaultCombination)
 {
     qnemu::CgbCompatibilityHeader header;

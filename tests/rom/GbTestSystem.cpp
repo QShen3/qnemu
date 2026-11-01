@@ -562,10 +562,6 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
         return;
     }
 
-    if (address >= 0xD000 && address <= 0xD00F) {
-        std::fprintf(stderr, "WRAMW addr=%04X val=%02X SVBK=%02X\n",
-            address, value, static_cast<int>(memory_[0xFF70]));
-    }
     if (address >= 0x8000 && address <= 0xFDFF) {
         memory_[address] = value;
         return;
