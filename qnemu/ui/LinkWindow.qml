@@ -6,15 +6,20 @@ ApplicationWindow {
     id: linkWindow
 
     visible: false
-    title: qsTr("QNEmu Link Play")
+    title: qsTr("QNEmu Link Play (%1 players)")
+        .arg(appController.linkPlayerCount)
     color: "black"
 
-    readonly property real paneHeight: Math.round(144 * 2 * appController.scaleFactor)
-    readonly property real paneWidth1: Math.round(paneHeight * emulator1.frameWidth / Math.max(1, emulator1.frameHeight))
-    readonly property real paneWidth2: Math.round(paneHeight * emulator2.frameWidth / Math.max(1, emulator2.frameHeight))
+    readonly property int playerCount: appController.linkPlayerCount
+    readonly property int rows: playerCount > 2 ? 2 : 1
+    readonly property real effectiveScale: playerCount > 2
+        ? Math.min(appController.scaleFactor, 1.0)
+        : appController.scaleFactor
+    readonly property real paneHeight: Math.round(144 * 2 * effectiveScale)
+    readonly property real paneWidth: Math.round(paneHeight * 160 / 144)
 
-    width: paneWidth1 + paneWidth2 + 3
-    height: paneHeight + (menuBar ? menuBar.height : 0)
+    width: paneWidth * 2 + 3
+    height: paneHeight * rows + (rows - 1) * 2 + (menuBar ? menuBar.height : 0)
     minimumWidth: 320
     minimumHeight: 160
 
@@ -23,30 +28,54 @@ ApplicationWindow {
         raise();
         requestActivate();
         Qt.callLater(function () {
-            emulator1.forceActiveFocus();
+            const firstPane = paneRepeater.itemAt(0);
+            if (firstPane) {
+                firstPane.display.forceActiveFocus();
+            }
         });
     }
 
+    function releaseAllButtons() {
+        for (let index = 0; index < paneRepeater.count; ++index) {
+            const pane = paneRepeater.itemAt(index);
+            if (pane && pane.display) {
+                pane.display.releaseAllButtons();
+            }
+        }
+    }
+
+    function titleAt(index) {
+        switch (index) {
+        case 0:
+            return appController.linkTitle1;
+        case 1:
+            return appController.linkTitle2;
+        case 2:
+            return appController.linkTitle3;
+        default:
+            return appController.linkTitle4;
+        }
+    }
+
     Component.onCompleted: {
-        appController.attachLinkDisplay(0, emulator1);
-        appController.attachLinkDisplay(1, emulator2);
         if (appController.linkActive) {
             present();
         }
     }
 
     onClosing: {
-        emulator1.releaseAllButtons();
-        emulator2.releaseAllButtons();
+        releaseAllButtons();
         appController.stopLink();
     }
 
     onActiveChanged: {
         if (active) {
-            emulator1.forceActiveFocus();
+            const firstPane = paneRepeater.itemAt(0);
+            if (firstPane) {
+                firstPane.display.forceActiveFocus();
+            }
         } else {
-            emulator1.releaseAllButtons();
-            emulator2.releaseAllButtons();
+            releaseAllButtons();
         }
     }
 
@@ -112,91 +141,64 @@ ApplicationWindow {
         onActivated: appController.toggleLinkPause()
     }
 
-    Row {
+    Grid {
         anchors.fill: parent
+        columns: 2
         spacing: 2
 
-        Rectangle {
-            id: pane1
+        Repeater {
+            id: paneRepeater
 
-            width: linkWindow.paneWidth1
-            height: linkWindow.paneHeight
-            color: "black"
-            border.width: emulator1.activeFocus ? 2 : 0
-            border.color: "#4a9eff"
+            model: 4
 
-            EmulatorItem {
-                id: emulator1
+            delegate: Rectangle {
+                id: pane
 
-                anchors.fill: parent
-                focus: true
-            }
+                required property int index
 
-            TapHandler {
-                onTapped: emulator1.forceActiveFocus()
-            }
+                property alias display: emulator
 
-            Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: 6
-                width: label1.implicitWidth + 12
-                height: label1.implicitHeight + 6
-                radius: 4
-                color: "#a0000000"
+                visible: index < linkWindow.playerCount
+                width: linkWindow.paneWidth
+                height: linkWindow.paneHeight
+                color: "black"
+                border.width: emulator.activeFocus ? 2 : 0
+                border.color: "#4a9eff"
 
-                Label {
-                    id: label1
+                EmulatorItem {
+                    id: emulator
 
-                    anchors.centerIn: parent
-                    color: "white"
-                    font.pixelSize: 11
-                    text: qsTr("P1 · ") + appController.linkTitle1
+                    anchors.fill: parent
+                    focus: index === 0
                 }
-            }
-        }
 
-        Rectangle {
-            width: 1
-            height: parent.height
-            color: "#333333"
-        }
+                TapHandler {
+                    onTapped: emulator.forceActiveFocus()
+                }
 
-        Rectangle {
-            id: pane2
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.margins: 6
+                    width: titleLabel.implicitWidth + 12
+                    height: titleLabel.implicitHeight + 6
+                    radius: 4
+                    color: "#a0000000"
 
-            width: linkWindow.paneWidth2
-            height: linkWindow.paneHeight
-            color: "black"
-            border.width: emulator2.activeFocus ? 2 : 0
-            border.color: "#4a9eff"
+                    Label {
+                        id: titleLabel
 
-            EmulatorItem {
-                id: emulator2
+                        anchors.centerIn: parent
+                        color: "white"
+                        font.pixelSize: 11
+                        text: qsTr("P%1 · %2")
+                            .arg(pane.index + 1)
+                            .arg(linkWindow.titleAt(pane.index))
+                    }
+                }
 
-                anchors.fill: parent
-            }
-
-            TapHandler {
-                onTapped: emulator2.forceActiveFocus()
-            }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.margins: 6
-                width: label2.implicitWidth + 12
-                height: label2.implicitHeight + 6
-                radius: 4
-                color: "#a0000000"
-
-                Label {
-                    id: label2
-
-                    anchors.centerIn: parent
-                    color: "white"
-                    font.pixelSize: 11
-                    text: qsTr("P2 · ") + appController.linkTitle2
+                Component.onCompleted: {
+                    appController.attachLinkDisplay(pane.index, emulator);
                 }
             }
         }

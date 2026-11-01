@@ -89,6 +89,11 @@ TEST_F(AppSettingsTest, PersistsNamedSaveSlots)
     EXPECT_EQ(other.saveSlotName(QStringLiteral("Pokemon Red"), 2),
         QStringLiteral("Player 2"));
 
+    other.setSaveSlotName(QStringLiteral("Pokemon Red"), 3,
+        QStringLiteral("Fourth"));
+    EXPECT_EQ(settings.saveSlotName(QStringLiteral("Pokemon Red"), 3),
+        QStringLiteral("Fourth"));
+
     other.setSaveSlotName(QStringLiteral("Pokemon Red"), 2, QStringLiteral("   "));
     EXPECT_TRUE(settings.saveSlotName(QStringLiteral("Pokemon Red"), 2).isEmpty());
     EXPECT_EQ(settings.saveSlotName(QStringLiteral("Pokemon Red"), 0),

@@ -120,6 +120,7 @@ qnemu_add_gb_library(gb_joypad
 
 # Serial port (SB/SC) and the local link transport.
 qnemu_add_gb_library(gb_serial
+    ${CMAKE_CURRENT_SOURCE_DIR}/serial/GbFourPlayerAdapter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/serial/GbLocalSerialLink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/serial/GbSerial.cpp)
 target_link_libraries(gb_serial

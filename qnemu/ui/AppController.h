@@ -10,6 +10,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <QtCore/QUrl>
 #include <QtCore/QVariantList>
 
@@ -45,8 +46,11 @@ class AppController : public QObject
         NOTIFY currentGamePathChanged)
     Q_PROPERTY(bool linkActive READ linkActive NOTIFY linkActiveChanged)
     Q_PROPERTY(bool linkPaused READ linkPaused NOTIFY linkPausedChanged)
+    Q_PROPERTY(int linkPlayerCount READ linkPlayerCount NOTIFY linkPlayerCountChanged)
     Q_PROPERTY(QString linkTitle1 READ linkTitle1 NOTIFY linkTitlesChanged)
     Q_PROPERTY(QString linkTitle2 READ linkTitle2 NOTIFY linkTitlesChanged)
+    Q_PROPERTY(QString linkTitle3 READ linkTitle3 NOTIFY linkTitlesChanged)
+    Q_PROPERTY(QString linkTitle4 READ linkTitle4 NOTIFY linkTitlesChanged)
     Q_PROPERTY(AppSettings* settings READ settings CONSTANT)
     Q_PROPERTY(GameLibrary* library READ library CONSTANT)
 
@@ -65,8 +69,11 @@ public:
     QString currentGamePath() const { return currentRomPath; }
     bool linkActive() const { return linkActiveValue; }
     bool linkPaused() const { return linkPausedValue; }
+    int linkPlayerCount() const { return linkPlayerCountValue; }
     QString linkTitle1() const { return linkTitles.at(0); }
     QString linkTitle2() const { return linkTitles.at(1); }
+    QString linkTitle3() const { return linkTitles.at(2); }
+    QString linkTitle4() const { return linkTitles.at(3); }
     AppSettings* settings() { return settingsValue; }
     GameLibrary* library() { return libraryValue; }
 
@@ -74,8 +81,8 @@ public:
     Q_INVOKABLE void attachLinkDisplay(int slot, QObject* item);
     Q_INVOKABLE void openRom(const QUrl& url);
     Q_INVOKABLE void openLinkGame(const QUrl& first, const QUrl& second);
-    Q_INVOKABLE void startLinkGame(const QString& firstPath, const QString& secondPath,
-        int firstSaveSlot, int secondSaveSlot);
+    Q_INVOKABLE void startLinkGame(const QStringList& paths,
+        const QVariantList& saveSlots);
     Q_INVOKABLE QVariantList saveSlots(const QString& romPath) const;
     Q_INVOKABLE QString saveDataBlockedReason(const QString& romPath) const;
     Q_INVOKABLE bool copySave(const QString& romPath, int fromSlot, int toSlot);
@@ -119,6 +126,7 @@ signals:
     void currentGamePathChanged();
     void linkActiveChanged();
     void linkPausedChanged();
+    void linkPlayerCountChanged();
     void linkTitlesChanged();
 
 private:
@@ -141,6 +149,8 @@ private:
         std::shared_ptr<GbSerialLink> serialLink = nullptr);
     void openGamePath(const QString& path, int slot);
     void closeCurrentGame();
+    void startLinkGamePair(const QString& firstPath, const QString& secondPath,
+        int firstSaveSlot, int secondSaveSlot);
     QString saveDirectoryForSlot(int slot) const;
     QString saveSlotLabel(const QString& romPath, int slot) const;
     QString defaultSaveSlotLabel(int slot) const;
@@ -153,11 +163,13 @@ private:
     GameLibrary* libraryValue = nullptr;
     EmulatorItem* displayItem = nullptr;
     std::unique_ptr<Gb> gb;
-    std::array<EmulatorItem*, 2> linkDisplayItems {};
-    std::array<std::unique_ptr<Gb>, 2> linkSystems;
-    std::array<QString, 2> linkTitles;
+    static constexpr int linkPlayerLimit = 4;
+    std::array<EmulatorItem*, linkPlayerLimit> linkDisplayItems {};
+    std::array<std::unique_ptr<Gb>, linkPlayerLimit> linkSystems;
+    std::array<QString, linkPlayerLimit> linkTitles;
     bool linkActiveValue = false;
     bool linkPausedValue = false;
+    int linkPlayerCountValue = 2;
     QString title = QStringLiteral("QNEmu");
     QString status;
     QString currentRomPath;

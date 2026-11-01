@@ -98,7 +98,7 @@ QVector<SaveBackup> findSaveBackups(const QString& saveDirectory,
     }
 
     const QString pattern = QStringLiteral(
-        "^%1-(game|link1|link2)-(\\d{8})-(\\d{6})-(\\d{3})\\.sav$")
+        "^%1-(game|link1|link2|link3)-(\\d{8})-(\\d{6})-(\\d{3})\\.sav$")
         .arg(QRegularExpression::escape(saveFileStem(romPath)));
     const QRegularExpression regex(pattern);
 
@@ -114,7 +114,9 @@ QVector<SaveBackup> findSaveBackups(const QString& saveDirectory,
         const QString slot = match.captured(1);
         backup.slot = slot == QStringLiteral("game")
             ? 0
-            : (slot == QStringLiteral("link1") ? 1 : 2);
+            : (slot == QStringLiteral("link1")
+                      ? 1
+                      : (slot == QStringLiteral("link2") ? 2 : 3));
         backup.path = info.absoluteFilePath();
         backup.rtcPath = info.absolutePath() + QLatin1Char('/')
             + info.completeBaseName() + QStringLiteral(".rtc");
@@ -144,7 +146,10 @@ QString backupPathForSlot(const QString& saveDirectory, const QString& romPath,
 {
     const QString suffix = slot == 0
         ? QStringLiteral("game")
-        : (slot == 1 ? QStringLiteral("link1") : QStringLiteral("link2"));
+        : (slot == 1
+                  ? QStringLiteral("link1")
+                  : (slot == 2 ? QStringLiteral("link2")
+                               : QStringLiteral("link3")));
     const QString fileName = QStringLiteral("%1-%2-%3.sav")
         .arg(saveFileStem(romPath), suffix,
             timestamp.toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")));

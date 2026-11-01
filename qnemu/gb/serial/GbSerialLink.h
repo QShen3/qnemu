@@ -45,6 +45,13 @@ public:
     /// Cancels a transfer owned by this endpoint.
     virtual void abortTransfer() = 0;
 
+    /// Publishes whether this endpoint has requested an external-clock byte.
+    virtual void setArmed(bool /*armed*/) {}
+
+    /// Advances transport-side timing.  The four-player adapter uses this from
+    /// its Player 1 endpoint; two-player links ignore it.
+    virtual void step() {}
+
     /// Cheap per-cycle check, without taking the link lock.
     virtual bool hasPendingByte() const = 0;
 

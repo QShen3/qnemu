@@ -178,8 +178,8 @@ TEST(SavePathsTest, FindsBackupsNewestFirst)
                                QStringLiteral("Pokemon Red-link2-20261101-130000-123.sav")),
         QByteArray("new")));
     ASSERT_TRUE(writeBytes(backups.filePath(
-                               QStringLiteral("Pokemon Red-weird-20261101-140000-000.sav")),
-        QByteArray("ignored")));
+                               QStringLiteral("Pokemon Red-link3-20261101-140000-000.sav")),
+        QByteArray("newest")));
     ASSERT_TRUE(writeBytes(backups.filePath(
                                QStringLiteral("Other-game-20261101-150000-000.sav")),
         QByteArray("ignored")));
@@ -187,13 +187,15 @@ TEST(SavePathsTest, FindsBackupsNewestFirst)
     const QVector<qnemu::SaveBackup> found =
         qnemu::findSaveBackups(directory.path(),
             QStringLiteral("/roms/Pokemon Red.gb"));
-    ASSERT_EQ(found.size(), 2);
-    EXPECT_EQ(found.at(0).slot, 2);
-    EXPECT_EQ(found.at(1).slot, 0);
+    ASSERT_EQ(found.size(), 3);
+    EXPECT_EQ(found.at(0).slot, 3);
+    EXPECT_EQ(found.at(1).slot, 2);
+    EXPECT_EQ(found.at(2).slot, 0);
     EXPECT_GT(found.at(0).timestamp, found.at(1).timestamp);
-    EXPECT_EQ(found.at(0).timestamp.time().msec(), 123);
-    EXPECT_TRUE(QFileInfo::exists(found.at(1).rtcPath));
-    EXPECT_FALSE(QFileInfo::exists(found.at(0).rtcPath));
+    EXPECT_GT(found.at(1).timestamp, found.at(2).timestamp);
+    EXPECT_EQ(found.at(1).timestamp.time().msec(), 123);
+    EXPECT_TRUE(QFileInfo::exists(found.at(2).rtcPath));
+    EXPECT_FALSE(QFileInfo::exists(found.at(1).rtcPath));
 }
 
 TEST(SavePathsTest, BackupPathMatchesDiscovery)
@@ -203,9 +205,9 @@ TEST(SavePathsTest, BackupPathMatchesDiscovery)
 
     const QDateTime timestamp(QDate(2026, 11, 1), QTime(12, 0, 0, 123));
     const QString path = qnemu::backupPathForSlot(directory.path(),
-        QStringLiteral("/roms/Pokemon Red.gb"), 2, timestamp);
+        QStringLiteral("/roms/Pokemon Red.gb"), 3, timestamp);
     EXPECT_EQ(QFileInfo(path).fileName(),
-        QStringLiteral("Pokemon Red-link2-20261101-120000-123.sav"));
+        QStringLiteral("Pokemon Red-link3-20261101-120000-123.sav"));
 
     ASSERT_TRUE(QDir().mkpath(QFileInfo(path).absolutePath()));
     ASSERT_TRUE(writeBytes(path, QByteArray("backup")));
@@ -213,7 +215,7 @@ TEST(SavePathsTest, BackupPathMatchesDiscovery)
         qnemu::findSaveBackups(directory.path(),
             QStringLiteral("/roms/Pokemon Red.gb"));
     ASSERT_EQ(found.size(), 1);
-    EXPECT_EQ(found.at(0).slot, 2);
+    EXPECT_EQ(found.at(0).slot, 3);
     EXPECT_EQ(found.at(0).timestamp.time().msec(), 123);
 }
 

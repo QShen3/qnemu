@@ -5,12 +5,11 @@ import QtQuick.Layouts
 Dialog {
     id: dialog
 
-    property string firstPath: ""
-    property string secondPath: ""
-    property string firstTitle: ""
-    property string secondTitle: ""
-    property var firstOptions: []
-    property var secondOptions: []
+    property var playerPaths: []
+    property var playerTitles: []
+    property int playerCount: 0
+    property var playerOptions: []
+    property var selectedSlots: []
     property var theme: null
     property var controller: null
 
@@ -22,150 +21,196 @@ Dialog {
     anchors.centerIn: Overlay.overlay
     modal: true
     padding: 18
-    width: Math.min(560, (Overlay.overlay ? Overlay.overlay.width : 720) - 64)
-    title: dialog.firstTitle !== "" && dialog.secondTitle !== ""
-        ? qsTr("Link Play: %1 + %2")
-            .arg(dialog.firstTitle)
-            .arg(dialog.secondTitle)
+    width: Math.min(600, (Overlay.overlay ? Overlay.overlay.width : 800) - 64)
+    title: dialog.playerCount > 0
+        ? qsTr("Link Play (%1 players)").arg(dialog.playerCount)
         : qsTr("Link Play")
 
-    function openForGames(firstPath, secondPath, firstTitle, secondTitle) {
-        dialog.firstPath = firstPath;
-        dialog.secondPath = secondPath;
-        dialog.firstTitle = firstTitle;
-        dialog.secondTitle = secondTitle;
-        dialog.firstOptions = controller.saveSlots(firstPath);
-        dialog.secondOptions = controller.saveSlots(secondPath);
-
-        firstSaveCombo.currentIndex = 0;
-        secondSaveCombo.currentIndex =
-            dialog.savePathsConflict(0, 0) ? 2 : 0;
+    function openForGames(paths, titles) {
+        const options = paths.map(function (path) {
+            return controller.saveSlots(path);
+        });
+        dialog.playerPaths = paths;
+        dialog.playerTitles = titles;
+        dialog.selectedSlots = dialog.defaultSlots(options, paths.length);
+        dialog.playerOptions = options;
+        // Set the count last so delegates are created with options and slots
+        // already populated.
+        dialog.playerCount = paths.length;
         open();
     }
 
-    function savePathsConflict(firstIndex, secondIndex) {
-        if (!firstOptions || !secondOptions
-            || firstIndex < 0 || secondIndex < 0
-            || firstIndex >= firstOptions.length
-            || secondIndex >= secondOptions.length) {
-            return false;
+    function defaultSlots(options, count) {
+        const chosen = [];
+        const usedPaths = [];
+        const candidates = count === 2 ? [0, 2, 1, 3] : [0, 1, 2, 3];
+
+        for (let player = 0; player < count; ++player) {
+            let selected = -1;
+            for (let index = 0; index < candidates.length; ++index) {
+                const slot = candidates[index];
+                const playerOptions = options[player];
+                if (!playerOptions || slot >= playerOptions.length) {
+                    continue;
+                }
+                if (usedPaths.indexOf(playerOptions[slot].path) < 0) {
+                    selected = slot;
+                    break;
+                }
+            }
+            if (selected < 0) {
+                selected = 0;
+            }
+            chosen.push(selected);
+            const playerOptions = options[player];
+            if (playerOptions && playerOptions[selected]) {
+                usedPaths.push(playerOptions[selected].path);
+            }
         }
-        return firstOptions[firstIndex].path === secondOptions[secondIndex].path;
+        return chosen;
     }
 
-    function currentConflict() {
-        return dialog.savePathsConflict(firstSaveCombo.currentIndex,
-            secondSaveCombo.currentIndex);
+    function setSlot(player, slot) {
+        if (player < 0 || player >= dialog.selectedSlots.length) {
+            return;
+        }
+        const updated = dialog.selectedSlots.slice();
+        updated[player] = slot;
+        dialog.selectedSlots = updated;
     }
 
-    function optionDescription(options, index) {
-        if (!options || index < 0 || index >= options.length) {
+    function optionPath(player, slot) {
+        const options = dialog.playerOptions[player];
+        if (!options || slot < 0 || slot >= options.length) {
             return "";
         }
-        const option = options[index];
-        const status = option.exists
-            ? qsTr("existing save, %1").arg(option.modified)
-            : qsTr("new save");
-        return option.path + "\n" + status;
+        return options[slot].path;
+    }
+
+    function optionStatus(player, slot) {
+        const options = dialog.playerOptions[player];
+        if (!options || slot < 0 || slot >= options.length) {
+            return "";
+        }
+        const option = options[slot];
+        return option.exists
+            ? qsTr("Existing save, %1").arg(option.modified)
+            : qsTr("New save");
+    }
+
+    function playerConflict(player) {
+        const options = dialog.playerOptions[player];
+        const slot = dialog.selectedSlots[player];
+        if (!options || slot < 0 || slot >= options.length) {
+            return false;
+        }
+        const selectedPath = options[slot].path;
+        for (let other = 0; other < dialog.playerCount; ++other) {
+            if (other === player) {
+                continue;
+            }
+            const otherOptions = dialog.playerOptions[other];
+            const otherSlot = dialog.selectedSlots[other];
+            if (otherOptions && otherSlot >= 0 && otherSlot < otherOptions.length
+                && otherOptions[otherSlot].path === selectedPath) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function hasConflict() {
+        for (let player = 0; player < dialog.playerCount; ++player) {
+            if (dialog.playerConflict(player)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function startGame() {
-        if (dialog.currentConflict()) {
+        if (dialog.hasConflict()) {
             return;
         }
-        controller.startLinkGame(dialog.firstPath, dialog.secondPath,
-            firstSaveCombo.currentIndex, secondSaveCombo.currentIndex);
+        controller.startLinkGame(dialog.playerPaths, dialog.selectedSlots);
         dialog.accept();
     }
 
     contentItem: ColumnLayout {
-        spacing: 10
+        spacing: 8
 
         Label {
             Layout.fillWidth: true
-            text: qsTr("Choose the save each player uses. “Game save” is the same file used in single-player, so progress carries over. Use a “Link save” for a second player when both players share the same ROM.")
+            text: qsTr("Choose the save each player uses. “Game save” is the file used in single-player, so progress carries over. Use a “Link save” when several players share the same ROM.")
             color: dialog.textColor
             font.pixelSize: 11
             wrapMode: Text.Wrap
         }
 
+        Repeater {
+            model: dialog.playerCount
+
+            delegate: ColumnLayout {
+                required property int index
+
+                Layout.fillWidth: true
+                spacing: 2
+
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Player %1 · %2")
+                        .arg(index + 1)
+                        .arg(dialog.playerTitles[index])
+                    color: dialog.textColor
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+
+                ComboBox {
+                    Layout.fillWidth: true
+                    model: dialog.playerOptions[index]
+                        ? dialog.playerOptions[index].map(function (option) {
+                            return option.label;
+                        })
+                        : []
+                    currentIndex: dialog.selectedSlots[index] !== undefined
+                        ? dialog.selectedSlots[index]
+                        : -1
+                    onActivated: dialog.setSlot(index, currentIndex)
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    text: dialog.optionPath(index, dialog.selectedSlots[index])
+                    color: dialog.mutedColor
+                    font.pixelSize: 10
+                    elide: Text.ElideMiddle
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    text: dialog.optionStatus(index, dialog.selectedSlots[index])
+                    color: dialog.faintColor
+                    font.pixelSize: 10
+                    elide: Text.ElideRight
+                }
+
+                Label {
+                    Layout.fillWidth: true
+                    visible: dialog.playerConflict(index)
+                    text: qsTr("This save is also used by another player.")
+                    color: "#e5534b"
+                    font.pixelSize: 10
+                    wrapMode: Text.Wrap
+                }
+            }
+        }
+
         Label {
             Layout.fillWidth: true
             Layout.topMargin: 2
-            text: qsTr("Player 1 · %1").arg(dialog.firstTitle)
-            color: dialog.textColor
-            font.pixelSize: 12
-            font.weight: Font.DemiBold
-            elide: Text.ElideRight
-        }
-
-        ComboBox {
-            id: firstSaveCombo
-
-            Layout.fillWidth: true
-            model: dialog.firstOptions.map(function (option) {
-                return option.label;
-            })
-        }
-
-        Label {
-            Layout.fillWidth: true
-            text: dialog.optionDescription(dialog.firstOptions,
-                firstSaveCombo.currentIndex)
-            color: dialog.mutedColor
-            font.pixelSize: 10
-            wrapMode: Text.WrapAnywhere
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.topMargin: 2
-            Layout.bottomMargin: 2
-            Layout.preferredHeight: 1
-            implicitHeight: 1
-            color: dialog.separatorColor
-        }
-
-        Label {
-            Layout.fillWidth: true
-            text: qsTr("Player 2 · %1").arg(dialog.secondTitle)
-            color: dialog.textColor
-            font.pixelSize: 12
-            font.weight: Font.DemiBold
-            elide: Text.ElideRight
-        }
-
-        ComboBox {
-            id: secondSaveCombo
-
-            Layout.fillWidth: true
-            model: dialog.secondOptions.map(function (option) {
-                return option.label;
-            })
-        }
-
-        Label {
-            Layout.fillWidth: true
-            text: dialog.optionDescription(dialog.secondOptions,
-                secondSaveCombo.currentIndex)
-            color: dialog.mutedColor
-            font.pixelSize: 10
-            wrapMode: Text.WrapAnywhere
-        }
-
-        Label {
-            Layout.fillWidth: true
-            Layout.topMargin: 4
-            visible: dialog.currentConflict()
-            text: qsTr("Both players would use the same save file. Choose a different save for one of them.")
-            color: "#e5534b"
-            font.pixelSize: 11
-            wrapMode: Text.Wrap
-        }
-
-        Label {
-            Layout.fillWidth: true
-            text: qsTr("Two games can share the same ROM. In that case give Player 2 a link save, or use a different game for Player 2.")
+            text: qsTr("Four-player games use the DMG-07 adapter protocol; two-player games use a direct link cable.")
             color: dialog.faintColor
             font.pixelSize: 10
             wrapMode: Text.Wrap
@@ -187,9 +232,7 @@ Dialog {
 
         Button {
             text: qsTr("Start Link Play")
-            enabled: !dialog.currentConflict()
-                && dialog.firstOptions.length > 0
-                && dialog.secondOptions.length > 0
+            enabled: !dialog.hasConflict() && dialog.playerCount >= 2
             onClicked: dialog.startGame()
         }
     }

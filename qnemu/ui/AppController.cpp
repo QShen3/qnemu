@@ -15,6 +15,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QSet>
 #include <QtCore/QVariantMap>
 #include <QtGui/QImage>
 
@@ -24,6 +25,7 @@
 #include "qnemu/ui/RomArchive.h"
 #include "qnemu/ui/SavePaths.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
+#include "qnemu/gb/serial/GbFourPlayerAdapter.h"
 #include "qnemu/gb/serial/GbLocalSerialLink.h"
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/input/InputInterface.h"
@@ -131,7 +133,7 @@ void AppController::attachDisplay(QObject* item)
 
 void AppController::attachLinkDisplay(int slot, QObject* item)
 {
-    if (slot < 0 || slot > 1) {
+    if (slot < 0 || slot >= linkPlayerLimit) {
         return;
     }
     linkDisplayItems.at(slot) = qobject_cast<EmulatorItem*>(item);
@@ -159,7 +161,7 @@ void AppController::openRom(const QUrl& url)
 
 void AppController::openGameWithSave(const QString& path, int slot)
 {
-    if (!displayItem || path.isEmpty() || slot < 0 || slot > 2) {
+    if (!displayItem || path.isEmpty() || slot < 0 || slot > 3) {
         return;
     }
     if (gb && sameFile(path, currentRomPath) && currentSaveSlotValue == slot) {
@@ -172,7 +174,7 @@ void AppController::openGameWithSave(const QString& path, int slot)
 
 void AppController::openGamePath(const QString& path, int slot)
 {
-    if (!displayItem || path.isEmpty() || slot < 0 || slot > 2) {
+    if (!displayItem || path.isEmpty() || slot < 0 || slot > 3) {
         return;
     }
 
@@ -224,7 +226,7 @@ void AppController::closeGame()
 
 void AppController::renameSaveSlot(const QString& romPath, int slot, const QString& name)
 {
-    if (romPath.isEmpty() || slot < 0 || slot > 2) {
+    if (romPath.isEmpty() || slot < 0 || slot > 3) {
         return;
     }
     const QString trimmed = name.trimmed();
@@ -251,53 +253,79 @@ void AppController::openLinkGame(const QUrl& first, const QUrl& second)
     // player its own persistent link save.
     const int secondSlot =
         linkSavePath(firstPath, 0) == linkSavePath(secondPath, 0) ? 2 : 0;
-    startLinkGame(firstPath, secondPath, 0, secondSlot);
+    startLinkGamePair(firstPath, secondPath, 0, secondSlot);
 }
 
-void AppController::startLinkGame(const QString& firstPath, const QString& secondPath,
-    int firstSaveSlot, int secondSaveSlot)
+void AppController::startLinkGamePair(const QString& firstPath,
+    const QString& secondPath, int firstSaveSlot, int secondSaveSlot)
 {
-    if (!linkDisplayItems.at(0) || !linkDisplayItems.at(1)
-        || firstPath.isEmpty() || secondPath.isEmpty()) {
-        return;
-    }
-    if (firstSaveSlot < 0 || firstSaveSlot > 2
-        || secondSaveSlot < 0 || secondSaveSlot > 2) {
+    startLinkGame(QStringList {firstPath, secondPath},
+        QVariantList {firstSaveSlot, secondSaveSlot});
+}
+
+void AppController::startLinkGame(const QStringList& paths,
+    const QVariantList& saveSlots)
+{
+    if (paths.size() < 2 || paths.size() > linkPlayerLimit
+        || paths.size() != saveSlots.size()) {
         return;
     }
 
-    const QString firstSave = linkSavePath(firstPath, firstSaveSlot);
-    const QString secondSave = linkSavePath(secondPath, secondSaveSlot);
-    if (firstSave == secondSave) {
-        setStatusText(tr("Link Play needs two different save files"));
-        return;
+    for (int player = 0; player < paths.size(); ++player) {
+        const int slot = saveSlots.at(player).toInt();
+        if (!linkDisplayItems.at(player) || paths.at(player).isEmpty()
+            || slot < 0 || slot > 3) {
+            return;
+        }
+    }
+
+    QSet<QString> usedSavePaths;
+    for (int player = 0; player < paths.size(); ++player) {
+        const QString savePath =
+            linkSavePath(paths.at(player), saveSlots.at(player).toInt());
+        if (usedSavePaths.contains(savePath)) {
+            setStatusText(tr("Link Play needs a different save file for each player"));
+            return;
+        }
+        usedSavePaths.insert(savePath);
     }
 
     stopLink();
     closeCurrentGame();
 
     try {
-        const auto [firstLink, secondLink] = createLocalSerialLinkPair();
-        auto firstGame = loadGame(firstPath, linkDisplayItems.at(0),
-            saveDirectoryForSlot(firstSaveSlot), firstLink);
-        auto secondGame = loadGame(secondPath, linkDisplayItems.at(1),
-            saveDirectoryForSlot(secondSaveSlot), secondLink);
+        std::vector<std::shared_ptr<GbSerialLink>> endpoints;
+        if (paths.size() == 2) {
+            const auto pair = createLocalSerialLinkPair();
+            endpoints = {pair.first, pair.second};
+        } else {
+            endpoints = createFourPlayerAdapter(paths.size());
+        }
 
-        linkSystems.at(0) = std::move(firstGame.system);
-        linkSystems.at(1) = std::move(secondGame.system);
-        linkTitles.at(0) = firstGame.displayName;
-        linkTitles.at(1) = secondGame.displayName;
+        std::array<std::unique_ptr<Gb>, linkPlayerLimit> systems;
+        std::array<QString, linkPlayerLimit> titles;
+        for (int player = 0; player < paths.size(); ++player) {
+            auto loaded = loadGame(paths.at(player), linkDisplayItems.at(player),
+                saveDirectoryForSlot(saveSlots.at(player).toInt()),
+                endpoints.at(player));
+            systems.at(player) = std::move(loaded.system);
+            titles.at(player) = loaded.displayName;
+        }
+
+        for (int player = 0; player < paths.size(); ++player) {
+            linkSystems.at(player) = std::move(systems.at(player));
+            linkTitles.at(player) = titles.at(player);
+            libraryValue->addOpenedGame(paths.at(player));
+        }
+        linkPlayerCountValue = paths.size();
         linkActiveValue = true;
         linkPausedValue = false;
+        emit linkPlayerCountChanged();
         emit linkTitlesChanged();
         emit linkPausedChanged();
         emit linkActiveChanged();
 
-        libraryValue->addOpenedGame(firstPath);
-        libraryValue->addOpenedGame(secondPath);
-        setStatusText(tr("Link play started (%1 / %2)")
-            .arg(saveSlotLabel(firstPath, firstSaveSlot),
-                saveSlotLabel(secondPath, secondSaveSlot)));
+        setStatusText(tr("Link play started (%1 players)").arg(paths.size()));
     } catch (const std::exception& error) {
         stopLink();
         qWarning().noquote() << "Failed to start link play:" << error.what();
@@ -308,7 +336,7 @@ void AppController::startLinkGame(const QString& firstPath, const QString& secon
 QVariantList AppController::saveSlots(const QString& romPath) const
 {
     QVariantList options;
-    for (int slot = 0; slot < 3; ++slot) {
+    for (int slot = 0; slot < 4; ++slot) {
         const QString path = linkSavePath(romPath, slot);
         const QString rtcPath = rtcFilePathForSlot(romPath, slot);
         const QFileInfo info(path);
@@ -346,7 +374,7 @@ bool AppController::saveDataEditable(const QString& romPath) const
 
 QString AppController::rtcFilePathForSlot(const QString& romPath, int slot) const
 {
-    if (slot < 0 || slot > 2) {
+    if (slot < 0 || slot > 3) {
         return {};
     }
     return rtcPathForRom(saveDirectoryForSlot(slot), romPath);
@@ -382,7 +410,7 @@ bool AppController::deleteSave(const QString& romPath, int slot)
         setStatusText(tr("Close the running game or link play before changing saves"));
         return false;
     }
-    if (slot < 0 || slot > 2) {
+    if (slot < 0 || slot > 3) {
         return false;
     }
 
@@ -413,7 +441,7 @@ bool AppController::backupSave(const QString& romPath, int slot)
         setStatusText(tr("Close the running game or link play before changing saves"));
         return false;
     }
-    if (slot < 0 || slot > 2) {
+    if (slot < 0 || slot > 3) {
         return false;
     }
 
@@ -445,7 +473,7 @@ bool AppController::importSave(const QString& romPath, int slot, const QUrl& sou
         setStatusText(tr("Close the running game or link play before changing saves"));
         return false;
     }
-    if (slot < 0 || slot > 2 || !source.isLocalFile()) {
+    if (slot < 0 || slot > 3 || !source.isLocalFile()) {
         return false;
     }
 
@@ -475,7 +503,7 @@ bool AppController::exportSave(const QString& romPath, int slot, const QUrl& tar
         setStatusText(tr("Close the running game or link play before changing saves"));
         return false;
     }
-    if (slot < 0 || slot > 2 || !target.isLocalFile()) {
+    if (slot < 0 || slot > 3 || !target.isLocalFile()) {
         return false;
     }
 
@@ -601,7 +629,7 @@ bool AppController::isBackupPath(const QString& path) const
 
 QString AppController::linkSavePath(const QString& romPath, int slot) const
 {
-    if (slot < 0 || slot > 2) {
+    if (slot < 0 || slot > 3) {
         return {};
     }
     return savePathForRom(saveDirectoryForSlot(slot), romPath);
@@ -610,17 +638,26 @@ QString AppController::linkSavePath(const QString& romPath, int slot) const
 void AppController::stopLink()
 {
     const bool wasActive = linkActiveValue;
-    const bool hadTitles = !linkTitles.at(0).isEmpty() || !linkTitles.at(1).isEmpty();
+    bool hadTitles = false;
+    for (const QString& title : linkTitles) {
+        hadTitles = hadTitles || !title.isEmpty();
+    }
 
-    linkSystems.at(0).reset();
-    linkSystems.at(1).reset();
-    linkTitles.at(0).clear();
-    linkTitles.at(1).clear();
+    for (auto& system : linkSystems) {
+        system.reset();
+    }
+    for (QString& title : linkTitles) {
+        title.clear();
+    }
     linkActiveValue = false;
 
     if (linkPausedValue) {
         linkPausedValue = false;
         emit linkPausedChanged();
+    }
+    if (linkPlayerCountValue != 2) {
+        linkPlayerCountValue = 2;
+        emit linkPlayerCountChanged();
     }
     if (wasActive) {
         emit linkActiveChanged();
@@ -733,8 +770,10 @@ QString AppController::defaultSaveSlotLabel(int slot) const
         return tr("Game save");
     case 1:
         return tr("Link save 1");
-    default:
+    case 2:
         return tr("Link save 2");
+    default:
+        return tr("Link save 3");
     }
 }
 

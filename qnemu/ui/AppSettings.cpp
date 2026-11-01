@@ -42,8 +42,10 @@ QString saveSlotKey(int slot)
         return QStringLiteral("game");
     case 1:
         return QStringLiteral("link1");
-    default:
+    case 2:
         return QStringLiteral("link2");
+    default:
+        return QStringLiteral("link3");
     }
 }
 
@@ -197,7 +199,7 @@ void AppSettings::setSavePath(const QString& value)
 
 QString AppSettings::saveSlotName(const QString& romStem, int slot) const
 {
-    if (romStem.isEmpty() || slot < 0 || slot > 2) {
+    if (romStem.isEmpty() || slot < 0 || slot > 3) {
         return {};
     }
     return settings.value(QStringLiteral("saveNames/%1/%2")
@@ -207,7 +209,7 @@ QString AppSettings::saveSlotName(const QString& romStem, int slot) const
 
 void AppSettings::setSaveSlotName(const QString& romStem, int slot, const QString& name)
 {
-    if (romStem.isEmpty() || slot < 0 || slot > 2) {
+    if (romStem.isEmpty() || slot < 0 || slot > 3) {
         return;
     }
     const QString key = QStringLiteral("saveNames/%1/%2")

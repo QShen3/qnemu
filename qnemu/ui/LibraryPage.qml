@@ -7,54 +7,84 @@ Item {
 
     signal addGameRequested
     signal settingsRequested(string platform)
-    signal linkPlayRequested(string firstPath, string secondPath, string firstTitle, string secondTitle)
+    signal linkPlayRequested(var paths, var titles)
     signal saveDataRequested(string path, string title)
 
     /// Application palette passed from the main window so custom labels follow
     /// the system light/dark theme.
     property var theme
 
-    property string linkFirstPath: ""
-    property string linkFirstTitle: ""
+    property var linkSelectedPaths: []
+    property var linkSelectedTitles: []
+    property int linkPlayerCount: 2
     property bool linkSelecting: false
 
-    function beginLinkSelection(firstPath, firstTitle) {
-        page.linkFirstPath = firstPath;
-        page.linkFirstTitle = firstTitle;
+    function beginLinkSelection(firstPath, firstTitle, playerCount) {
+        page.linkPlayerCount = playerCount === 4 ? 4 : 2;
+        page.linkSelectedPaths = firstPath === "" ? [] : [firstPath];
+        page.linkSelectedTitles = firstTitle === "" ? [] : [firstTitle];
         page.linkSelecting = true;
     }
 
     function cancelLinkSelection() {
         page.linkSelecting = false;
-        page.linkFirstPath = "";
-        page.linkFirstTitle = "";
+        page.linkSelectedPaths = [];
+        page.linkSelectedTitles = [];
+    }
+
+    function setLinkPlayerCount(count) {
+        page.linkPlayerCount = count === 4 ? 4 : 2;
+        if (page.linkSelectedPaths.length > page.linkPlayerCount) {
+            page.linkSelectedPaths =
+                page.linkSelectedPaths.slice(0, page.linkPlayerCount);
+            page.linkSelectedTitles =
+                page.linkSelectedTitles.slice(0, page.linkPlayerCount);
+        }
+        if (page.linkSelectedPaths.length === page.linkPlayerCount
+            && page.linkPlayerCount > 0) {
+            const paths = page.linkSelectedPaths.slice();
+            const titles = page.linkSelectedTitles.slice();
+            page.cancelLinkSelection();
+            page.linkPlayRequested(paths, titles);
+        }
     }
 
     function chooseLinkGame(path, title) {
         if (!page.linkSelecting || path === "") {
             return false;
         }
-        if (page.linkFirstPath === "") {
-            page.linkFirstPath = path;
-            page.linkFirstTitle = title;
-            return true;
-        }
 
-        const firstPath = page.linkFirstPath;
-        const firstTitle = page.linkFirstTitle;
-        page.cancelLinkSelection();
-        page.linkPlayRequested(firstPath, path, firstTitle, title);
+        const paths = page.linkSelectedPaths.slice();
+        const titles = page.linkSelectedTitles.slice();
+        paths.push(path);
+        titles.push(title);
+
+        if (paths.length >= page.linkPlayerCount) {
+            const selectedPaths = paths.slice(0, page.linkPlayerCount);
+            const selectedTitles = titles.slice(0, page.linkPlayerCount);
+            page.cancelLinkSelection();
+            page.linkPlayRequested(selectedPaths, selectedTitles);
+        } else {
+            page.linkSelectedPaths = paths;
+            page.linkSelectedTitles = titles;
+        }
         return true;
     }
 
     function sameGameLink() {
-        if (page.linkFirstPath === "") {
+        if (page.linkSelectedPaths.length === 0) {
             return;
         }
-        const firstPath = page.linkFirstPath;
-        const firstTitle = page.linkFirstTitle;
+        const paths = [];
+        const titles = [];
+        const firstPath = page.linkSelectedPaths[0];
+        const firstTitle = page.linkSelectedTitles[0];
+        for (let player = 0; player < page.linkPlayerCount; ++player) {
+            paths.push(firstPath);
+            titles.push(firstTitle);
+        }
         page.cancelLinkSelection();
-        page.linkPlayRequested(firstPath, firstPath, firstTitle, firstTitle);
+        page.linkPlayRequested(paths, titles);
     }
 
     function gameCountText() {
@@ -162,7 +192,7 @@ Item {
                     if (page.linkSelecting) {
                         page.cancelLinkSelection();
                     } else {
-                        page.beginLinkSelection("", "");
+                        page.beginLinkSelection("", "", 2);
                     }
                 }
             }
@@ -294,18 +324,30 @@ Item {
 
                 Label {
                     Layout.fillWidth: true
-                    text: page.linkFirstPath === ""
-                        ? qsTr("Link Play — select Player 1")
-                        : qsTr("Link Play — %1 is Player 1; select Player 2")
-                            .arg(page.linkFirstTitle)
+                    text: page.linkSelectedPaths.length === 0
+                        ? qsTr("Link Play — select Player 1 of %1")
+                            .arg(page.linkPlayerCount)
+                        : qsTr("Link Play — %1 selected; select Player %2 of %3")
+                            .arg(page.linkSelectedTitles[
+                                page.linkSelectedPaths.length - 1])
+                            .arg(page.linkSelectedPaths.length + 1)
+                            .arg(page.linkPlayerCount)
                     color: page.theme.windowText
                     font.pixelSize: 12
                     elide: Text.ElideRight
                 }
 
+                ComboBox {
+                    model: [qsTr("2 players"), qsTr("4 players")]
+                    currentIndex: page.linkPlayerCount === 4 ? 1 : 0
+                    implicitWidth: 112
+                    onActivated: page.setLinkPlayerCount(
+                        currentIndex === 1 ? 4 : 2)
+                }
+
                 Button {
                     text: qsTr("Same game")
-                    visible: page.linkFirstPath !== ""
+                    visible: page.linkSelectedPaths.length > 0
                     implicitHeight: 28
                     onClicked: page.sameGameLink()
                 }
@@ -639,7 +681,7 @@ Item {
                         MenuItem {
                             text: qsTr("Link Play...")
                             enabled: !model.missing
-                            onTriggered: page.beginLinkSelection(model.path, model.title)
+                            onTriggered: page.beginLinkSelection(model.path, model.title, 2)
                         }
 
                         MenuItem {

@@ -264,15 +264,20 @@ Dialog {
             }
         }
 
-        Repeater {
+        ListView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(300, dialog.slots.length * 92)
+            clip: true
+            spacing: 8
             model: dialog.slots
+            ScrollBar.vertical: ScrollBar {}
 
             delegate: Rectangle {
                 id: card
 
                 required property var modelData
 
-                Layout.fillWidth: true
+                width: ListView.view.width
                 implicitHeight: cardLayout.implicitHeight + 24
                 radius: 8
                 color: dialog.cardColor
@@ -370,6 +375,13 @@ Dialog {
                                     enabled: slotMenu.sourceExists
                                         && slotMenu.sourceSlot !== 2
                                     onTriggered: dialog.requestCopy(slotMenu.sourceSlot, 2)
+                                }
+
+                                MenuItem {
+                                    text: qsTr("Copy to %1").arg(dialog.labelAt(3))
+                                    enabled: slotMenu.sourceExists
+                                        && slotMenu.sourceSlot !== 3
+                                    onTriggered: dialog.requestCopy(slotMenu.sourceSlot, 3)
                                 }
 
                                 MenuSeparator {}

@@ -80,14 +80,18 @@ void GbSerial::write(uint16_t address, const uint8_t& value)
 
 void GbSerial::step()
 {
-    if (link && link->hasPendingByte()) {
-        uint8_t received = 0;
-        if (link->takeReceivedByte(received)) {
-            shiftRegister = received;
-            control &= 0x7F;
-            transferActive = false;
-            clockOwner = false;
-            interruptHandler->requestSerialInterrupt();
+    if (link) {
+        link->step();
+        if (link->hasPendingByte()) {
+            uint8_t received = 0;
+            if (link->takeReceivedByte(received)) {
+                shiftRegister = received;
+                control &= 0x7F;
+                transferActive = false;
+                clockOwner = false;
+                link->setArmed(false);
+                interruptHandler->requestSerialInterrupt();
+            }
         }
     }
 
@@ -109,6 +113,7 @@ void GbSerial::step()
         transferActive = false;
         clockOwner = false;
         if (link) {
+            link->setArmed(false);
             link->finishTransfer(outgoing);
         }
         interruptHandler->requestSerialInterrupt();
@@ -130,6 +135,7 @@ void GbSerial::reset()
     clockOwner = false;
 
     if (link) {
+        link->setArmed(false);
         link->setShiftRegister(shiftRegister);
         link->reset();
     }
@@ -161,6 +167,10 @@ void GbSerial::startTransfer()
     outgoing = shiftRegister;
     incoming = 0xFF;
 
+    if (link) {
+        link->setArmed(true);
+    }
+
     // External clock: the transfer only completes when the peer clocks it.
     if ((control & 0x01) == 0) {
         return;
@@ -187,6 +197,7 @@ void GbSerial::abortTransfer()
     ticksRemaining = 0;
     bitsRemaining = 0;
     if (link) {
+        link->setArmed(false);
         link->abortTransfer();
     }
 }

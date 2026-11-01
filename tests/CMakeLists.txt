@@ -44,7 +44,8 @@ set_target_properties(qnemu_test PROPERTIES
     AUTOMOC ON AUTOUIC OFF AUTORCC OFF)
 target_include_directories(qnemu_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_compile_definitions(qnemu_test PRIVATE
-    QNEMU_ROMDB_PATH="${PROJECT_SOURCE_DIR}/qnemu/data/romdb.json")
+    QNEMU_ROMDB_PATH="${PROJECT_SOURCE_DIR}/qnemu/data/romdb.json"
+    QNEMU_FOUR_PLAYER_TEST_ROM="${PROJECT_SOURCE_DIR}/tests/rom/four_player/four_player_test.gb")
 target_link_libraries(
     qnemu_test
     PRIVATE

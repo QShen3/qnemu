@@ -7,7 +7,9 @@
 #include <QtCore/QCommandLineOption>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QDebug>
+#include <QtCore/QSet>
 #include <QtCore/QStringList>
+#include <QtCore/QVariantList>
 #include <QtCore/QUrl>
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlApplicationEngine>
@@ -50,7 +52,7 @@ int main(int argc, char* argv[])
     parser.addOption(romOption);
     const QCommandLineOption linkRomOption(
         QStringList {"link-rom"},
-        "Load a second ROM and start in-process link play. Requires --rom.",
+        "Load another ROM for link play; repeat up to three times. Requires --rom.",
         "path");
     parser.addOption(linkRomOption);
     parser.process(app);
@@ -117,9 +119,39 @@ int main(int argc, char* argv[])
             qCritical().noquote() << "--link-rom requires --rom";
             return 1;
         }
-        controller.openLinkGame(
-            QUrl::fromLocalFile(parser.value(romOption)),
-            QUrl::fromLocalFile(parser.value(linkRomOption)));
+
+        QStringList paths;
+        paths << parser.value(romOption);
+        paths << parser.values(linkRomOption);
+        if (paths.size() > 4) {
+            qCritical().noquote() << "Link play supports at most 4 players";
+            return 1;
+        }
+
+        if (paths.size() == 2) {
+            controller.openLinkGame(QUrl::fromLocalFile(paths.at(0)),
+                QUrl::fromLocalFile(paths.at(1)));
+        } else {
+            QVariantList saveSlots;
+            QSet<QString> usedSaves;
+            for (const QString& path : paths) {
+                int chosen = -1;
+                for (int slot = 0; slot < 4; ++slot) {
+                    const QString save = controller.linkSavePath(path, slot);
+                    if (!usedSaves.contains(save)) {
+                        chosen = slot;
+                        break;
+                    }
+                }
+                if (chosen < 0) {
+                    qCritical().noquote() << "Could not choose a save slot for" << path;
+                    return 1;
+                }
+                saveSlots.append(chosen);
+                usedSaves.insert(controller.linkSavePath(path, chosen));
+            }
+            controller.startLinkGame(paths, saveSlots);
+        }
     } else if (parser.isSet(romOption)) {
         controller.openRom(QUrl::fromLocalFile(parser.value(romOption)));
     }

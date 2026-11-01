@@ -38,7 +38,7 @@ ApplicationWindow {
                 text: qsTr("&Link Play...")
                 action: Action {
                     text: qsTr("&Link Play...")
-                    onTriggered: libraryPage.beginLinkSelection("", "")
+                    onTriggered: libraryPage.beginLinkSelection("", "", 2)
                 }
             }
 
@@ -151,8 +151,8 @@ ApplicationWindow {
         onSettingsRequested: function (platform) {
             settingsDialog.showPage(platform === "GBC" ? 2 : 1, window);
         }
-        onLinkPlayRequested: function (firstPath, secondPath, firstTitle, secondTitle) {
-            linkPlayDialog.openForGames(firstPath, secondPath, firstTitle, secondTitle);
+        onLinkPlayRequested: function (paths, titles) {
+            linkPlayDialog.openForGames(paths, titles);
         }
         onSaveDataRequested: function (path, title) {
             saveManagerDialog.openForGame(path, title);
