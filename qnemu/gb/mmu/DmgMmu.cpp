@@ -19,7 +19,8 @@ DmgMmu::DmgMmu(std::unique_ptr<GbApu> apu,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<DmgWorkRam> workRam,
-        std::unique_ptr<GbTimer> timer) :
+        std::unique_ptr<GbTimer> timer,
+        std::unique_ptr<GbSerial> serial) :
     apu(std::move(apu)),
     cartridge(cartridge),
     gpu_(std::move(gpu)),
@@ -27,7 +28,8 @@ DmgMmu::DmgMmu(std::unique_ptr<GbApu> apu,
     interruptHandler(interruptHandler),
     joypad(std::move(joypad)),
     workRam_(std::move(workRam)),
-    timer_(std::move(timer))
+    timer_(std::move(timer)),
+    serial_(std::move(serial))
 {
 }
 
@@ -50,6 +52,8 @@ uint8_t DmgMmu::read(uint16_t address) const
         return gpu_->read(address);
     } else if (address == 0xFF00) {
         return joypad->read(address);
+    } else if (address >= 0xFF01 && address <= 0xFF02) {
+        return serial_->read(address);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
         return timer_->read(address);
     } else if (address >= 0xFF10 && address <= 0xFF26) {
@@ -89,6 +93,8 @@ void DmgMmu::write(uint16_t address, const uint8_t& value)
         gpu_->write(address, value);
     } else if (address == 0xFF00) {
         joypad->write(address, value);
+    } else if (address >= 0xFF01 && address <= 0xFF02) {
+        serial_->write(address, value);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
         timer_->write(address, value);
         if (timer_->takeDivApuTick()) {
@@ -128,6 +134,7 @@ void DmgMmu::step()
     }
     joypad->step();
     interruptHandler->step();
+    serial_->step();
 }
 
 void DmgMmu::reset()
@@ -140,6 +147,7 @@ void DmgMmu::reset()
     timer_->reset();
     joypad->reset();
     interruptHandler->reset();
+    serial_->reset();
 }
 
 bool DmgMmu::isCpuStalled() const

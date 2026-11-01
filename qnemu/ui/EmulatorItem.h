@@ -35,6 +35,8 @@ namespace qnemu
 class EmulatorItem : public QQuickPaintedItem, public DisplayInterface, public InputInterface
 {
     Q_OBJECT
+    Q_PROPERTY(int frameWidth READ frameWidth NOTIFY frameReady)
+    Q_PROPERTY(int frameHeight READ frameHeight NOTIFY frameReady)
 public:
     explicit EmulatorItem(QQuickItem* parent = nullptr);
     ~EmulatorItem() override = default;
@@ -55,6 +57,9 @@ public:
 
     /// Returns a copy of the latest presented frame (thread-safe).
     QImage snapshot() const;
+
+    int frameWidth() const;
+    int frameHeight() const;
 
 signals:
     void frameReady();

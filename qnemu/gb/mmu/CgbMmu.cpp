@@ -18,9 +18,11 @@ CgbMmu::CgbMmu(std::unique_ptr<GbApu> apu,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<CgbWorkRam> workRam,
-        std::unique_ptr<GbTimer> timer) :
+        std::unique_ptr<GbTimer> timer,
+        std::unique_ptr<GbSerial> serial) :
     DmgMmu(std::move(apu), cartridge, std::move(gpu), std::move(highRam),
-        interruptHandler, std::move(joypad), std::move(workRam), std::move(timer))
+        interruptHandler, std::move(joypad), std::move(workRam), std::move(timer),
+        std::move(serial))
 {
 }
 
@@ -73,6 +75,7 @@ void CgbMmu::reset()
 
 void CgbMmu::setCgb(bool cgb)
 {
+    serial().setCgbMode(cgb);
     if (cgb) {
         dmgMode_ = false;
         cgbWorkRam().setDmgCompatibility(false);
@@ -84,12 +87,14 @@ void CgbMmu::setCgb(bool cgb)
 void CgbMmu::setDmgCompatibilityMode(bool enabled)
 {
     dmgMode_ = enabled;
+    serial().setCgbMode(!enabled);
     cgbWorkRam().setDmgCompatibility(enabled);
 }
 
 void CgbMmu::setDoubleSpeed(bool doubleSpeed)
 {
     timer().setDoubleSpeed(doubleSpeed);
+    serial().setDoubleSpeed(doubleSpeed);
 }
 
 CgbWorkRam& CgbMmu::cgbWorkRam() const

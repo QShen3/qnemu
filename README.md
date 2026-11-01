@@ -18,6 +18,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - Four-channel APU with a DIV-APU frame sequencer, mixer, DC filter and
   low-pass output stage.
 - Timer/divider, joypad and OAM DMA/HDMA.
+- Serial data transfer with an in-process link cable for two-player games.
 - Super Game Boy command protocol, palette/attribute colorization, the
   default 256×224 border and custom border transfers.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
@@ -25,7 +26,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
 - Parallel background library scan with a loading overlay, plus text search and region/language/status filters.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 425 CTest cases, including 168 curated test ROMs.
+- 458 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -242,6 +243,26 @@ Open a row's **⋯ → Game information** menu to see the database name, all
 metadata, CRC32/SHA-1 and the source/license.  See
 [`doc/rom-database.md`](doc/rom-database.md) for sources, status rules,
 language inference and the regeneration workflow.
+
+## Serial link
+
+The library header and each game's `⋯` menu can start link play.  Select two
+games (or **Same game** twice) and the game window opens with two screens side
+by side.  Click a screen to give it keyboard focus; Space or Ctrl+P pauses
+both.  `--rom game1.gb --link-rom game2.gb` starts the same mode directly.
+
+Before starting, a setup dialog chooses the save for each player.  The default
+**Game save** is the file used in single-player, so Pokémon trades and other
+linked progress carry straight back into normal play.  **Link save 1/2** are
+persistent separate slots for cases where both players use the same ROM; the
+dialog warns instead of letting two running games share one save file.  See
+[`doc/serial-link.md`](doc/serial-link.md) for the transport interface, test
+coverage and current limitations.
+
+Each game's `⋯` menu also has **Save data...**: play any slot in single-player,
+copy between slots, create a timestamped backup, import/export a `.sav` (with
+its sibling `.rtc` when present), or delete a slot.  Backups go to the
+`backups` folder inside the save directory.
 
 ## ROM archives
 
@@ -667,7 +688,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **425/425 CTest cases**, including 168 ROM tests.
+The current set is **458/458 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -861,6 +882,7 @@ fail when run directly:
 | APU              | ✅          | unit + Blargg sound |
 | Interrupts       | ✅          | unit + Mooneye |
 | Joypad           | ✅          | unit |
+| Serial link      | ✅          | unit + two-instance test + manual |
 | Timer / divider  | ✅          | unit + Mooneye |
 | OAM DMA / HDMA   | ✅          | unit + Mooneye |
 | No MBC           | ✅          | ROM tests |
@@ -881,6 +903,7 @@ fail when run directly:
 | Boot ROMs        | ✅          | Mooneye boot_regs/hwio + acid2 |
 | Pause / resume   | ✅          | manual |
 | Battery saves    | ✅          | unit |
+| Save manager     | ✅          | unit + manual |
 | MBC3 RTC         | ✅          | unit |
 | Save states      | ❌          | — |
 | Speed setting    | ❌          | — |

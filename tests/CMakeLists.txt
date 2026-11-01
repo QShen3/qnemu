@@ -7,6 +7,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/memory GB_MEMORYTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/mmu GB_MMUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/apu GB_APUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/joypad GB_JOYPADTEST_SRCS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/serial GB_SERIALTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/timer GB_TIMERTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/gpu GB_GPUTEST_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/gb/system GB_SYSTEMTEST_SRCS)
@@ -25,6 +26,7 @@ add_executable(
     ${GB_MMUTEST_SRCS}
     ${GB_APUTEST_SRCS}
     ${GB_JOYPADTEST_SRCS}
+    ${GB_SERIALTEST_SRCS}
     ${GB_TIMERTEST_SRCS}
     ${GB_GPUTEST_SRCS}
     ${GB_SYSTEMTEST_SRCS}
@@ -36,6 +38,7 @@ add_executable(
     ${PROJECT_SOURCE_DIR}/qnemu/ui/LaunchPolicy.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/RomArchive.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/RomDatabase.cpp
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/SavePaths.cpp
 )
 set_target_properties(qnemu_test PROPERTIES
     AUTOMOC ON AUTOUIC OFF AUTORCC OFF)

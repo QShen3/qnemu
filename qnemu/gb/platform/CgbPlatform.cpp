@@ -24,6 +24,7 @@
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/mmu/CgbCpuBus.h"
 #include "qnemu/gb/mmu/CgbMmu.h"
+#include "qnemu/gb/serial/GbSerial.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "qnemu/input/InputInterface.h"
 #include "qnemu/sound/SoundInterface.h"
@@ -34,7 +35,8 @@ namespace qnemu
 CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<DisplayInterface> display,
         std::unique_ptr<SoundInterface> sound,
-        std::shared_ptr<InputInterface> input) :
+        std::shared_ptr<InputInterface> input,
+        std::shared_ptr<GbSerialLink> serialLink) :
     cartridge_(std::move(cartridge)),
     display_(std::move(display)),
     input_(std::move(input))
@@ -66,9 +68,10 @@ CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
     auto ppu = std::make_unique<CgbPpu>(display_, interruptHandler_);
     ppu_ = ppu.get();
     ppu_->setOamBugEnabled(false);
+    auto serial = std::make_unique<GbSerial>(interruptHandler_, std::move(serialLink), true);
     mmu_ = std::make_unique<CgbMmu>(std::move(apu), cartridge_, std::move(ppu),
         std::move(highRam), interruptHandler_, std::move(joypad), std::move(workRam),
-        std::move(timer));
+        std::move(timer), std::move(serial));
     ppu_->setExternalRead([mmuPointer = mmu_.get()](uint16_t address) {
         return mmuPointer->read(address);
     });

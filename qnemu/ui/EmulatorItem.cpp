@@ -100,6 +100,18 @@ QImage EmulatorItem::snapshot() const
     return frameImage;
 }
 
+int EmulatorItem::frameWidth() const
+{
+    const std::lock_guard lock(frameMutex);
+    return hasFrame ? frameImage.width() : 160;
+}
+
+int EmulatorItem::frameHeight() const
+{
+    const std::lock_guard lock(frameMutex);
+    return hasFrame ? frameImage.height() : 144;
+}
+
 void EmulatorItem::setKeyBindings(const QVariantMap& bindings)
 {
     releaseAllButtons();

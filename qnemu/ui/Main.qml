@@ -35,6 +35,14 @@ ApplicationWindow {
             }
 
             MenuItem {
+                text: qsTr("&Link Play...")
+                action: Action {
+                    text: qsTr("&Link Play...")
+                    onTriggered: libraryPage.beginLinkSelection("", "")
+                }
+            }
+
+            MenuItem {
                 text: qsTr("&Add Game...")
                 action: Action {
                     text: qsTr("&Add Game...")
@@ -135,11 +143,19 @@ ApplicationWindow {
     }
 
     LibraryPage {
+        id: libraryPage
+
         anchors.fill: parent
         theme: uiTheme
         onAddGameRequested: addGameDialog.open()
         onSettingsRequested: function (platform) {
             settingsDialog.showPage(platform === "GBC" ? 2 : 1, window);
+        }
+        onLinkPlayRequested: function (firstPath, secondPath, firstTitle, secondTitle) {
+            linkPlayDialog.openForGames(firstPath, secondPath, firstTitle, secondTitle);
+        }
+        onSaveDataRequested: function (path, title) {
+            saveManagerDialog.openForGame(path, title);
         }
     }
 
@@ -156,6 +172,13 @@ ApplicationWindow {
 
         function onShowingGameChanged() {
             if (!appController.showingGame) {
+                window.raise();
+                window.requestActivate();
+            }
+        }
+
+        function onLinkActiveChanged() {
+            if (!appController.linkActive) {
                 window.raise();
                 window.requestActivate();
             }
@@ -181,8 +204,24 @@ ApplicationWindow {
         parentWindow: window
     }
 
+    LinkPlayDialog {
+        id: linkPlayDialog
+        controller: appController
+        theme: uiTheme
+    }
+
+    SaveManagerDialog {
+        id: saveManagerDialog
+        controller: appController
+        theme: uiTheme
+    }
+
     GameWindow {
         id: gameWindow
         onSettingsRequested: settingsDialog.showPage(0, gameWindow)
+    }
+
+    LinkWindow {
+        id: linkWindow
     }
 }

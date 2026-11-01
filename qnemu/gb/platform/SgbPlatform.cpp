@@ -18,8 +18,10 @@ namespace qnemu
 SgbPlatform::SgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<DisplayInterface> displayInterface,
         std::unique_ptr<SoundInterface> sound,
-        std::shared_ptr<InputInterface> input) :
-    DmgPlatform(std::move(cartridge), std::move(displayInterface), std::move(sound), std::move(input)),
+        std::shared_ptr<InputInterface> input,
+        std::shared_ptr<GbSerialLink> serialLink) :
+    DmgPlatform(std::move(cartridge), std::move(displayInterface), std::move(sound),
+        std::move(input), std::move(serialLink)),
     colorizer_(sgb_),
     frameSink_(sgb_, display())
 {

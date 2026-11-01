@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "qnemu/gb/platform/DmgPlatform.h"
+#include "qnemu/gb/serial/GbSerialLink.h"
 #include "qnemu/gb/sgb/GbSgb.h"
 #include "qnemu/gb/sgb/SgbVideo.h"
 
@@ -32,7 +33,8 @@ public:
     SgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         std::shared_ptr<DisplayInterface> displayInterface,
         std::unique_ptr<SoundInterface> sound,
-        std::shared_ptr<InputInterface> input);
+        std::shared_ptr<InputInterface> input,
+        std::shared_ptr<GbSerialLink> serialLink);
     ~SgbPlatform() override;
 
     void reset(const GbCartridgeHeader& header) override;

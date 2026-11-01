@@ -48,6 +48,11 @@ int main(int argc, char* argv[])
         "Load a ROM file on startup.",
         "path");
     parser.addOption(romOption);
+    const QCommandLineOption linkRomOption(
+        QStringList {"link-rom"},
+        "Load a second ROM and start in-process link play. Requires --rom.",
+        "path");
+    parser.addOption(linkRomOption);
     parser.process(app);
 
     std::optional<qnemu::GbPlatform> platformOverride;
@@ -107,7 +112,15 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (parser.isSet(romOption)) {
+    if (parser.isSet(linkRomOption)) {
+        if (!parser.isSet(romOption)) {
+            qCritical().noquote() << "--link-rom requires --rom";
+            return 1;
+        }
+        controller.openLinkGame(
+            QUrl::fromLocalFile(parser.value(romOption)),
+            QUrl::fromLocalFile(parser.value(linkRomOption)));
+    } else if (parser.isSet(romOption)) {
         controller.openRom(QUrl::fromLocalFile(parser.value(romOption)));
     }
 

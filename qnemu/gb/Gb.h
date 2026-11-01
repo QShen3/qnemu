@@ -20,6 +20,7 @@
 #include "qnemu/gb/GbPlatform.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
+#include "qnemu/gb/serial/GbSerialLink.h"
 #include "qnemu/input/InputInterface.h"
 #include "qnemu/sound/SoundInterface.h"
 
@@ -43,7 +44,8 @@ public:
     Gb(GbPlatform platformKind,
         std::shared_ptr<DisplayInterface> display,
         std::unique_ptr<SoundInterface> sound,
-        std::shared_ptr<InputInterface> input = nullptr);
+        std::shared_ptr<InputInterface> input = nullptr,
+        std::shared_ptr<GbSerialLink> serialLink = nullptr);
     ~Gb();
 
     Gb(const Gb&) = delete;

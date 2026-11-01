@@ -32,7 +32,8 @@ public:
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<CgbWorkRam> workRam,
-        std::unique_ptr<GbTimer> timer);
+        std::unique_ptr<GbTimer> timer,
+        std::unique_ptr<GbSerial> serial);
     ~CgbMmu() override = default;
 
     uint8_t read(uint16_t address) const override;

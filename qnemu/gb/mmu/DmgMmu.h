@@ -17,6 +17,7 @@
 #include "qnemu/gb/memory/DmgWorkRam.h"
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/mmu/GbMmuInterface.h"
+#include "qnemu/gb/serial/GbSerial.h"
 #include "qnemu/gb/timer/GbTimer.h"
 
 namespace qnemu
@@ -40,7 +41,8 @@ public:
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbJoypad> joypad,
         std::unique_ptr<DmgWorkRam> workRam,
-        std::unique_ptr<GbTimer> timer);
+        std::unique_ptr<GbTimer> timer,
+        std::unique_ptr<GbSerial> serial);
     ~DmgMmu() override = default;
 
     uint8_t read(uint16_t address) const override;
@@ -62,6 +64,7 @@ protected:
     GbGpuInterface& gpu() const { return *gpu_; }
     DmgWorkRam& workRam() const { return *workRam_; }
     GbTimer& timer() const { return *timer_; }
+    GbSerial& serial() const { return *serial_; }
 
 private:
     std::unique_ptr<GbApu> apu;
@@ -72,6 +75,7 @@ private:
     std::unique_ptr<GbJoypad> joypad;
     std::unique_ptr<DmgWorkRam> workRam_;
     std::unique_ptr<GbTimer> timer_;
+    std::unique_ptr<GbSerial> serial_;
     std::span<const uint8_t> bootRom;
     bool bootRomActive = false;
 };

@@ -7,10 +7,55 @@ Item {
 
     signal addGameRequested
     signal settingsRequested(string platform)
+    signal linkPlayRequested(string firstPath, string secondPath, string firstTitle, string secondTitle)
+    signal saveDataRequested(string path, string title)
 
     /// Application palette passed from the main window so custom labels follow
     /// the system light/dark theme.
     property var theme
+
+    property string linkFirstPath: ""
+    property string linkFirstTitle: ""
+    property bool linkSelecting: false
+
+    function beginLinkSelection(firstPath, firstTitle) {
+        page.linkFirstPath = firstPath;
+        page.linkFirstTitle = firstTitle;
+        page.linkSelecting = true;
+    }
+
+    function cancelLinkSelection() {
+        page.linkSelecting = false;
+        page.linkFirstPath = "";
+        page.linkFirstTitle = "";
+    }
+
+    function chooseLinkGame(path, title) {
+        if (!page.linkSelecting || path === "") {
+            return false;
+        }
+        if (page.linkFirstPath === "") {
+            page.linkFirstPath = path;
+            page.linkFirstTitle = title;
+            return true;
+        }
+
+        const firstPath = page.linkFirstPath;
+        const firstTitle = page.linkFirstTitle;
+        page.cancelLinkSelection();
+        page.linkPlayRequested(firstPath, path, firstTitle, title);
+        return true;
+    }
+
+    function sameGameLink() {
+        if (page.linkFirstPath === "") {
+            return;
+        }
+        const firstPath = page.linkFirstPath;
+        const firstTitle = page.linkFirstTitle;
+        page.cancelLinkSelection();
+        page.linkPlayRequested(firstPath, firstPath, firstTitle, firstTitle);
+    }
 
     function gameCountText() {
         if (appController.library.loading) {
@@ -98,6 +143,27 @@ Item {
                     color: page.theme.mutedText
                     font.pixelSize: 11
                     elide: Text.ElideRight
+                }
+            }
+
+            ToolButton {
+                id: linkButton
+
+                text: qsTr("Link")
+                font.pixelSize: 11
+                implicitWidth: 42
+                implicitHeight: 30
+                enabled: !appController.library.loading
+                ToolTip.visible: hovered
+                ToolTip.text: page.linkSelecting
+                    ? qsTr("Cancel link selection")
+                    : qsTr("Select two games to play with a link cable")
+                onClicked: {
+                    if (page.linkSelecting) {
+                        page.cancelLinkSelection();
+                    } else {
+                        page.beginLinkSelection("", "");
+                    }
                 }
             }
 
@@ -209,6 +275,46 @@ Item {
                 onClicked: appController.library.clearFilters()
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Clear all filters")
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 48
+            visible: page.linkSelecting
+            radius: 8
+            color: page.theme.withAlpha(page.theme.accent, 0.10)
+            border.width: 1
+            border.color: page.theme.withAlpha(page.theme.accent, 0.35)
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 8
+
+                Label {
+                    Layout.fillWidth: true
+                    text: page.linkFirstPath === ""
+                        ? qsTr("Link Play — select Player 1")
+                        : qsTr("Link Play — %1 is Player 1; select Player 2")
+                            .arg(page.linkFirstTitle)
+                    color: page.theme.windowText
+                    font.pixelSize: 12
+                    elide: Text.ElideRight
+                }
+
+                Button {
+                    text: qsTr("Same game")
+                    visible: page.linkFirstPath !== ""
+                    implicitHeight: 28
+                    onClicked: page.sameGameLink()
+                }
+
+                Button {
+                    text: qsTr("Cancel")
+                    implicitHeight: 28
+                    onClicked: page.cancelLinkSelection()
+                }
             }
         }
 
@@ -413,9 +519,14 @@ Item {
             }
 
             onClicked: {
-                if (!model.missing) {
-                    appController.openGame(model.path);
+                if (model.missing) {
+                    return;
                 }
+                if (page.linkSelecting
+                    && page.chooseLinkGame(model.path, model.title)) {
+                    return;
+                }
+                appController.openGame(model.path);
             }
 
             contentItem: RowLayout {
@@ -524,6 +635,20 @@ Item {
 
                     Menu {
                         id: rowMenu
+
+                        MenuItem {
+                            text: qsTr("Link Play...")
+                            enabled: !model.missing
+                            onTriggered: page.beginLinkSelection(model.path, model.title)
+                        }
+
+                        MenuItem {
+                            text: qsTr("Save data...")
+                            enabled: !model.missing
+                            onTriggered: page.saveDataRequested(model.path, model.title)
+                        }
+
+                        MenuSeparator {}
 
                         MenuItem {
                             text: qsTr("Game information")

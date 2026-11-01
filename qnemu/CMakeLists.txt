@@ -11,13 +11,17 @@ add_executable(
     ui/GameLibrary.cpp
     ui/LaunchPolicy.cpp
     ui/RomArchive.cpp
-    ui/RomDatabase.cpp)
+    ui/RomDatabase.cpp
+    ui/SavePaths.cpp)
 qt_add_resources(qnemu "qml"
     PREFIX "/qml"
     BASE ui
     FILES
         ui/Main.qml
         ui/GameWindow.qml
+        ui/LinkWindow.qml
+        ui/LinkPlayDialog.qml
+        ui/SaveManagerDialog.qml
         ui/LibraryPage.qml
         ui/FilterComboBox.qml
         ui/SettingsDialog.qml

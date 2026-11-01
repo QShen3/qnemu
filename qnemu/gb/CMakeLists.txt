@@ -118,6 +118,14 @@ qnemu_add_gb_library(gb_memory
 qnemu_add_gb_library(gb_joypad
     ${CMAKE_CURRENT_SOURCE_DIR}/joypad/GbJoypad.cpp)
 
+# Serial port (SB/SC) and the local link transport.
+qnemu_add_gb_library(gb_serial
+    ${CMAKE_CURRENT_SOURCE_DIR}/serial/GbLocalSerialLink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/serial/GbSerial.cpp)
+target_link_libraries(gb_serial
+    PRIVATE
+        gb_interrupt)
+
 # Bus address decoding and the CPU bus adapter.
 qnemu_add_gb_library(gb_mmu
     ${CMAKE_CURRENT_SOURCE_DIR}/mmu/CgbMmu.cpp
@@ -127,6 +135,7 @@ target_link_libraries(gb_mmu
         gb_apu
         gb_joypad
         gb_memory
+        gb_serial
         gb_timer)
 
 # Complete GB system: owns the CPU/MMU/PPU/APU/timer/joypad/cartridge.  The
@@ -151,6 +160,7 @@ target_link_libraries(gb
         gb_memory
         gb_joypad
         gb_mmu
+        gb_serial
         gb_sgb
     PRIVATE
         save)

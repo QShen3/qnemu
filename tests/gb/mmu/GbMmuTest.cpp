@@ -25,6 +25,7 @@
 #include "qnemu/gb/memory/GbHighRam.h"
 #include "qnemu/gb/mmu/CgbMmu.h"
 #include "qnemu/gb/mmu/DmgMmu.h"
+#include "qnemu/gb/serial/GbSerial.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "tests/support/NullSound.h"
 
@@ -149,10 +150,12 @@ protected:
         auto joypad = std::make_unique<qnemu::GbJoypad>(interruptHandler);
         auto workRam = std::make_unique<qnemu::CgbWorkRam>();
         auto timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
+        auto serial = std::make_unique<qnemu::GbSerial>(interruptHandler, nullptr, true);
 
         mmu = std::make_unique<qnemu::CgbMmu>(
             std::move(apu), cartridge, std::move(gpu), std::move(highRam),
-            interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
+            interruptHandler, std::move(joypad), std::move(workRam), std::move(timer),
+            std::move(serial));
         mmu->setCgb(true);
     }
 
@@ -177,10 +180,12 @@ protected:
         auto joypad = std::make_unique<qnemu::GbJoypad>(interruptHandler);
         auto workRam = std::make_unique<qnemu::DmgWorkRam>();
         auto timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
+        auto serial = std::make_unique<qnemu::GbSerial>(interruptHandler, nullptr, false);
 
         mmu = std::make_unique<qnemu::DmgMmu>(
             std::move(apu), cartridge, std::move(gpu), std::move(highRam),
-            interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
+            interruptHandler, std::move(joypad), std::move(workRam), std::move(timer),
+            std::move(serial));
     }
 
     std::shared_ptr<FakeCartridge> cartridge;
@@ -204,6 +209,43 @@ TEST_F(DmgMmuTest, DoesNotExposeCgbRegisters)
     EXPECT_EQ(mmu->read(0xFF4F), 0xFF);
     EXPECT_EQ(mmu->read(0xFF70), 0xFF);
     EXPECT_EQ(mmu->read(0xFF72), 0xFF);
+}
+
+TEST_F(DmgMmuTest, RoutesSerialRegisters)
+{
+    mmu->write(0xFF01, 0x5A);
+    EXPECT_EQ(mmu->read(0xFF01), 0x5A);
+
+    mmu->write(0xFF02, 0x81);
+    EXPECT_EQ(mmu->read(0xFF02), 0xFF);
+
+    for (int cycle = 0; cycle < 4095; ++cycle) {
+        mmu->step();
+    }
+    EXPECT_EQ(mmu->read(0xFF02), 0xFF);
+
+    mmu->step();
+    EXPECT_EQ(mmu->read(0xFF02), 0x7F);
+    EXPECT_EQ(mmu->read(0xFF01), 0xFF);
+}
+
+TEST_F(CgbMmuTest, RoutesSerialRegisters)
+{
+    EXPECT_EQ(mmu->read(0xFF02), 0x7F);
+
+    mmu->write(0xFF01, 0xA5);
+    EXPECT_EQ(mmu->read(0xFF01), 0xA5);
+
+    mmu->write(0xFF02, 0x83);
+    EXPECT_EQ(mmu->read(0xFF02), 0xFF);
+
+    for (int cycle = 0; cycle < 127; ++cycle) {
+        mmu->step();
+    }
+    EXPECT_EQ(mmu->read(0xFF02), 0xFF);
+
+    mmu->step();
+    EXPECT_EQ(mmu->read(0xFF02), 0x7F);
 }
 
 TEST_F(DmgMmuTest, UsesFixedUpperWorkRam)
