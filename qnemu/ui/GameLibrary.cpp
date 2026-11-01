@@ -261,12 +261,43 @@ void GameFilterProxyModel::setFilterText(const QString& text)
     if (filterTextValue == text) {
         return;
     }
+    filterTextValue = text;
+    refreshFilter();
+}
+
+void GameFilterProxyModel::setRegionFilter(const QString& region)
+{
+    if (regionFilterValue == region) {
+        return;
+    }
+    regionFilterValue = region;
+    refreshFilter();
+}
+
+void GameFilterProxyModel::setLanguageFilter(const QString& language)
+{
+    if (languageFilterValue == language) {
+        return;
+    }
+    languageFilterValue = language;
+    refreshFilter();
+}
+
+void GameFilterProxyModel::setStatusFilter(const QString& status)
+{
+    if (statusFilterValue == status) {
+        return;
+    }
+    statusFilterValue = status;
+    refreshFilter();
+}
+
+void GameFilterProxyModel::refreshFilter()
+{
 #if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
     beginFilterChange();
-    filterTextValue = text;
     endFilterChange();
 #else
-    filterTextValue = text;
     invalidateFilter();
 #endif
 }
@@ -274,17 +305,36 @@ void GameFilterProxyModel::setFilterText(const QString& text)
 bool GameFilterProxyModel::filterAcceptsRow(int sourceRow,
     const QModelIndex& sourceParent) const
 {
+    const QAbstractItemModel* model = sourceModel();
+    if (model == nullptr) {
+        return true;
+    }
+    const QModelIndex index = model->index(sourceRow, 0, sourceParent);
+    const auto value = [model, &index](int role) {
+        return model->data(index, role).toString();
+    };
+
+    if (!regionFilterValue.isEmpty()
+        && !value(GameListModel::RegionRole).contains(
+            regionFilterValue, Qt::CaseInsensitive)) {
+        return false;
+    }
+    if (!languageFilterValue.isEmpty()
+        && !value(GameListModel::LanguagesRole).contains(
+            languageFilterValue, Qt::CaseInsensitive)) {
+        return false;
+    }
+    if (!statusFilterValue.isEmpty()
+        && value(GameListModel::StatusRole) != statusFilterValue) {
+        return false;
+    }
+
     const QStringList terms = filterTextValue.trimmed().split(
         QLatin1Char(' '), Qt::SkipEmptyParts);
     if (terms.isEmpty()) {
         return true;
     }
 
-    const QAbstractItemModel* model = sourceModel();
-    if (model == nullptr) {
-        return true;
-    }
-    const QModelIndex index = model->index(sourceRow, 0, sourceParent);
     QStringList fields;
     for (const int role : {
              GameListModel::TitleRole,
@@ -360,6 +410,57 @@ void GameLibrary::setFilterText(const QString& text)
     gbProxy.setFilterText(text);
     gbcProxy.setFilterText(text);
     emit filterTextChanged();
+    emit filtersChanged();
+}
+
+void GameLibrary::setRegionFilter(const QString& region)
+{
+    if (regionFilterValue == region) {
+        return;
+    }
+    regionFilterValue = region;
+    gbProxy.setRegionFilter(region);
+    gbcProxy.setRegionFilter(region);
+    emit regionFilterChanged();
+    emit filtersChanged();
+}
+
+void GameLibrary::setLanguageFilter(const QString& language)
+{
+    if (languageFilterValue == language) {
+        return;
+    }
+    languageFilterValue = language;
+    gbProxy.setLanguageFilter(language);
+    gbcProxy.setLanguageFilter(language);
+    emit languageFilterChanged();
+    emit filtersChanged();
+}
+
+void GameLibrary::setStatusFilter(const QString& status)
+{
+    if (statusFilterValue == status) {
+        return;
+    }
+    statusFilterValue = status;
+    gbProxy.setStatusFilter(status);
+    gbcProxy.setStatusFilter(status);
+    emit statusFilterChanged();
+    emit filtersChanged();
+}
+
+bool GameLibrary::isFiltering() const
+{
+    return !filterTextValue.trimmed().isEmpty() || !regionFilterValue.isEmpty()
+        || !languageFilterValue.isEmpty() || !statusFilterValue.isEmpty();
+}
+
+void GameLibrary::clearFilters()
+{
+    setFilterText(QString());
+    setRegionFilter(QString());
+    setLanguageFilter(QString());
+    setStatusFilter(QString());
 }
 
 void GameLibrary::refresh()
@@ -583,6 +684,7 @@ void GameLibrary::finishScan()
 
     gbModel.setGames(std::move(gbGames));
     gbcModel.setGames(std::move(gbcGames));
+    rebuildFilterOptions();
     emit countsChanged();
 
     if (scanPending) {
@@ -600,6 +702,83 @@ void GameLibrary::setLoading(bool value)
     }
     loadingValue = value;
     emit loadingChanged();
+}
+
+void GameLibrary::rebuildFilterOptions()
+{
+    QSet<QString> regions;
+    QSet<QString> languages;
+    QSet<QString> statuses;
+    for (const GameEntry& game : std::as_const(scanEntries)) {
+        for (const QString& region : game.region.split(
+                 QLatin1Char(','), Qt::SkipEmptyParts)) {
+            const QString trimmed = region.trimmed();
+            if (!trimmed.isEmpty() && trimmed != QStringLiteral("Unknown")) {
+                regions.insert(trimmed);
+            }
+        }
+        for (const QString& language : game.languages.split(
+                 QLatin1Char(','), Qt::SkipEmptyParts)) {
+            const QString trimmed = language.trimmed();
+            if (!trimmed.isEmpty()) {
+                languages.insert(trimmed);
+            }
+        }
+        if (!game.status.isEmpty()
+            && game.status != QStringLiteral("unknown")) {
+            statuses.insert(game.status);
+        }
+    }
+
+    regionOptionsValue = regions.values();
+    regionOptionsValue.sort(Qt::CaseInsensitive);
+    languageOptionsValue = languages.values();
+    languageOptionsValue.sort(Qt::CaseInsensitive);
+
+    statusOptionsValue.clear();
+    for (const QString& status : {
+             QStringLiteral("official"),
+             QStringLiteral("aftermarket"),
+             QStringLiteral("unlicensed"),
+             QStringLiteral("proto"),
+             QStringLiteral("pirate"),
+             QStringLiteral("homebrew"),
+             QStringLiteral("demo"),
+         }) {
+        if (statuses.contains(status)) {
+            statusOptionsValue.append(status);
+        }
+    }
+
+    bool reset = false;
+    if (!regionFilterValue.isEmpty()
+        && !regionOptionsValue.contains(regionFilterValue)) {
+        regionFilterValue.clear();
+        gbProxy.setRegionFilter(QString());
+        gbcProxy.setRegionFilter(QString());
+        emit regionFilterChanged();
+        reset = true;
+    }
+    if (!languageFilterValue.isEmpty()
+        && !languageOptionsValue.contains(languageFilterValue)) {
+        languageFilterValue.clear();
+        gbProxy.setLanguageFilter(QString());
+        gbcProxy.setLanguageFilter(QString());
+        emit languageFilterChanged();
+        reset = true;
+    }
+    if (!statusFilterValue.isEmpty()
+        && !statusOptionsValue.contains(statusFilterValue)) {
+        statusFilterValue.clear();
+        gbProxy.setStatusFilter(QString());
+        gbcProxy.setStatusFilter(QString());
+        emit statusFilterChanged();
+        reset = true;
+    }
+    if (reset) {
+        emit filtersChanged();
+    }
+    emit filterOptionsChanged();
 }
 
 void GameLibrary::waitForScan()

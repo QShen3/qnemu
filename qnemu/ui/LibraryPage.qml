@@ -17,7 +17,7 @@ Item {
             return qsTr("Scanning game library...");
         }
         const count = appController.library.gbCount + appController.library.gbcCount;
-        if (appController.library.filterText.trim() !== "") {
+        if (appController.library.filtering) {
             return count === 1 ? qsTr("1 matching game") : qsTr("%1 matching games").arg(count);
         }
         if (count === 0) {
@@ -137,7 +137,7 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: 30
-                placeholderText: qsTr("Search title, publisher, region, language...")
+                placeholderText: qsTr("Search title, publisher, developer...")
                 text: appController.library.filterText
                 selectByMouse: true
                 onTextEdited: appController.library.filterText = text
@@ -154,6 +154,61 @@ Item {
                 onClicked: appController.library.filterText = ""
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Clear search")
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 6
+
+            FilterComboBox {
+                id: regionFilterCombo
+
+                filterValue: appController.library.regionFilter
+                filterOptions: appController.library.regionOptions.map(function(region) {
+                    return { label: region, value: region };
+                })
+                allLabel: qsTr("All regions")
+                onSelected: function(value) {
+                    appController.library.regionFilter = value;
+                }
+            }
+
+            FilterComboBox {
+                id: languageFilterCombo
+
+                filterValue: appController.library.languageFilter
+                filterOptions: appController.library.languageOptions.map(function(language) {
+                    return { label: language, value: language };
+                })
+                allLabel: qsTr("All languages")
+                onSelected: function(value) {
+                    appController.library.languageFilter = value;
+                }
+            }
+
+            FilterComboBox {
+                id: statusFilterCombo
+
+                filterValue: appController.library.statusFilter
+                filterOptions: appController.library.statusOptions.map(function(status) {
+                    return { label: page.statusLabel(status), value: status };
+                })
+                allLabel: qsTr("All statuses")
+                onSelected: function(value) {
+                    appController.library.statusFilter = value;
+                }
+            }
+
+            ToolButton {
+                id: clearFiltersButton
+
+                text: qsTr("Clear")
+                visible: appController.library.filtering
+                implicitHeight: 30
+                onClicked: appController.library.clearFilters()
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Clear all filters")
             }
         }
 
@@ -260,7 +315,7 @@ Item {
                         width: Math.min(parent.width, 300)
                         height: implicitHeight
                         visible: !appController.library.loading && gbList.count === 0
-                        filtering: appController.library.filterText.trim() !== ""
+                        filtering: appController.library.filtering
                         theme: page.theme
                         platformName: "GB"
                         onAddRequested: page.addGameRequested()
@@ -286,7 +341,7 @@ Item {
                         width: Math.min(parent.width, 300)
                         height: implicitHeight
                         visible: !appController.library.loading && gbcList.count === 0
-                        filtering: appController.library.filterText.trim() !== ""
+                        filtering: appController.library.filtering
                         theme: page.theme
                         platformName: "GBC"
                         onAddRequested: page.addGameRequested()

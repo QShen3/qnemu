@@ -59,7 +59,7 @@ ColumnLayout {
     Label {
         Layout.alignment: Qt.AlignHCenter
         text: empty.filtering
-            ? qsTr("No %1 games match your search").arg(empty.platformName)
+            ? qsTr("No %1 games match your filters").arg(empty.platformName)
             : qsTr("No %1 games yet").arg(empty.platformName)
         color: empty.theme.windowText
         font.pixelSize: 15
@@ -71,7 +71,7 @@ ColumnLayout {
         Layout.maximumWidth: 260
         Layout.fillWidth: true
         text: empty.filtering
-            ? qsTr("Try a different search or clear the filter.")
+            ? qsTr("Try a different search or filter combination.")
             : qsTr("Add a ROM file, or choose a folder in Settings.")
         color: empty.theme.mutedText
         font.pixelSize: 11

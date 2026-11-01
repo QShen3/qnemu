@@ -208,6 +208,23 @@ TEST_F(GameLibraryTest, MarksOfficialRomFromBuiltInDatabase)
     EXPECT_FALSE(library.gbGames()->data(index, qnemu::GameListModel::Sha1Role).toString().isEmpty());
     EXPECT_EQ(library.gbGames()->data(index, qnemu::GameListModel::DatabaseNameRole).toString(),
         QStringLiteral("Tetris (World) (Rev 1)"));
+
+    EXPECT_TRUE(library.regionOptions().contains(QStringLiteral("World")));
+    EXPECT_TRUE(library.languageOptions().contains(QStringLiteral("English")));
+    EXPECT_TRUE(library.statusOptions().contains(QStringLiteral("official")));
+
+    library.setRegionFilter(QStringLiteral("World"));
+    library.setLanguageFilter(QStringLiteral("English"));
+    library.setStatusFilter(QStringLiteral("official"));
+    EXPECT_TRUE(library.isFiltering());
+    EXPECT_EQ(library.gbCount(), 1);
+
+    library.setRegionFilter(QStringLiteral("Japan"));
+    EXPECT_EQ(library.gbCount(), 0);
+
+    library.clearFilters();
+    EXPECT_FALSE(library.isFiltering());
+    EXPECT_EQ(library.gbCount(), 1);
 }
 
 TEST_F(GameLibraryTest, MarksOfficialRomInsideZip)
@@ -278,6 +295,51 @@ TEST_F(GameLibraryTest, FiltersByTitleAndTerms)
 
     library.setFilterText(QString());
     EXPECT_EQ(library.gbCount(), 2);
+}
+
+TEST(GameFilterProxyModelTest, FiltersByRegionLanguageAndStatus)
+{
+    qnemu::GameListModel model;
+    QVector<qnemu::GameEntry> games(2);
+    games[0].title = QStringLiteral("Alpha");
+    games[0].region = QStringLiteral("USA, Europe");
+    games[0].languages = QStringLiteral("English, French");
+    games[0].status = QStringLiteral("official");
+    games[1].title = QStringLiteral("Beta");
+    games[1].region = QStringLiteral("Japan");
+    games[1].languages = QStringLiteral("Japanese");
+    games[1].status = QStringLiteral("aftermarket");
+    model.setGames(games);
+
+    qnemu::GameFilterProxyModel proxy;
+    proxy.setSourceModel(&model);
+    EXPECT_EQ(proxy.count(), 2);
+
+    proxy.setRegionFilter(QStringLiteral("Europe"));
+    ASSERT_EQ(proxy.count(), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0),
+                  qnemu::GameListModel::TitleRole).toString(),
+        QStringLiteral("Alpha"));
+
+    proxy.setRegionFilter(QString());
+    proxy.setLanguageFilter(QStringLiteral("Japanese"));
+    ASSERT_EQ(proxy.count(), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0),
+                  qnemu::GameListModel::TitleRole).toString(),
+        QStringLiteral("Beta"));
+
+    proxy.setLanguageFilter(QString());
+    proxy.setStatusFilter(QStringLiteral("aftermarket"));
+    ASSERT_EQ(proxy.count(), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0),
+                  qnemu::GameListModel::TitleRole).toString(),
+        QStringLiteral("Beta"));
+
+    proxy.setStatusFilter(QString());
+    proxy.setFilterText(QStringLiteral("Alpha"));
+    EXPECT_EQ(proxy.count(), 1);
+    proxy.setFilterText(QStringLiteral("Alpha Beta"));
+    EXPECT_EQ(proxy.count(), 0);
 }
 
 }  // namespace qnemuTest

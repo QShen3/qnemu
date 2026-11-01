@@ -23,9 +23,9 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
-- Parallel background library scan with a loading overlay, plus title/publisher/region/language/checksum search.
+- Parallel background library scan with a loading overlay, plus text search and region/language/status filters.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 424 CTest cases, including 168 curated test ROMs.
+- 425 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -262,10 +262,11 @@ some AES variants are not supported.
 
 ## Searching the library
 
-The search field filters the current GB/GBC list by title, publisher,
-developer, region, language, serial, genre, status, checksum, platform and
-archive entry. Terms are case-insensitive and space-separated; every term must
-match. The tab counts and the empty state follow the active filter.
+The search field covers title, publisher, developer, serial, genre, checksum,
+platform and archive entry. Region, language and status have dedicated
+dropdown filters. Search terms are case-insensitive and space-separated; every
+term must match, and all filters combine. The tab counts and the empty state
+follow the active filters.
 
 ## Project structure
 
@@ -636,7 +637,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **424/424 CTest cases**, including 168 ROM tests.
+The current set is **425/425 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -841,7 +842,7 @@ fail when run directly:
 | QML UI           | ✅          | manual smoke test |
 | Game library     | ✅          | manual smoke test |
 | ROM archives     | ✅          | unit + real zip scan |
-| Library search   | ✅          | unit |
+| Library filters  | ✅          | unit |
 | Settings         | ✅          | manual smoke test |
 | Screenshots      | ✅          | manual smoke test |
 | Key profiles     | ✅          | manual smoke test |

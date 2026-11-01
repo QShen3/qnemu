@@ -18,6 +18,7 @@ qt_add_resources(qnemu "qml"
         ui/Main.qml
         ui/GameWindow.qml
         ui/LibraryPage.qml
+        ui/FilterComboBox.qml
         ui/SettingsDialog.qml
         ui/Theme.qml
         ui/SettingsCard.qml

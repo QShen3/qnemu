@@ -101,10 +101,11 @@ private:
 };
 
 /**
- * Case-insensitive, space-separated search over the library metadata.
+ * Case-insensitive text search plus region/language/status filters.
  *
- * Each term must match at least one of title/publisher/developer/region/
- * language/database name/archive entry/serial/genre/status/checksum/platform.
+ * Search terms are space-separated and every term must match the combined
+ * metadata; region and language match within comma-separated values, while
+ * status is an exact code match.
  */
 class GameFilterProxyModel : public QSortFilterProxyModel
 {
@@ -115,6 +116,9 @@ public:
     explicit GameFilterProxyModel(QObject* parent = nullptr);
 
     void setFilterText(const QString& text);
+    void setRegionFilter(const QString& region);
+    void setLanguageFilter(const QString& language);
+    void setStatusFilter(const QString& status);
     int count() const { return rowCount(); }
 
 signals:
@@ -124,7 +128,12 @@ protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override;
 
 private:
+    void refreshFilter();
+
     QString filterTextValue;
+    QString regionFilterValue;
+    QString languageFilterValue;
+    QString statusFilterValue;
 };
 
 /**
@@ -147,6 +156,19 @@ class GameLibrary : public QObject
     Q_PROPERTY(bool loading READ isLoading NOTIFY loadingChanged)
     Q_PROPERTY(QString filterText READ filterText WRITE setFilterText
         NOTIFY filterTextChanged)
+    Q_PROPERTY(QStringList regionOptions READ regionOptions
+        NOTIFY filterOptionsChanged)
+    Q_PROPERTY(QStringList languageOptions READ languageOptions
+        NOTIFY filterOptionsChanged)
+    Q_PROPERTY(QStringList statusOptions READ statusOptions
+        NOTIFY filterOptionsChanged)
+    Q_PROPERTY(QString regionFilter READ regionFilter WRITE setRegionFilter
+        NOTIFY regionFilterChanged)
+    Q_PROPERTY(QString languageFilter READ languageFilter WRITE setLanguageFilter
+        NOTIFY languageFilterChanged)
+    Q_PROPERTY(QString statusFilter READ statusFilter WRITE setStatusFilter
+        NOTIFY statusFilterChanged)
+    Q_PROPERTY(bool filtering READ isFiltering NOTIFY filtersChanged)
     Q_PROPERTY(QString databaseSource READ databaseSource CONSTANT)
     Q_PROPERTY(QString databaseVersion READ databaseVersion CONSTANT)
     Q_PROPERTY(QString databaseLicenseUrl READ databaseLicenseUrl CONSTANT)
@@ -164,6 +186,17 @@ public:
     bool isLoading() const { return loadingValue; }
     QString filterText() const { return filterTextValue; }
     void setFilterText(const QString& text);
+    QStringList regionOptions() const { return regionOptionsValue; }
+    QStringList languageOptions() const { return languageOptionsValue; }
+    QStringList statusOptions() const { return statusOptionsValue; }
+    QString regionFilter() const { return regionFilterValue; }
+    QString languageFilter() const { return languageFilterValue; }
+    QString statusFilter() const { return statusFilterValue; }
+    bool isFiltering() const;
+    void setRegionFilter(const QString& region);
+    void setLanguageFilter(const QString& language);
+    void setStatusFilter(const QString& status);
+    Q_INVOKABLE void clearFilters();
     QString databaseSource() const { return database.sourceLabel(); }
     QString databaseVersion() const { return database.datVersion(); }
     QString databaseLicenseUrl() const { return database.sourceLicenseUrl(); }
@@ -185,6 +218,11 @@ signals:
     void countsChanged();
     void loadingChanged();
     void filterTextChanged();
+    void regionFilterChanged();
+    void languageFilterChanged();
+    void statusFilterChanged();
+    void filterOptionsChanged();
+    void filtersChanged();
 
 private:
     struct HashCacheEntry
@@ -203,6 +241,7 @@ private:
     void startScan();
     void finishScan();
     void setLoading(bool value);
+    void rebuildFilterOptions();
     GameEntry makeEntry(const QString& path, const GbCartridgeHeader& header,
         const RomHash& hash, const QString& archiveEntry) const;
     GameEntry makeFallbackEntry(const QString& path) const;
@@ -222,6 +261,12 @@ private:
     QStringList references;
     QStringList hiddenPaths;
     QString filterTextValue;
+    QString regionFilterValue;
+    QString languageFilterValue;
+    QString statusFilterValue;
+    QStringList regionOptionsValue;
+    QStringList languageOptionsValue;
+    QStringList statusOptionsValue;
     QSettings settings;
     bool loadingValue = false;
     bool scanPending = false;
