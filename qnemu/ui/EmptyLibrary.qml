@@ -8,6 +8,7 @@ ColumnLayout {
 
     property var theme
     property string platformName: "GB"
+    property bool filtering: false
 
     signal addRequested
     signal settingsRequested
@@ -57,7 +58,9 @@ ColumnLayout {
 
     Label {
         Layout.alignment: Qt.AlignHCenter
-        text: qsTr("No %1 games yet").arg(empty.platformName)
+        text: empty.filtering
+            ? qsTr("No %1 games match your search").arg(empty.platformName)
+            : qsTr("No %1 games yet").arg(empty.platformName)
         color: empty.theme.windowText
         font.pixelSize: 15
         font.weight: Font.DemiBold
@@ -67,7 +70,9 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         Layout.maximumWidth: 260
         Layout.fillWidth: true
-        text: qsTr("Add a ROM file, or choose a folder in Settings.")
+        text: empty.filtering
+            ? qsTr("Try a different search or clear the filter.")
+            : qsTr("Add a ROM file, or choose a folder in Settings.")
         color: empty.theme.mutedText
         font.pixelSize: 11
         wrapMode: Text.WordWrap

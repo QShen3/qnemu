@@ -7,12 +7,14 @@
 #include <utility>
 #include <vector>
 
+#include <QtConcurrent/QtConcurrent>
 #include <QtCore/QDateTime>
 #include <QtCore/QDir>
 #include <QtCore/QDirIterator>
 #include <QtCore/QDebug>
 #include <QtCore/QFileInfo>
 #include <QtCore/QMap>
+#include <QtCore/QSet>
 #include <QtCore/QVariant>
 
 #include "qnemu/ui/GameLibrary.h"
@@ -107,6 +109,42 @@ bool isSupportedRomPath(const QString& path)
     const QString suffix = QFileInfo(path).suffix().toLower();
     return suffix == QStringLiteral("gb") || suffix == QStringLiteral("gbc")
         || suffix == QStringLiteral("sgb") || RomArchive::isArchivePath(path);
+}
+
+ScanResult scanPath(const QString& path, const RomDatabase& database)
+{
+    ScanResult result;
+    result.path = path;
+    try {
+        const QFileInfo info(path);
+        if (!info.exists()) {
+            result.error = QStringLiteral("File missing");
+            return result;
+        }
+
+        if (RomArchive::isArchivePath(path)) {
+            RomArchiveEntry archive;
+            QString error;
+            if (!RomArchive::read(path, &archive, &error)) {
+                result.error = error;
+                return result;
+            }
+            result.archiveEntry = archive.name;
+            const std::vector<uint8_t> romData(archive.data.begin(), archive.data.end());
+            result.header = GbCartridge::readHeader(romData);
+            result.hash = RomDatabase::hashData(archive.data);
+        } else {
+            result.header = GbCartridge::readHeader(path.toStdString());
+            const quint32 fileSize = static_cast<quint32>(info.size());
+            if (database.hasSize(fileSize)) {
+                result.hash = RomDatabase::hashFile(path);
+            }
+        }
+        result.valid = true;
+    } catch (const std::exception& error) {
+        result.error = QString::fromUtf8(error.what());
+    }
+    return result;
 }
 
 }  // namespace
@@ -205,8 +243,90 @@ void GameListModel::setGames(QVector<GameEntry> newGames)
     emit countChanged();
 }
 
+GameFilterProxyModel::GameFilterProxyModel(QObject* parent)
+    : QSortFilterProxyModel(parent)
+{
+    connect(this, &QAbstractItemModel::rowsInserted,
+        this, &GameFilterProxyModel::countChanged);
+    connect(this, &QAbstractItemModel::rowsRemoved,
+        this, &GameFilterProxyModel::countChanged);
+    connect(this, &QAbstractItemModel::modelReset,
+        this, &GameFilterProxyModel::countChanged);
+    connect(this, &QAbstractItemModel::layoutChanged,
+        this, &GameFilterProxyModel::countChanged);
+}
+
+void GameFilterProxyModel::setFilterText(const QString& text)
+{
+    if (filterTextValue == text) {
+        return;
+    }
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    beginFilterChange();
+    filterTextValue = text;
+    endFilterChange();
+#else
+    filterTextValue = text;
+    invalidateFilter();
+#endif
+}
+
+bool GameFilterProxyModel::filterAcceptsRow(int sourceRow,
+    const QModelIndex& sourceParent) const
+{
+    const QStringList terms = filterTextValue.trimmed().split(
+        QLatin1Char(' '), Qt::SkipEmptyParts);
+    if (terms.isEmpty()) {
+        return true;
+    }
+
+    const QAbstractItemModel* model = sourceModel();
+    if (model == nullptr) {
+        return true;
+    }
+    const QModelIndex index = model->index(sourceRow, 0, sourceParent);
+    QStringList fields;
+    for (const int role : {
+             GameListModel::TitleRole,
+             GameListModel::PublisherRole,
+             GameListModel::DeveloperRole,
+             GameListModel::RegionRole,
+             GameListModel::LanguagesRole,
+             GameListModel::SerialRole,
+             GameListModel::PlatformRole,
+             GameListModel::StatusRole,
+             GameListModel::CrcRole,
+             GameListModel::Sha1Role,
+             GameListModel::DatabaseNameRole,
+             GameListModel::ArchiveEntryRole,
+             GameListModel::GenreRole,
+             GameListModel::YearRole,
+         }) {
+        const QString value = model->data(index, role).toString();
+        if (!value.isEmpty()) {
+            fields.append(value);
+        }
+    }
+    const QString haystack = fields.join(QLatin1Char(' '));
+    for (const QString& term : terms) {
+        if (!haystack.contains(term, Qt::CaseInsensitive)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 GameLibrary::GameLibrary(QObject* parent, const QString& databasePath) : QObject(parent)
 {
+    gbProxy.setSourceModel(&gbModel);
+    gbcProxy.setSourceModel(&gbcModel);
+    connect(&gbProxy, &GameFilterProxyModel::countChanged,
+        this, &GameLibrary::countsChanged);
+    connect(&gbcProxy, &GameFilterProxyModel::countChanged,
+        this, &GameLibrary::countsChanged);
+    connect(&scanWatcher, &QFutureWatcher<ScanResult>::finished,
+        this, &GameLibrary::finishScan);
+
     if (!databasePath.isEmpty()) {
         QString error;
         if (!database.load(databasePath, &error)) {
@@ -216,11 +336,30 @@ GameLibrary::GameLibrary(QObject* parent, const QString& databasePath) : QObject
     loadLists();
 }
 
+GameLibrary::~GameLibrary()
+{
+    scanPending = false;
+    if (scanHasFuture && scanWatcher.isRunning()) {
+        scanWatcher.waitForFinished();
+    }
+}
+
 void GameLibrary::setPaths(const QString& gbPath, const QString& gbcPath)
 {
     gbLibraryPath = QDir::cleanPath(gbPath);
     gbcLibraryPath = QDir::cleanPath(gbcPath);
     scan();
+}
+
+void GameLibrary::setFilterText(const QString& text)
+{
+    if (filterTextValue == text) {
+        return;
+    }
+    filterTextValue = text;
+    gbProxy.setFilterText(text);
+    gbcProxy.setFilterText(text);
+    emit filterTextChanged();
 }
 
 void GameLibrary::refresh()
@@ -311,16 +450,43 @@ void GameLibrary::saveLists()
 
 void GameLibrary::scan()
 {
-    QMap<QString, GameEntry> entries;
-    const auto addPath = [this, &entries](const QString& path) {
+    if (!scanHandled || (scanHasFuture && scanWatcher.isRunning())) {
+        scanPending = true;
+        return;
+    }
+    startScan();
+}
+
+void GameLibrary::startScan()
+{
+    scanHandled = false;
+    scanHasFuture = false;
+    scanEntries.clear();
+    setLoading(true);
+
+    QSet<QString> seen;
+    QStringList pending;
+    const auto addPath = [this, &seen, &pending](const QString& path) {
         const QFileInfo info(path);
         const QString absolute = info.canonicalFilePath().isEmpty()
             ? info.absoluteFilePath()
             : info.canonicalFilePath();
-        if (absolute.isEmpty() || hiddenPaths.contains(absolute)) {
+        if (absolute.isEmpty() || hiddenPaths.contains(absolute)
+            || seen.contains(absolute)) {
             return;
         }
-        entries.insert(absolute, makeEntry(absolute));
+        seen.insert(absolute);
+
+        const qint64 modified = info.lastModified().toMSecsSinceEpoch();
+        const auto cached = hashCache.constFind(absolute);
+        if (cached != hashCache.constEnd() && cached->size == info.size()
+            && cached->modified == modified && cached->valid) {
+            scanEntries.insert(absolute,
+                makeEntry(absolute, cached->header, cached->hash,
+                    cached->archiveEntry));
+            return;
+        }
+        pending.append(absolute);
     };
 
     const auto scanDirectory = [&addPath](const QString& root) {
@@ -342,9 +508,58 @@ void GameLibrary::scan()
         addPath(path);
     }
 
+    if (pending.isEmpty()) {
+        finishScan();
+        return;
+    }
+
+    const RomDatabase* databasePtr = &database;
+    scanHasFuture = true;
+    scanWatcher.setFuture(QtConcurrent::mapped(pending,
+        [databasePtr](const QString& path) {
+            return scanPath(path, *databasePtr);
+        }));
+}
+
+void GameLibrary::finishScan()
+{
+    if (scanHandled) {
+        return;
+    }
+    scanHandled = true;
+
+    if (scanHasFuture && scanWatcher.isFinished()
+        && scanWatcher.future().isValid()) {
+        const QFuture<ScanResult> future = scanWatcher.future();
+        for (int index = 0; index < future.resultCount(); ++index) {
+            const ScanResult result = future.resultAt(index);
+            if (!result.valid) {
+                qWarning().noquote() << "Failed to read ROM metadata:"
+                                     << result.path << result.error;
+                scanEntries.insert(result.path, makeFallbackEntry(result.path));
+                continue;
+            }
+
+            scanEntries.insert(result.path,
+                makeEntry(result.path, result.header, result.hash,
+                    result.archiveEntry));
+
+            const QFileInfo info(result.path);
+            HashCacheEntry cache;
+            cache.size = info.size();
+            cache.modified = info.lastModified().toMSecsSinceEpoch();
+            cache.hash = result.hash;
+            cache.header = result.header;
+            cache.archiveEntry = result.archiveEntry;
+            cache.valid = true;
+            hashCache.insert(result.path, cache);
+        }
+    }
+    scanHasFuture = false;
+
     QVector<GameEntry> gbGames;
     QVector<GameEntry> gbcGames;
-    for (const GameEntry& game : std::as_const(entries)) {
+    for (const GameEntry& game : std::as_const(scanEntries)) {
         if (game.platform == QStringLiteral("GBC")) {
             gbcGames.append(game);
         } else {
@@ -369,14 +584,43 @@ void GameLibrary::scan()
     gbModel.setGames(std::move(gbGames));
     gbcModel.setGames(std::move(gbcGames));
     emit countsChanged();
+
+    if (scanPending) {
+        scanPending = false;
+        startScan();
+        return;
+    }
+    setLoading(false);
 }
 
-GameEntry GameLibrary::makeEntry(const QString& path)
+void GameLibrary::setLoading(bool value)
+{
+    if (loadingValue == value) {
+        return;
+    }
+    loadingValue = value;
+    emit loadingChanged();
+}
+
+void GameLibrary::waitForScan()
+{
+    while (!scanHandled || (scanHasFuture && scanWatcher.isRunning())) {
+        if (scanHasFuture && scanWatcher.isRunning()) {
+            scanWatcher.waitForFinished();
+        }
+        finishScan();
+    }
+}
+
+GameEntry GameLibrary::makeEntry(const QString& path,
+    const GbCartridgeHeader& header, const RomHash& hash,
+    const QString& archiveEntry) const
 {
     const QFileInfo info(path);
     GameEntry entry;
     entry.path = info.absoluteFilePath();
-    entry.platform = info.suffix().compare(QStringLiteral("gbc"), Qt::CaseInsensitive) == 0
+    entry.platform = info.suffix().compare(QStringLiteral("gbc"),
+                         Qt::CaseInsensitive) == 0
         ? QStringLiteral("GBC")
         : QStringLiteral("GB");
     entry.title = info.completeBaseName();
@@ -388,65 +632,30 @@ GameEntry GameLibrary::makeEntry(const QString& path)
         return entry;
     }
 
-    const qint64 modified = info.lastModified().toMSecsSinceEpoch();
-    const auto cached = hashCache.constFind(entry.path);
-    if (cached != hashCache.constEnd() && cached->size == info.size()
-        && cached->modified == modified && cached->valid) {
-        applyHeader(entry, cached->header);
-        entry.archiveEntry = cached->archiveEntry;
-        if (cached->hash.valid) {
-            applyHash(entry, cached->hash);
-            applyDatabase(entry, cached->hash);
-        }
-        finishEntry(entry, info);
-        return entry;
+    applyHeader(entry, header);
+    entry.archiveEntry = archiveEntry;
+    if (hash.valid) {
+        applyHash(entry, hash);
+        applyDatabase(entry, hash);
     }
-
-    try {
-        GbCartridgeHeader header;
-        RomHash hash;
-        QString archiveEntry;
-        if (RomArchive::isArchivePath(entry.path)) {
-            RomArchiveEntry archive;
-            QString error;
-            if (!RomArchive::read(entry.path, &archive, &error)) {
-                throw std::runtime_error(error.toStdString());
-            }
-            archiveEntry = archive.name;
-            const std::vector<uint8_t> romData(archive.data.begin(), archive.data.end());
-            header = GbCartridge::readHeader(romData);
-            hash = RomDatabase::hashData(archive.data);
-        } else {
-            header = GbCartridge::readHeader(entry.path.toStdString());
-            const quint32 fileSize = static_cast<quint32>(info.size());
-            if (database.hasSize(fileSize)) {
-                hash = RomDatabase::hashFile(entry.path);
-            }
-        }
-
-        applyHeader(entry, header);
-        entry.archiveEntry = archiveEntry;
-        if (hash.valid) {
-            applyHash(entry, hash);
-            applyDatabase(entry, hash);
-        }
-
-        HashCacheEntry cache;
-        cache.size = info.size();
-        cache.modified = modified;
-        cache.hash = hash;
-        cache.header = header;
-        cache.archiveEntry = archiveEntry;
-        cache.valid = true;
-        hashCache.insert(entry.path, cache);
-    } catch (const std::exception& error) {
-        qWarning().noquote() << "Failed to read ROM metadata:" << entry.path
-                             << error.what();
-        entry.publisher = QStringLiteral("Unknown");
-        entry.region = QStringLiteral("Unknown");
-    }
-
     finishEntry(entry, info);
+    return entry;
+}
+
+GameEntry GameLibrary::makeFallbackEntry(const QString& path) const
+{
+    const QFileInfo info(path);
+    GameEntry entry;
+    entry.path = info.absoluteFilePath();
+    entry.platform = info.suffix().compare(QStringLiteral("gbc"),
+                         Qt::CaseInsensitive) == 0
+        ? QStringLiteral("GBC")
+        : QStringLiteral("GB");
+    entry.title = info.completeBaseName();
+    entry.publisher = QStringLiteral("Unknown");
+    entry.region = QStringLiteral("Unknown");
+    entry.status = QStringLiteral("unknown");
+    entry.missing = !info.exists();
     return entry;
 }
 

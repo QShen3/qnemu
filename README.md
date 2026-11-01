@@ -23,8 +23,9 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
+- Parallel background library scan with a loading overlay, plus title/publisher/region/language/checksum search.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 423 CTest cases, including 168 curated test ROMs.
+- 424 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -32,8 +33,8 @@ goal is to support more consoles and handhelds with the same host layer.
 
 - A C++20 compiler (GCC >= 9, Clang >= 12, or MSVC 2019+)
 - CMake >= 3.16 (>= 3.20 for the bundled presets)
-- Qt >= 6.3 with Core, Gui, Multimedia, Qml, Quick, QuickControls2 and
-  QuickDialogs2
+- Qt >= 6.3 with Core, Gui, Multimedia, Concurrent, Qml, Quick,
+  QuickControls2 and QuickDialogs2
 - libarchive >= 3.x (ROM archive support)
 - Google Test >= 1.10 (only when building the tests)
 
@@ -250,12 +251,21 @@ plain ROMs. Opening an archive uses the archive filename for save files, so
 
 Encrypted, corrupt, oversized and multi-ROM archives are rejected instead of
 being guessed. The library row stays unverified, and opening the archive shows
-the reason in the status toast. The first scan decompresses every archive to
-compute its checksum; later scans in the same session use an in-memory cache.
+the reason in the status toast. The first scan runs in parallel on Qt's thread
+pool and keeps the library visible with a loading overlay; later scans in the
+same session use an in-memory cache.
+
 When packaging a macOS `.app` or a Windows build, bundle libarchive (or link it
 statically), since Homebrew/vcpkg library paths are machine-specific. libarchive
 covers the common ZIP methods (store/deflate/bzip2/lzma/xz/zstd); Deflate64 and
 some AES variants are not supported.
+
+## Searching the library
+
+The search field filters the current GB/GBC list by title, publisher,
+developer, region, language, serial, genre, status, checksum, platform and
+archive entry. Terms are case-insensitive and space-separated; every term must
+match. The tab counts and the empty state follow the active filter.
 
 ## Project structure
 
@@ -626,7 +636,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **423/423 CTest cases**, including 168 ROM tests.
+The current set is **424/424 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -831,6 +841,7 @@ fail when run directly:
 | QML UI           | ✅          | manual smoke test |
 | Game library     | ✅          | manual smoke test |
 | ROM archives     | ✅          | unit + real zip scan |
+| Library search   | ✅          | unit |
 | Settings         | ✅          | manual smoke test |
 | Screenshots      | ✅          | manual smoke test |
 | Key profiles     | ✅          | manual smoke test |

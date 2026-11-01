@@ -36,6 +36,7 @@ target_link_libraries(
     gb
     sound
     ${QNEMU_LIBARCHIVE_TARGET}
+    Qt6::Concurrent
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2

@@ -49,6 +49,7 @@ target_link_libraries(
     save
     ${QNEMU_LIBARCHIVE_TARGET}
     GTest::gmock_main
+    Qt6::Concurrent
     Qt6::Core
     Qt6::Gui)
 

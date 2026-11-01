@@ -81,7 +81,7 @@ if(QNEMU_ENABLE_COVERAGE AND NOT MSVC)
 endif()
 
 find_package(Qt6 6.3 COMPONENTS
-    Core Gui Multimedia
+    Core Gui Multimedia Concurrent
     Qml Quick QuickControls2 QuickDialogs2
     REQUIRED)
 

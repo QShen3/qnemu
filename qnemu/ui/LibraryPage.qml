@@ -13,7 +13,13 @@ Item {
     property var theme
 
     function gameCountText() {
+        if (appController.library.loading) {
+            return qsTr("Scanning game library...");
+        }
         const count = appController.library.gbCount + appController.library.gbcCount;
+        if (appController.library.filterText.trim() !== "") {
+            return count === 1 ? qsTr("1 matching game") : qsTr("%1 matching games").arg(count);
+        }
         if (count === 0) {
             return qsTr("No games in your library");
         }
@@ -102,6 +108,7 @@ Item {
                 font.pixelSize: 18
                 implicitWidth: 30
                 implicitHeight: 30
+                enabled: !appController.library.loading
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Add a ROM to the library")
                 onClicked: page.addGameRequested()
@@ -114,9 +121,39 @@ Item {
                 font.pixelSize: 15
                 implicitWidth: 30
                 implicitHeight: 30
+                enabled: !appController.library.loading
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Rescan library folders")
                 onClicked: appController.refreshLibrary()
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 4
+
+            TextField {
+                id: searchField
+
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                placeholderText: qsTr("Search title, publisher, region, language...")
+                text: appController.library.filterText
+                selectByMouse: true
+                onTextEdited: appController.library.filterText = text
+            }
+
+            ToolButton {
+                id: clearSearchButton
+
+                text: "×"
+                font.pixelSize: 16
+                implicitWidth: 30
+                implicitHeight: 30
+                visible: appController.library.filterText !== ""
+                onClicked: appController.library.filterText = ""
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Clear search")
             }
         }
 
@@ -197,58 +234,96 @@ Item {
             }
         }
 
-        StackLayout {
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: segmented.currentIndex
 
-            Item {
-                ListView {
-                    id: gbList
-                    anchors.fill: parent
-                    clip: true
-                    spacing: 8
-                    topMargin: 2
-                    bottomMargin: 2
-                    model: appController.library.gbGames
-                    delegate: gameDelegate
-                    ScrollBar.vertical: ScrollBar {}
+            StackLayout {
+                anchors.fill: parent
+                currentIndex: segmented.currentIndex
+
+                Item {
+                    ListView {
+                        id: gbList
+                        anchors.fill: parent
+                        clip: true
+                        spacing: 8
+                        topMargin: 2
+                        bottomMargin: 2
+                        model: appController.library.gbGames
+                        delegate: gameDelegate
+                        ScrollBar.vertical: ScrollBar {}
+                    }
+
+                    EmptyLibrary {
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, 300)
+                        height: implicitHeight
+                        visible: !appController.library.loading && gbList.count === 0
+                        filtering: appController.library.filterText.trim() !== ""
+                        theme: page.theme
+                        platformName: "GB"
+                        onAddRequested: page.addGameRequested()
+                        onSettingsRequested: page.settingsRequested("GB")
+                    }
                 }
 
-                EmptyLibrary {
-                    anchors.centerIn: parent
-                    width: Math.min(parent.width, 300)
-                    height: implicitHeight
-                    visible: gbList.count === 0
-                    theme: page.theme
-                    platformName: "GB"
-                    onAddRequested: page.addGameRequested()
-                    onSettingsRequested: page.settingsRequested("GB")
+                Item {
+                    ListView {
+                        id: gbcList
+                        anchors.fill: parent
+                        clip: true
+                        spacing: 8
+                        topMargin: 2
+                        bottomMargin: 2
+                        model: appController.library.gbcGames
+                        delegate: gameDelegate
+                        ScrollBar.vertical: ScrollBar {}
+                    }
+
+                    EmptyLibrary {
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width, 300)
+                        height: implicitHeight
+                        visible: !appController.library.loading && gbcList.count === 0
+                        filtering: appController.library.filterText.trim() !== ""
+                        theme: page.theme
+                        platformName: "GBC"
+                        onAddRequested: page.addGameRequested()
+                        onSettingsRequested: page.settingsRequested("GBC")
+                    }
                 }
             }
 
-            Item {
-                ListView {
-                    id: gbcList
-                    anchors.fill: parent
-                    clip: true
-                    spacing: 8
-                    topMargin: 2
-                    bottomMargin: 2
-                    model: appController.library.gbcGames
-                    delegate: gameDelegate
-                    ScrollBar.vertical: ScrollBar {}
-                }
+            Rectangle {
+                anchors.fill: parent
+                visible: appController.library.loading
+                color: page.theme.withAlpha(page.theme.window, 0.88)
+                z: 10
 
-                EmptyLibrary {
+                ColumnLayout {
                     anchors.centerIn: parent
-                    width: Math.min(parent.width, 300)
-                    height: implicitHeight
-                    visible: gbcList.count === 0
-                    theme: page.theme
-                    platformName: "GBC"
-                    onAddRequested: page.addGameRequested()
-                    onSettingsRequested: page.settingsRequested("GBC")
+                    spacing: 8
+
+                    BusyIndicator {
+                        Layout.alignment: Qt.AlignHCenter
+                        running: appController.library.loading
+                    }
+
+                    Label {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: qsTr("Scanning game library...")
+                        color: page.theme.windowText
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                    }
+
+                    Label {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: qsTr("Reading cartridge headers and checksums.")
+                        color: page.theme.mutedText
+                        font.pixelSize: 10
+                    }
                 }
             }
         }

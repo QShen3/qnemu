@@ -142,23 +142,24 @@ TEST_F(GameLibraryTest, ClassifiesByCartridgeHeaderNotExtension)
 
     qnemu::GameLibrary library(nullptr, QString());
     library.setPaths(roms.path(), roms.path());
+    library.waitForScan();
 
     EXPECT_EQ(library.gbCount(), 2);
     EXPECT_EQ(library.gbcCount(), 1);
 
     QStringList gbTitles;
     for (int row = 0; row < library.gbCount(); ++row) {
-        gbTitles.append(library.gbGames()->data(library.gbGames()->index(row), Qt::DisplayRole).toString());
+        gbTitles.append(library.gbGames()->data(library.gbGames()->index(row, 0), Qt::DisplayRole).toString());
     }
     EXPECT_TRUE(gbTitles.contains(QStringLiteral("DMG!")));
     EXPECT_TRUE(gbTitles.contains(QStringLiteral("DUAL")));
     EXPECT_FALSE(gbTitles.contains(QStringLiteral("CGB!")));
 
     const QVariant title = library.gbcGames()->data(
-        library.gbcGames()->index(0), Qt::DisplayRole);
+        library.gbcGames()->index(0, 0), Qt::DisplayRole);
     EXPECT_EQ(title.toString(), QStringLiteral("CGB!"));
     const QVariant platform = library.gbcGames()->data(
-        library.gbcGames()->index(0), qnemu::GameListModel::PlatformRole);
+        library.gbcGames()->index(0, 0), qnemu::GameListModel::PlatformRole);
     EXPECT_EQ(platform.toString(), QStringLiteral("GBC"));
 }
 
@@ -175,13 +176,14 @@ TEST_F(GameLibraryTest, MarksOfficialRomFromBuiltInDatabase)
 
     qnemu::GameLibrary library(nullptr, databasePath);
     library.setPaths(roms.path(), roms.path());
+    library.waitForScan();
 
     ASSERT_EQ(library.gbCount(), 1);
     ASSERT_EQ(library.gbcCount(), 0);
     EXPECT_EQ(library.databaseCount(), 1);
     EXPECT_EQ(library.databaseSource(), QStringLiteral("Test Database GB test"));
 
-    const QModelIndex index = library.gbGames()->index(0);
+    const QModelIndex index = library.gbGames()->index(0, 0);
     EXPECT_EQ(library.gbGames()->data(index, qnemu::GameListModel::TitleRole).toString(),
         QStringLiteral("Tetris"));
     EXPECT_EQ(library.gbGames()->data(index, qnemu::GameListModel::PublisherRole).toString(),
@@ -223,10 +225,11 @@ TEST_F(GameLibraryTest, MarksOfficialRomInsideZip)
 
     qnemu::GameLibrary library(nullptr, databasePath);
     library.setPaths(roms.path(), roms.path());
+    library.waitForScan();
 
     ASSERT_EQ(library.gbCount(), 1);
     ASSERT_EQ(library.gbcCount(), 0);
-    const QModelIndex index = library.gbGames()->index(0);
+    const QModelIndex index = library.gbGames()->index(0, 0);
     EXPECT_EQ(library.gbGames()->data(index, qnemu::GameListModel::TitleRole).toString(),
         QStringLiteral("Tetris"));
     EXPECT_EQ(library.gbGames()->data(index, qnemu::GameListModel::ArchiveEntryRole).toString(),
@@ -241,11 +244,40 @@ TEST_F(GameLibraryTest, MarksOfficialRomInsideZip)
     // A second scan should use the cached archive header/hash instead of
     // decompressing the zip again.
     library.refresh();
+    library.waitForScan();
     ASSERT_EQ(library.gbCount(), 1);
-    const QModelIndex refreshed = library.gbGames()->index(0);
+    const QModelIndex refreshed = library.gbGames()->index(0, 0);
     EXPECT_EQ(library.gbGames()->data(refreshed, qnemu::GameListModel::ArchiveEntryRole).toString(),
         QStringLiteral("tetris.gb"));
     EXPECT_TRUE(library.gbGames()->data(refreshed, qnemu::GameListModel::OfficialRole).toBool());
+}
+
+TEST_F(GameLibraryTest, FiltersByTitleAndTerms)
+{
+    QTemporaryDir roms;
+    ASSERT_TRUE(roms.isValid());
+    ASSERT_FALSE(writeRom(roms, QStringLiteral("mario.gb"),
+        QByteArray("MARIO"), 0x00).isEmpty());
+    ASSERT_FALSE(writeRom(roms, QStringLiteral("zelda.gb"),
+        QByteArray("ZELDA"), 0x00).isEmpty());
+
+    qnemu::GameLibrary library(nullptr, QString());
+    library.setPaths(roms.path(), roms.path());
+    library.waitForScan();
+    EXPECT_EQ(library.gbCount(), 2);
+
+    library.setFilterText(QStringLiteral("mario"));
+    EXPECT_EQ(library.filterText(), QStringLiteral("mario"));
+    ASSERT_EQ(library.gbCount(), 1);
+    EXPECT_EQ(library.gbGames()->data(library.gbGames()->index(0, 0),
+                  qnemu::GameListModel::TitleRole).toString(),
+        QStringLiteral("MARIO"));
+
+    library.setFilterText(QStringLiteral("mario zelda"));
+    EXPECT_EQ(library.gbCount(), 0);
+
+    library.setFilterText(QString());
+    EXPECT_EQ(library.gbCount(), 2);
 }
 
 }  // namespace qnemuTest
