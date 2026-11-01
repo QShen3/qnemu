@@ -42,8 +42,9 @@ public:
     /// Called by the host input backend.  Safe to call from another thread.
     void setButtonState(GbButton button, bool pressed);
 
-    /// Called for every CPU write to FF00, used by the SGB packet receiver.
-    void setSgbWriteCallback(std::function<void(uint8_t)> callback);
+    /// Called for every CPU write to FF00.  SGB uses this for its packet
+    /// receiver; the joypad itself does not know about the SGB.
+    void setWriteCallback(std::function<void(uint8_t)> callback);
 
 private:
     uint8_t selectedLowNibble() const;
@@ -56,7 +57,7 @@ private:
     uint8_t actionButtons = 0x0F;     // active low: A, B, Select, Start
     uint8_t directionButtons = 0x0F;  // active low: Right, Left, Up, Down
 
-    std::function<void(uint8_t)> sgbWriteCallback;
+    std::function<void(uint8_t)> writeCallback;
     mutable std::mutex mutex;
     std::shared_ptr<GbInterruptHandlerInterface> interruptHandler;
 };

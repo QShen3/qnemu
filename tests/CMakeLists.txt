@@ -33,6 +33,7 @@ add_executable(
     ${UI_TEST_SRCS}
     ${PROJECT_SOURCE_DIR}/qnemu/ui/GameLibrary.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/AppSettings.cpp
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/LaunchPolicy.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/RomArchive.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/RomDatabase.cpp
 )

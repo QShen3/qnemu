@@ -2,110 +2,33 @@
  *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
-#include <array>
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include <span>
 #include <thread>
 #include <utility>
 
+#include "qnemu/display/DisplayInterface.h"
 #include "qnemu/gb/Gb.h"
-#include "qnemu/gb/apu/GbApu.h"
-#include "qnemu/gb/apu/GbChannelInterface.h"
-#include "qnemu/gb/apu/GbChannel1.h"
-#include "qnemu/gb/apu/GbChannel2.h"
-#include "qnemu/gb/apu/GbChannel3.h"
-#include "qnemu/gb/apu/GbChannel4.h"
-#include "qnemu/gb/boot/GbCgbBootRom.h"
-#include "qnemu/gb/boot/GbDmgBootRom.h"
-#include "qnemu/gb/boot/GbSgbBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
-#include "qnemu/gb/cpu/GbCpu.h"
-#include "qnemu/gb/gpu/GbPpu.h"
-#include "qnemu/gb/interrupt/GbInterruptHandler.h"
-#include "qnemu/gb/joypad/GbJoypad.h"
-#include "qnemu/gb/memory/GbHighRam.h"
-#include "qnemu/gb/memory/GbWorkRam.h"
-#include "qnemu/gb/mmu/GbCpuBus.h"
-#include "qnemu/gb/mmu/GbMmu.h"
-#include "qnemu/gb/sgb/GbSgb.h"
-#include "qnemu/gb/timer/GbTimer.h"
+#include "qnemu/gb/platform/GameBoyPlatform.h"
+#include "qnemu/gb/platform/PlatformFactory.h"
+#include "qnemu/input/InputInterface.h"
 #include "qnemu/save/SaveManager.h"
 
 namespace qnemu
 {
 
-Gb::Gb(GbModel model,
+Gb::Gb(GbPlatform platformKind,
         std::shared_ptr<DisplayInterface> displayInterface,
         std::unique_ptr<SoundInterface> soundInterface,
         std::shared_ptr<InputInterface> inputInterface) :
-    model(model),
     display(std::move(displayInterface)),
     input(std::move(inputInterface))
 {
-    std::array<std::unique_ptr<GbChannelInterface>, 4> channels {
-        std::make_unique<GbChannel1>(),
-        std::make_unique<GbChannel2>(),
-        std::make_unique<GbChannel3>(),
-        std::make_unique<GbChannel4>(),
-    };
     sound = soundInterface.get();
-    auto apu = std::make_unique<GbApu>(std::move(soundInterface), std::move(channels),
-        model == GbModel::cgb, GbApu::DefaultFadeInFrames);
-
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
-    auto interruptHandler = std::make_shared<GbInterruptHandler>();
-
-    if (model == GbModel::sgb) {
-        sgb = std::make_unique<GbSgb>();
-        sgb->reset();
-    }
-
-    auto workRam = std::make_unique<GbWorkRam>();
-    auto highRam = std::make_unique<GbHighRam>();
-    auto timer = std::make_unique<GbTimer>(interruptHandler);
-
-    auto joypad = std::make_unique<GbJoypad>(interruptHandler);
-    if (sgb) {
-        GbSgb* sgbPointer = sgb.get();
-        joypad->setSgbWriteCallback([sgbPointer](uint8_t value) {
-            sgbPointer->write(value);
-        });
-    }
-    if (input) {
-        auto* joypadPointer = joypad.get();
-        input->setButtonPressCallback([joypadPointer](GbButton button) {
-            joypadPointer->setButtonState(button, true);
-        });
-        input->setButtonReleaseCallback([joypadPointer](GbButton button) {
-            joypadPointer->setButtonState(button, false);
-        });
-    }
-
-    auto ppuInstance = std::make_unique<GbPpu>(
-        model == GbModel::cgb && cartridge->isGbcCartridge(), display, interruptHandler);
-    ppu = ppuInstance.get();
-    ppu->setOamBugEnabled(model != GbModel::cgb);
-    ppu->setSgb(sgb.get());
-
-    mmu = std::make_unique<GbMmu>(std::move(apu), cartridge, std::move(ppuInstance), std::move(highRam),
-        interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
-    ppu->setExternalRead([mmuPointer = mmu.get()](uint16_t address) {
-        return mmuPointer->read(address);
-    });
-    bus = std::make_unique<GbCpuBus>(
-        *mmu, model == GbModel::cgb && cartridge->isGbcCartridge());
-    bus->setCgbModeCallback([this](bool mode) {
-        // The PPU stays on CGB hardware registers in DMG compatibility mode;
-        // only its rendering mode switches to the DMG path.  The CGB boot ROM
-        // has already written the compatibility palettes into palette RAM.
-        ppu->setDmgMode(!mode);
-        if (!mode) {
-            ppu->enableDmgCompatibility();
-        }
-    });
-    cpu = std::make_unique<GbCpu>(*bus);
+    platform = createPlatform(platformKind, cartridge, display, std::move(soundInterface), input);
 }
 
 Gb::~Gb()
@@ -116,9 +39,10 @@ Gb::~Gb()
     }
     saveManager.reset();
 
+    // The platform wires the host input callbacks to its joypad.  Tear it
+    // down before clearing the callbacks so the captures are always valid.
+    platform.reset();
     if (input) {
-        // The input callbacks capture the joypad's address; drop them before
-        // the MMU (which owns the joypad) is destroyed.
         input->setButtonPressCallback({});
         input->setButtonReleaseCallback({});
     }
@@ -150,28 +74,11 @@ void Gb::loadCartridge(const std::vector<uint8_t>& buffer,
 
 void Gb::finishCartridgeLoad(const std::string& saveIdentity)
 {
-    // Every model runs its bundled boot ROM.  CGB hardware starts in CGB mode
-    // even for DMG-only cartridges; the CGB boot ROM selects the per-game
-    // compatibility palette and switches to DMG mode through KEY0.  DMG uses
-    // Bootix and SGB uses qnemu's clean-room header-forwarding ROM.
-    const GbCartridgeHeader header = cartridge->cartridgeHeader();
-    if (sgb) {
-        sgb->setHeader(header);
-    }
-    const bool hardwareCgb = model == GbModel::cgb;
-    cgbMode = hardwareCgb && header.cgb;
-    const std::span<const uint8_t> bootRom = hardwareCgb ? cgbBootRom()
-        : model == GbModel::dmg ? dmgBootRom()
-        : sgbBootRom();
-    bus->setCgb(hardwareCgb);
-    bus->reset();
-    ppu->setCgb(hardwareCgb);
-    mmu->setBootRom(bootRom);
-    mmu->setBootRomActive(true);
-    mmu->reset();
-    ppu->resetForBootRom();
-    ppu->setDmgMode(false);
-    cpu->reset(hardwareCgb, true);
+    // The platform owns its boot ROM and reset sequence.  CGB hardware starts
+    // in CGB mode even for DMG-only cartridges; its boot ROM selects the
+    // per-game compatibility palette and switches to DMG mode through KEY0.
+    // DMG uses Bootix and SGB uses qnemu's clean-room header-forwarding ROM.
+    platform->reset(cartridge->cartridgeHeader());
 
     saveManager = std::make_unique<SaveManager>(
         saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, saveIdentity);
@@ -223,9 +130,19 @@ void Gb::setSoundEnabled(bool enabled)
     }
 }
 
+bool Gb::isCgbMode() const
+{
+    return platform && platform->isCgbMode();
+}
+
 const FrameBuffer& Gb::frameBuffer() const
 {
-    return ppu->frameBuffer();
+    return platform->frameBuffer();
+}
+
+std::pair<int, int> Gb::frameSize() const
+{
+    return platform ? platform->frameSize() : std::pair {160, 144};
 }
 
 void Gb::run()
@@ -234,7 +151,7 @@ void Gb::run()
     constexpr auto frameInterval = std::chrono::microseconds(16743);
 
     bool displayEnabled = true;
-    uint64_t lastFrameCount = ppu ? ppu->frameCount() : 0;
+    uint64_t lastFrameCount = platform ? platform->frameCount() : 0;
     auto nextFrame = Clock::now();
 
     while (running.load()) {
@@ -248,9 +165,9 @@ void Gb::run()
             break;
         }
 
-        cpu->step();
+        platform->step();
 
-        const bool stopped = cpu->isStopped();
+        const bool stopped = platform->isCpuStopped();
         if (display) {
             if (stopped && displayEnabled) {
                 display->disable();
@@ -261,7 +178,7 @@ void Gb::run()
             }
         }
 
-        const uint64_t frameCount = ppu ? ppu->frameCount() : 0;
+        const uint64_t frameCount = platform ? platform->frameCount() : 0;
         if (frameCount != lastFrameCount) {
             lastFrameCount = frameCount;
             nextFrame += frameInterval;

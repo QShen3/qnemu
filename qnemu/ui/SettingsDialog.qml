@@ -14,11 +14,11 @@ ApplicationWindow {
     readonly property var navItems: [
         {
             title: qsTr("General"),
-            subtitle: qsTr("Display, audio and storage")
+            subtitle: qsTr("Display, audio, startup and storage")
         },
         {
             title: qsTr("Game Boy"),
-            subtitle: qsTr("Launch mode and ROM library")
+            subtitle: qsTr("ROM library")
         },
         {
             title: qsTr("Game Boy Color"),
@@ -29,18 +29,18 @@ ApplicationWindow {
             subtitle: qsTr("Profiles and key bindings")
         }
     ]
-    readonly property var launchModels: [
+    readonly property var launchPlatforms: [
         {
-            value: "dmg",
-            label: qsTr("DMG (monochrome)")
+            value: "gb",
+            label: qsTr("Game Boy")
         },
         {
             value: "sgb",
-            label: qsTr("SGB (border and color)")
+            label: qsTr("Super Game Boy")
         },
         {
-            value: "cgb",
-            label: qsTr("CGB compatibility (color)")
+            value: "gbc",
+            label: qsTr("Game Boy Color")
         }
     ]
     readonly property var keyActions: [
@@ -118,13 +118,13 @@ ApplicationWindow {
         requestActivate();
     }
 
-    function gbLaunchModelIndex(value) {
-        for (let i = 0; i < launchModels.length; ++i) {
-            if (launchModels[i].value === value) {
+    function launchPlatformIndex(value) {
+        for (let i = 0; i < launchPlatforms.length; ++i) {
+            if (launchPlatforms[i].value === value) {
                 return i;
             }
         }
-        return launchModels.length - 1;
+        return 0;
     }
 
     function buttonLabel(name) {
@@ -360,6 +360,89 @@ ApplicationWindow {
 
                         SettingsCard {
                             theme: uiTheme
+                            title: qsTr("Startup platform")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Grey cartridges")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("DMG-only cartridges. Game Boy runs them in monochrome; Super Game Boy and Game Boy Color add their own color handling.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 210
+                                    model: settingsWindow.launchPlatforms
+                                    textRole: "label"
+                                    currentIndex: settingsWindow.launchPlatformIndex(settings.dmgOnlyLaunchPlatform)
+                                    onActivated: settings.dmgOnlyLaunchPlatform = settingsWindow.launchPlatforms[currentIndex].value
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 1
+                                color: uiTheme.separator
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Dual-mode cartridges")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Cartridges with the CGB flag 0x80. Game Boy and Super Game Boy use the DMG path; Game Boy Color uses the native CGB path.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                ComboBox {
+                                    Layout.preferredWidth: 210
+                                    model: settingsWindow.launchPlatforms
+                                    textRole: "label"
+                                    currentIndex: settingsWindow.launchPlatformIndex(settings.dualModeLaunchPlatform)
+                                    onActivated: settings.dualModeLaunchPlatform = settingsWindow.launchPlatforms[currentIndex].value
+                                }
+                            }
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: qsTr("CGB-only cartridges (flag 0xC0) always start on Game Boy Color. The launch platform is applied when a game is opened.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
                             title: qsTr("Screenshots")
 
                             RowLayout {
@@ -509,51 +592,6 @@ ApplicationWindow {
 
                         SettingsCard {
                             theme: uiTheme
-                            title: qsTr("Emulation")
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 16
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Label {
-                                        text: qsTr("Launch mode")
-                                        color: uiTheme.windowText
-                                        font.pixelSize: 12
-                                    }
-
-                                    Label {
-                                        Layout.fillWidth: true
-                                        text: qsTr("Applies to GB and dual-mode cartridges. DMG keeps the original monochrome display; SGB uses the Super Game Boy color/attribute protocol and the default border; CGB colorizes DMG-only games with the compatibility palette. GBC-only cartridges always use CGB.")
-                                        color: uiTheme.mutedText
-                                        font.pixelSize: 11
-                                        wrapMode: Text.WordWrap
-                                    }
-                                }
-
-                                ComboBox {
-                                    Layout.preferredWidth: 210
-                                    model: settingsWindow.launchModels
-                                    textRole: "label"
-                                    currentIndex: settingsWindow.gbLaunchModelIndex(settings.gbLaunchModel)
-                                    onActivated: settings.gbLaunchModel = settingsWindow.launchModels[currentIndex].value
-                                }
-                            }
-
-                            Label {
-                                Layout.fillWidth: true
-                                text: qsTr("Every model runs its bundled boot ROM at startup: Bootix for DMG, the QNEMU CGB boot ROM for CGB, and the clean-room SGB header forwarder for SGB. The SGB border and palette menus still come from the HLE BIOS.")
-                                color: uiTheme.mutedText
-                                font.pixelSize: 11
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-
-                        SettingsCard {
-                            theme: uiTheme
                             title: qsTr("Library folder")
 
                             Label {
@@ -632,7 +670,7 @@ ApplicationWindow {
 
                             Label {
                                 Layout.fillWidth: true
-                                text: qsTr("GBC-only cartridges always launch in CGB mode and cannot run as DMG or SGB, so there is no launch-mode setting for this platform.")
+                                text: qsTr("GBC-only cartridges always launch in CGB mode and cannot run as DMG or SGB. Launch platform preferences for grey and dual-mode cartridges live on the General page.")
                                 color: uiTheme.mutedText
                                 font.pixelSize: 11
                                 wrapMode: Text.WordWrap

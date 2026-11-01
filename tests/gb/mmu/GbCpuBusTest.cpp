@@ -59,10 +59,10 @@ TEST(GbCpuBusTest, DmgDoesNotExposeKeyRegisters)
     qnemu::GbCpuBus bus(mmu, false);
 
     EXPECT_EQ(bus.read(0xFF4C), 0xFF);
-    EXPECT_EQ(bus.read(0xFF4D), 0x7E);
+    EXPECT_EQ(bus.read(0xFF4D), 0xFF);
     bus.write(0xFF4D, 0x01);
     EXPECT_TRUE(bus.onStop());
-    EXPECT_EQ(bus.read(0xFF4D), 0x7E);
+    EXPECT_EQ(bus.read(0xFF4D), 0xFF);
 }
 
 TEST(GbCpuBusTest, ResetReturnsToNormalSpeed)

@@ -39,8 +39,8 @@ void GbJoypad::write(uint16_t address, const uint8_t& value)
         return;
     }
 
-    if (sgbWriteCallback) {
-        sgbWriteCallback(value);
+    if (writeCallback) {
+        writeCallback(value);
     }
 
     bool requestInterrupt = false;
@@ -72,9 +72,9 @@ void GbJoypad::reset()
     directionButtons = 0x0F;
 }
 
-void GbJoypad::setSgbWriteCallback(std::function<void(uint8_t)> callback)
+void GbJoypad::setWriteCallback(std::function<void(uint8_t)> callback)
 {
-    sgbWriteCallback = std::move(callback);
+    writeCallback = std::move(callback);
 }
 
 void GbJoypad::setButtonState(GbButton button, bool pressed)

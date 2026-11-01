@@ -159,23 +159,24 @@ matching known official DMG/MGB/SGB/SGB2/CGB/CGB0/AGB boot ROMs.
 
 ```bash
 ./build/qnemu/qnemu
-./build/qnemu/qnemu --model cgb   # override the hardware model for this run
-./build/qnemu/qnemu --model dmg
-./build/qnemu/qnemu --model sgb
+./build/qnemu/qnemu --launch-platform gbc   # override the platform for this run
+./build/qnemu/qnemu --launch-platform gb
+./build/qnemu/qnemu --launch-platform sgb
 ./build/qnemu/qnemu --rom path/to/game.gb
 ```
 
-`-m` is accepted as a shorthand for `--model`. `--rom` loads a ROM on startup;
-without it, use **File → Open...**. `--model` overrides the hardware model for
-the current run. When it is omitted, GB and dual-mode cartridges use the GB
-platform **Launch mode** setting (CGB compatibility by default), while GBC-only
-cartridges always use CGB. With `cgb`, a CGB-capable cartridge (dual-mode
-`0x80` or CGB-only `0xC0`) runs in native CGB mode; a DMG-only cartridge runs in
-DMG compatibility mode with the CGB compatibility palette, so monochrome games
-are colorized. `dmg` forces the DMG-compatible CPU/PPU path. `sgb` keeps the
-DMG CPU/PPU path but enables the Super Game Boy command protocol, palette and
-attribute commands, the default SGB border and custom border transfers
-(`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`/`PAL_TRN`).
+`-p` is accepted as a shorthand for `--launch-platform`. `--rom` loads a ROM on
+startup; without it, use **File → Open...**. The launch platform overrides the
+per-cartridge-type preferences for the current run. When it is omitted, DMG-only
+and dual-mode cartridges use their own **Startup platform** setting in General,
+while GBC-only cartridges always start on **Game Boy Color**. On the GBC
+platform, a dual-mode (`0x80`) or CGB-only (`0xC0`) cartridge runs in native CGB
+mode, while a DMG-only cartridge runs in DMG compatibility mode with the CGB
+compatibility palette, so monochrome games are colorized. The GB platform
+forces the DMG CPU/PPU path. SGB keeps the DMG CPU/PPU path but enables the
+Super Game Boy command protocol, palette and attribute commands, the default SGB
+border and custom border transfers (`CHR_TRN`/`PCT_TRN`/`ATTR_TRN`/`PAL_TRN`).
+`--model dmg|sgb|cgb` remains as a deprecated alias for `--launch-platform`.
 
 The library and the game view are separate windows. The library window keeps a
 comfortable fixed layout independent of the game scale; the game window opens
@@ -183,7 +184,7 @@ at the configured scale and can be resized. Closing the game window pauses
 emulation; click the same library row again to resume, or use
 **Game → Resume** (Ctrl+P) or Space from the game window.
 
-The home page is a per-platform library:
+The home page has two library tabs (cartridge type, not launch platform):
 
 - **Open ROM...** plays a ROM immediately in the game window. ROMs outside the
   configured library folders are added to the library as references; the
@@ -192,7 +193,7 @@ The home page is a per-platform library:
 - Click a library row to run it. Clicking the already-loaded game resumes it
   instead of reloading; the row shows a **Running** or **Paused** badge. The row
   menu can remove it from the library without deleting the file.
-- **Settings...** opens the settings window with the GB launch mode, library
+- **Settings...** opens the settings window with the startup platform, library
   paths, save path, screenshots, game scale, audio and key profiles.
 - **Screenshot** saves the current frame (160×144, or 256×224 with the SGB
   border) using the configured output folder and format.
@@ -202,13 +203,14 @@ The home page is a per-platform library:
 
 The settings window has four pages:
 
-- **General**: game-window scale (100/150/200%), audio enable, save folder,
-  screenshot folder and format (the format list comes from Qt's image writers).
-  The library window is not affected by the scale setting.
-- **Game Boy**: launch mode (DMG / SGB / CGB compatibility) for GB and
-  dual-mode cartridges, plus the ROM folder scanned for the GB library.
-- **Game Boy Color**: the GBC-only ROM folder. GBC-only cartridges always use
-  CGB, so this page has no launch-mode setting.
+- **General**: game-window scale (100/150/200%), audio enable, the startup
+  platform for grey and dual-mode cartridges, save folder, screenshot folder and
+  format (the format list comes from Qt's image writers). The library window is
+  not affected by the scale setting.
+- **Game Boy**: the ROM folder scanned for the GB library (grey and dual-mode
+  cartridges).
+- **Game Boy Color**: the GBC-only ROM folder. GBC-only cartridges always start
+  on Game Boy Color, so there is no per-type preference for them.
 - **Controls**: named key profiles, profile creation/deletion, and click-to-capture
   key bindings. Changes apply immediately.
 
@@ -297,7 +299,9 @@ qnemu/
     ├── memory/         work RAM and high RAM
     ├── joypad/         FF00 joypad matrix
     ├── mmu/            address decoding and CPU bus adapter
-    └── Gb.cpp          complete GB system
+    ├── platform/       DMG/SGB/CGB platform assemblies
+    ├── sgb/            SGB command receiver, colorizer and frame sink
+    └── Gb.cpp          host-side system facade
 ```
 
 Each hardware block is a separate Qt-free static library:
@@ -319,6 +323,22 @@ optional input backend are injected by the executable, so `gb` itself does not
 depend on Qt Quick, Qt Widgets or Multimedia. The QML executable links `gb`,
 `sound` and the Qt Quick modules; the headless ROM runner links the device
 libraries it needs without pulling in Qt Multimedia or the GUI.
+
+Platform selection is separate from cartridge capability. `Gb` owns the
+emulation thread, pause/save service and host interfaces, while
+`GameBoyPlatform` owns an assembled device graph:
+
+- `DmgPlatform` builds the DMG CPU, PPU, APU, timer, memory map and bus.
+- `SgbPlatform` extends `DmgPlatform` with `GbSgb` and installs
+  `SgbColorizer`/`SgbFrameSink`. The PPU itself only knows `PpuColorizer` and
+  `PpuFrameSink`, so `gb_ppu` no longer depends on `gb_sgb`.
+- `CgbPlatform` builds the CGB variant and keeps the CGB boot ROM's DMG
+  compatibility path for grey cartridges.
+
+Cartridge type is derived from the header, not the file extension: `0xC0` is
+CGB-only, `0x80` is dual-mode, and anything else is DMG-only. The two General
+preferences select the startup platform for DMG-only and dual-mode cartridges;
+CGB-only always selects GBC.
 
 ### User interface
 
@@ -360,19 +380,19 @@ add a game or open the settings.
 The settings window is a sidebar layout with grouped cards instead of a flat
 form:
 
-- **General**: game-window scale, audio, screenshot folder/format and save
-  folder.
-- **Game Boy**: launch mode, library folder, a live count and a rescan button.
-- **Game Boy Color**: library folder, a live count and a rescan button. The
-  launch mode is fixed to CGB.
+- **General**: game-window scale, audio, startup platform for grey and
+  dual-mode cartridges, screenshot folder/format and save folder.
+- **Game Boy**: library folder, a live count and a rescan button.
+- **Game Boy Color**: library folder, a live count and a rescan button.
+  CGB-only cartridges always start on Game Boy Color.
 - **Controls**: profile management and a two-column key binding grid.
 
 All paths, scale, audio, screenshot settings and key profiles persist through
 `QSettings`; key bindings apply to `EmulatorItem` immediately.
 
-When a DMG-only cartridge is launched with the CGB model, the PPU keeps the DMG
-tile/attribute path but maps the four shades through the CGB compatibility
-palettes. A dual-mode cartridge launched with the CGB model uses the native CGB
+When a DMG-only cartridge is launched on the GBC platform, the PPU keeps the
+DMG tile/attribute path but maps the four shades through the CGB compatibility
+palettes. A dual-mode cartridge launched on the GBC platform uses the native CGB
 PPU path instead. The CGB boot ROM performs the per-game selection: Nintendo
 license check, title checksum, duplicate checksums disambiguated by the fourth
 title character, and the palette combination table. Holding a direction,

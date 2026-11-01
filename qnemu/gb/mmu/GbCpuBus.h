@@ -51,6 +51,9 @@ public:
             return cgb ? 0x80 : 0xFF;
         }
         if (address == 0xFF4D) {
+            if (!cgb) {
+                return 0xFF;
+            }
             return static_cast<uint8_t>(0x7E
                 | (doubleSpeed ? 0x80 : 0x00)
                 | (speedSwitchArmed ? 0x01 : 0x00));

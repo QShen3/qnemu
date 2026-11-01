@@ -14,6 +14,7 @@ target_link_libraries(gb_test_runner PRIVATE
     gb_apu
     gb_timer
     gb_cartridge
+    gb_sgb
     Qt6::Gui)
 
 set(QNEMU_TEST_ROM_ROOT "${PROJECT_SOURCE_DIR}/third_party" CACHE PATH

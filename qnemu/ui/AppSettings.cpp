@@ -76,23 +76,17 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
     scalePercentValue = std::clamp(settings.value(QStringLiteral("ui/scalePercent"), 200).toInt(),
         100, 200);
     soundEnabledValue = settings.value(QStringLiteral("audio/enabled"), true).toBool();
-    gbLaunchModelValue = settings.value(QStringLiteral("platforms/gb/launchModel"))
-                             .toString()
-                             .toLower();
-    if (gbLaunchModelValue.isEmpty()) {
-        // Migrate the pre-platform global launch model.
-        const QString legacy = settings.value(QStringLiteral("emulator/launchModel"))
-                                   .toString()
-                                   .toLower();
-        if (legacy == QStringLiteral("cgb") || legacy == QStringLiteral("dmg")
-            || legacy == QStringLiteral("sgb")) {
-            gbLaunchModelValue = legacy;
-            settings.setValue(QStringLiteral("platforms/gb/launchModel"), legacy);
-        }
+    dmgOnlyLaunchPlatformValue = settings.value(QStringLiteral("platforms/launch/dmgOnly"))
+                                     .toString()
+                                     .toLower();
+    if (!isValidLaunchPlatform(dmgOnlyLaunchPlatformValue)) {
+        dmgOnlyLaunchPlatformValue = QStringLiteral("gb");
     }
-    if (gbLaunchModelValue != QStringLiteral("cgb") && gbLaunchModelValue != QStringLiteral("dmg")
-        && gbLaunchModelValue != QStringLiteral("sgb")) {
-        gbLaunchModelValue = QStringLiteral("cgb");
+    dualModeLaunchPlatformValue = settings.value(QStringLiteral("platforms/launch/dualMode"))
+                                      .toString()
+                                      .toLower();
+    if (!isValidLaunchPlatform(dualModeLaunchPlatformValue)) {
+        dualModeLaunchPlatformValue = QStringLiteral("gbc");
     }
     loadKeyProfiles();
 }
@@ -126,6 +120,12 @@ QString AppSettings::defaultScreenshotPath()
         base = QDir::homePath();
     }
     return QDir(base).filePath(QStringLiteral("QNEmu"));
+}
+
+bool AppSettings::isValidLaunchPlatform(const QString& value)
+{
+    return value == QStringLiteral("gb") || value == QStringLiteral("sgb")
+        || value == QStringLiteral("gbc");
 }
 
 QVariantMap AppSettings::defaultBindings()
@@ -218,19 +218,26 @@ void AppSettings::setSoundEnabled(bool value)
     emit soundEnabledChanged();
 }
 
-void AppSettings::setGbLaunchModel(const QString& value)
+void AppSettings::setDmgOnlyLaunchPlatform(const QString& value)
 {
-    const QString model = value.toLower();
-    if (model != QStringLiteral("cgb") && model != QStringLiteral("dmg")
-        && model != QStringLiteral("sgb")) {
+    const QString platform = value.toLower();
+    if (!isValidLaunchPlatform(platform) || platform == dmgOnlyLaunchPlatformValue) {
         return;
     }
-    if (model == gbLaunchModelValue) {
+    dmgOnlyLaunchPlatformValue = platform;
+    settings.setValue(QStringLiteral("platforms/launch/dmgOnly"), platform);
+    emit dmgOnlyLaunchPlatformChanged();
+}
+
+void AppSettings::setDualModeLaunchPlatform(const QString& value)
+{
+    const QString platform = value.toLower();
+    if (!isValidLaunchPlatform(platform) || platform == dualModeLaunchPlatformValue) {
         return;
     }
-    gbLaunchModelValue = model;
-    settings.setValue(QStringLiteral("platforms/gb/launchModel"), model);
-    emit gbLaunchModelChanged();
+    dualModeLaunchPlatformValue = platform;
+    settings.setValue(QStringLiteral("platforms/launch/dualMode"), platform);
+    emit dualModeLaunchPlatformChanged();
 }
 
 QString AppSettings::keyName(int key) const

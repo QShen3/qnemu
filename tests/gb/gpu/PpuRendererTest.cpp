@@ -11,6 +11,7 @@
 #include "qnemu/gb/gpu/PpuRegisters.h"
 #include "qnemu/gb/gpu/PpuRenderer.h"
 #include "qnemu/gb/sgb/GbSgb.h"
+#include "qnemu/gb/sgb/SgbVideo.h"
 
 namespace qnemuTest
 {
@@ -137,7 +138,8 @@ TEST(PpuRendererTest, SgbBackgroundUsesSgbPalette)
     qnemu::FrameBuffer frame;
     qnemu::GbSgb sgb;
     sgb.reset();
-    qnemu::PpuRenderer renderer(false, &sgb);
+    qnemu::SgbColorizer colorizer(sgb);
+    qnemu::PpuRenderer renderer(false, &colorizer);
 
     registers.lcdc = dmgLcdc;
     registers.bgp = 0xE4;

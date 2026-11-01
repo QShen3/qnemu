@@ -31,9 +31,16 @@ int main(int argc, char* argv[])
     parser.setApplicationDescription("QNEmu Game Boy / Game Boy Color emulator");
     parser.addHelpOption();
     parser.addVersionOption();
+    // Do not call this "--platform": QGuiApplication treats "-platform" as
+    // its own Qt platform-plugin option and would consume the argument.
+    const QCommandLineOption platformOption(
+        QStringList {"p", "launch-platform"},
+        "Override the launch platform for this run: gb, sgb or gbc.",
+        "platform");
+    parser.addOption(platformOption);
     const QCommandLineOption modelOption(
         QStringList {"m", "model"},
-        "Override the hardware model for this run: cgb, dmg or sgb.",
+        "Deprecated alias for --launch-platform: dmg, sgb or cgb.",
         "model");
     parser.addOption(modelOption);
     const QCommandLineOption romOption(
@@ -43,18 +50,31 @@ int main(int argc, char* argv[])
     parser.addOption(romOption);
     parser.process(app);
 
-    std::optional<qnemu::GbModel> modelOverride;
-    if (parser.isSet(modelOption)) {
+    std::optional<qnemu::GbPlatform> platformOverride;
+    if (parser.isSet(platformOption)) {
+        const QString platformName = parser.value(platformOption).toLower();
+        if (platformName == "gb") {
+            platformOverride = qnemu::GbPlatform::gb;
+        } else if (platformName == "sgb") {
+            platformOverride = qnemu::GbPlatform::sgb;
+        } else if (platformName == "gbc") {
+            platformOverride = qnemu::GbPlatform::gbc;
+        } else {
+            qCritical().noquote() << "Unknown platform:" << platformName
+                                  << "(expected gb, sgb or gbc)";
+            return 1;
+        }
+    } else if (parser.isSet(modelOption)) {
         const QString modelName = parser.value(modelOption).toLower();
-        if (modelName == "cgb") {
-            modelOverride = qnemu::GbModel::cgb;
-        } else if (modelName == "dmg") {
-            modelOverride = qnemu::GbModel::dmg;
+        if (modelName == "cgb" || modelName == "gbc") {
+            platformOverride = qnemu::GbPlatform::gbc;
+        } else if (modelName == "dmg" || modelName == "gb") {
+            platformOverride = qnemu::GbPlatform::gb;
         } else if (modelName == "sgb") {
-            modelOverride = qnemu::GbModel::sgb;
+            platformOverride = qnemu::GbPlatform::sgb;
         } else {
             qCritical().noquote() << "Unknown model:" << modelName
-                                  << "(expected cgb, dmg or sgb)";
+                                  << "(expected dmg, sgb or cgb)";
             return 1;
         }
     }
@@ -78,7 +98,7 @@ int main(int argc, char* argv[])
     qmlRegisterUncreatableType<qnemu::GameLibrary>("QNEmu", 1, 0, "GameLibrary",
         QStringLiteral("GameLibrary is owned by AppController"));
 
-    qnemu::AppController controller(modelOverride);
+    qnemu::AppController controller(platformOverride);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("appController"), &controller);
 

@@ -10,6 +10,7 @@
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/sgb/GbSgb.h"
+#include "qnemu/gb/sgb/SgbVideo.h"
 #include "tests/support/MemoryDisplay.h"
 
 namespace qnemuTest
@@ -74,7 +75,10 @@ TEST_F(GbPpuTest, SgbPresentsBorderFrame)
 {
     qnemu::GbSgb sgb;
     sgb.reset();
-    ppu->setSgb(&sgb);
+    qnemu::SgbColorizer colorizer(sgb);
+    qnemu::SgbFrameSink frameSink(sgb, *display);
+    ppu->setColorizer(&colorizer);
+    ppu->setFrameSink(&frameSink);
 
     for (int i = 0; i < 70224 * 2 && ppu->frameCount() == 0; ++i) {
         ppu->step();

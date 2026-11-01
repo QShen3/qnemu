@@ -19,6 +19,7 @@
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/sgb/GbSgb.h"
+#include "qnemu/gb/sgb/SgbVideo.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "tests/support/MemoryDisplay.h"
 
@@ -107,6 +108,8 @@ private:
     std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
         std::make_shared<qnemu::GbInterruptHandler>();
     std::unique_ptr<qnemu::GbSgb> sgb;
+    std::unique_ptr<qnemu::SgbColorizer> sgbColorizer;
+    std::unique_ptr<qnemu::SgbFrameSink> sgbFrameSink;
     std::unique_ptr<qnemu::GbTimer> timer;
 
     uint8_t lcdc_ = 0x91;

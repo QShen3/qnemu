@@ -80,6 +80,8 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu, bool sgb
     bootRomActive_ = bootRomEnabled_;
 
     ppu.reset();
+    sgbFrameSink.reset();
+    sgbColorizer.reset();
     display.reset();
     apu.reset();
     sgb.reset();
@@ -97,7 +99,10 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu, bool sgb
         const bool ppuCgb = cgb && (bootRomActive_ || header.cgb);
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
         if (sgbMode) {
-            ppu->setSgb(sgb.get());
+            sgbColorizer = std::make_unique<qnemu::SgbColorizer>(*sgb);
+            sgbFrameSink = std::make_unique<qnemu::SgbFrameSink>(*sgb, *display);
+            ppu->setColorizer(sgbColorizer.get());
+            ppu->setFrameSink(sgbFrameSink.get());
         }
         if (bootRomActive_) {
             ppu->resetForBootRom();

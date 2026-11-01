@@ -18,6 +18,7 @@
 
 #include "qnemu/ui/AppController.h"
 #include "qnemu/ui/EmulatorItem.h"
+#include "qnemu/ui/LaunchPolicy.h"
 #include "qnemu/ui/RomArchive.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/display/DisplayInterface.h"
@@ -48,9 +49,9 @@ bool sameFile(const QString& left, const QString& right)
 
 }  // namespace
 
-AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* parent) :
+AppController::AppController(std::optional<GbPlatform> cliPlatformOverride, QObject* parent) :
     QObject(parent),
-    modelOverride(cliModelOverride)
+    platformOverride(cliPlatformOverride)
 {
     settingsValue = new AppSettings(this);
     libraryValue = new GameLibrary(this);
@@ -68,11 +69,15 @@ AppController::AppController(std::optional<GbModel> cliModelOverride, QObject* p
             gb->setSoundEnabled(settingsValue->soundEnabled());
         }
     });
-    connect(settingsValue, &AppSettings::gbLaunchModelChanged, this, [this]() {
+    const auto launchPlatformChanged = [this]() {
         if (gb && !currentRomCgbOnly) {
-            setStatusText(QStringLiteral("GB launch mode changed; reopen the game to apply."));
+            setStatusText(QStringLiteral("Launch platform changed; reopen the game to apply."));
         }
-    });
+    };
+    connect(settingsValue, &AppSettings::dmgOnlyLaunchPlatformChanged,
+        this, launchPlatformChanged);
+    connect(settingsValue, &AppSettings::dualModeLaunchPlatformChanged,
+        this, launchPlatformChanged);
     connect(settingsValue, &AppSettings::activeKeyBindingsChanged, this, &AppController::applyKeyBindings);
     connect(settingsValue, &AppSettings::activeKeyProfileChanged, this, &AppController::applyKeyBindings);
 }
@@ -117,24 +122,15 @@ void AppController::attachDisplay(QObject* item)
     applyKeyBindings();
 }
 
-GbModel AppController::launchModel(bool cgbOnly) const
+GbPlatform AppController::launchPlatform(const GbCartridgeHeader& header) const
 {
-    // GBC-only cartridges can only run on CGB hardware, regardless of the
-    // GB platform preference.
-    if (cgbOnly) {
-        return GbModel::cgb;
-    }
-    if (modelOverride) {
-        return *modelOverride;
-    }
-    const QString model = settingsValue->gbLaunchModel();
-    if (model == QStringLiteral("dmg")) {
-        return GbModel::dmg;
-    }
-    if (model == QStringLiteral("sgb")) {
-        return GbModel::sgb;
-    }
-    return GbModel::cgb;
+    const GbPlatform dmgOnly = launchPlatformFromString(
+        settingsValue->dmgOnlyLaunchPlatform().toStdString())
+                                   .value_or(GbPlatform::gb);
+    const GbPlatform dualMode = launchPlatformFromString(
+        settingsValue->dualModeLaunchPlatform().toStdString())
+                                     .value_or(GbPlatform::gbc);
+    return selectLaunchPlatform(header, dmgOnly, dualMode, platformOverride);
 }
 
 void AppController::openRom(const QUrl& url)
@@ -176,10 +172,10 @@ void AppController::openRom(const QUrl& url)
         }
 
         currentRomCgbOnly = header.cgbOnly;
-        const GbModel targetModel = launchModel(currentRomCgbOnly);
+        const GbPlatform targetPlatform = launchPlatform(header);
 
         auto sound = std::make_unique<DefaultSound>();
-        auto system = std::make_unique<Gb>(targetModel, display,
+        auto system = std::make_unique<Gb>(targetPlatform, display,
             std::move(sound), input);
         system->setSaveDirectory(settingsValue->savePath().toStdString());
         system->setSoundEnabled(settingsValue->soundEnabled());
@@ -190,8 +186,8 @@ void AppController::openRom(const QUrl& url)
         }
 
         gb = std::move(system);
-        setFrameSize(targetModel == GbModel::sgb ? 256 : 160,
-            targetModel == GbModel::sgb ? 224 : 144);
+        const auto [frameWidth, frameHeight] = gb->frameSize();
+        setFrameSize(frameWidth, frameHeight);
         setCurrentRomPath(path);
         libraryValue->addOpenedGame(path);
 

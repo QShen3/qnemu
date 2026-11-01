@@ -8,13 +8,12 @@
 #include <cstdint>
 
 #include "qnemu/display/FrameBuffer.h"
+#include "qnemu/gb/gpu/PpuColorizer.h"
 #include "qnemu/gb/gpu/PpuMemory.h"
 #include "qnemu/gb/gpu/PpuRegisters.h"
 
 namespace qnemu
 {
-
-class GbSgb;
 
 /**
  * Stateless pixel/scanline renderer.  It only reads PPU memory/registers and
@@ -26,10 +25,10 @@ class GbSgb;
 class PpuRenderer
 {
 public:
-    explicit PpuRenderer(bool cgb, GbSgb* sgb = nullptr, bool dmgMode = false)
-        : cgb_(cgb), sgb_(sgb), dmgMode_(dmgMode) {}
+    explicit PpuRenderer(bool cgb, PpuColorizer* colorizer = nullptr, bool dmgMode = false)
+        : cgb_(cgb), colorizer_(colorizer), dmgMode_(dmgMode) {}
 
-    void setSgb(GbSgb* sgb) { sgb_ = sgb; }
+    void setColorizer(PpuColorizer* colorizer) { colorizer_ = colorizer; }
     void setDmgMode(bool dmgMode) { dmgMode_ = dmgMode; }
 
     /// Returns true when the window contributed at least one pixel to the line.
@@ -80,7 +79,7 @@ private:
     bool cgbRendering() const { return cgb_ && !dmgMode_; }
 
     bool cgb_;
-    GbSgb* sgb_ = nullptr;
+    PpuColorizer* colorizer_ = nullptr;
     bool dmgMode_ = false;
 };
 

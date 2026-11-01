@@ -14,6 +14,7 @@
 #include "qnemu/ui/AppSettings.h"
 #include "qnemu/ui/GameLibrary.h"
 #include "qnemu/gb/Gb.h"
+#include "qnemu/gb/cartridge/GbCartridgeHeader.h"
 
 namespace qnemu
 {
@@ -43,7 +44,7 @@ class AppController : public QObject
     Q_PROPERTY(GameLibrary* library READ library CONSTANT)
 
 public:
-    explicit AppController(std::optional<GbModel> cliModelOverride, QObject* parent = nullptr);
+    explicit AppController(std::optional<GbPlatform> cliPlatformOverride, QObject* parent = nullptr);
     ~AppController() override;
 
     QString windowTitle() const { return title; }
@@ -92,9 +93,9 @@ private:
     void setCurrentRomPath(const QString& path);
     void setFrameSize(int width, int height);
     void applyKeyBindings();
-    GbModel launchModel(bool cgbOnly) const;
+    GbPlatform launchPlatform(const GbCartridgeHeader& header) const;
 
-    std::optional<GbModel> modelOverride;
+    std::optional<GbPlatform> platformOverride;
     AppSettings* settingsValue = nullptr;
     GameLibrary* libraryValue = nullptr;
     EmulatorItem* displayItem = nullptr;

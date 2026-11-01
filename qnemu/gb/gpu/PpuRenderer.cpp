@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include "qnemu/gb/gpu/PpuRenderer.h"
-#include "qnemu/gb/sgb/GbSgb.h"
 
 namespace qnemu
 {
@@ -19,9 +18,8 @@ uint32_t PpuRenderer::dmgPixelColor(const PpuMemory& memory,
     uint8_t colorIndex,
     uint8_t palette) const
 {
-    if (sgb_) {
-        const uint8_t shade = static_cast<uint8_t>((palette >> (colorIndex * 2)) & 3);
-        return sgb_->colorForPixel(x, y, shade);
+    if (colorizer_) {
+        return colorizer_->colorForDmgPixel(x, y, colorIndex, palette);
     }
     if (memory.dmgCompatibility()) {
         return memory.dmgCompatibilityColor(false, 0, palette, colorIndex);
@@ -77,7 +75,7 @@ bool PpuRenderer::renderLine(const PpuRegisters& registers,
     bool windowVisible = false;
 
     const bool backgroundVisible = cgbRendering() || registers.bgWindowEnabled();
-    if (!cgbRendering() && sgb_) {
+    if (!cgbRendering() && colorizer_) {
         for (int x = 0; x < FrameBuffer::width; ++x) {
             frame.at(x, line) = dmgPixelColor(memory, x, line, 0, registers.bgp);
         }
@@ -222,7 +220,7 @@ void PpuRenderer::renderSprites(const PpuRegisters& registers,
             } else {
                 const bool objectPalette1 = (attributes & 0x10) != 0;
                 const uint8_t palette = objectPalette1 ? registers.obp1 : registers.obp0;
-                if (sgb_) {
+                if (colorizer_) {
                     frame.at(x, line) = dmgPixelColor(memory, x, line, colorIndex, palette);
                 } else if (memory.dmgCompatibility()) {
                     frame.at(x, line) = memory.dmgCompatibilityColor(

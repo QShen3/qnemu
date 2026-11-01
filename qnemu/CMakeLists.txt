@@ -9,6 +9,7 @@ add_executable(
     ui/AppSettings.cpp
     ui/EmulatorItem.cpp
     ui/GameLibrary.cpp
+    ui/LaunchPolicy.cpp
     ui/RomArchive.cpp
     ui/RomDatabase.cpp)
 qt_add_resources(qnemu "qml"

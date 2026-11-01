@@ -105,7 +105,7 @@ TEST(GbTest, LoadsCartridgeFromMemory)
     const std::vector<uint8_t> buffer(data.begin(), data.end());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::dmg, display,
+    qnemu::Gb system(qnemu::GbPlatform::gb, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(buffer, path.toStdString());
     EXPECT_FALSE(system.isCgbMode());
@@ -115,7 +115,7 @@ TEST(GbTest, LoadsCartridgeFromMemory)
 TEST(GbTest, ConstructsWithInjectedHostInterfaces)
 {
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::dmg, display,
+    qnemu::Gb system(qnemu::GbPlatform::gb, display,
         std::make_unique<NullSound>(), nullptr);
 
     system.stop();
@@ -130,7 +130,7 @@ TEST(GbTest, DualModeCartridgeUsesCgbHardwareWhenAllowed)
     ASSERT_FALSE(path.isEmpty());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::cgb, display,
+    qnemu::Gb system(qnemu::GbPlatform::gbc, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
     EXPECT_TRUE(system.isCgbMode());
@@ -145,7 +145,7 @@ TEST(GbTest, DmgOnlyCartridgeUsesCompatibilityPath)
     ASSERT_FALSE(path.isEmpty());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::cgb, display,
+    qnemu::Gb system(qnemu::GbPlatform::gbc, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
     EXPECT_FALSE(system.isCgbMode());
@@ -160,7 +160,7 @@ TEST(GbTest, DualModeCartridgeStaysDmgWhenDmgForced)
     ASSERT_FALSE(path.isEmpty());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::dmg, display,
+    qnemu::Gb system(qnemu::GbPlatform::gb, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
     EXPECT_FALSE(system.isCgbMode());
@@ -175,7 +175,7 @@ TEST(GbTest, CgbBootRomPresentsQnemuLogo)
     ASSERT_FALSE(path.isEmpty());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::cgb, display,
+    qnemu::Gb system(qnemu::GbPlatform::gbc, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
 
@@ -199,7 +199,7 @@ TEST(GbTest, DmgBootRomRunsAndShowsCartridgeLogo)
     ASSERT_FALSE(path.isEmpty());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::dmg, display,
+    qnemu::Gb system(qnemu::GbPlatform::gb, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
 
@@ -228,7 +228,7 @@ TEST(GbTest, SgbBootRomRunsAndPresentsSgbFrames)
     ASSERT_FALSE(path.isEmpty());
 
     auto display = std::make_shared<MemoryDisplay>();
-    qnemu::Gb system(qnemu::GbModel::sgb, display,
+    qnemu::Gb system(qnemu::GbPlatform::sgb, display,
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
 
@@ -246,7 +246,7 @@ TEST(GbTest, WiresAndClearsInputCallbacks)
     auto input = std::make_shared<RecordingInput>();
 
     {
-        qnemu::Gb system(qnemu::GbModel::dmg, display,
+        qnemu::Gb system(qnemu::GbPlatform::gb, display,
             std::make_unique<NullSound>(), input);
         EXPECT_TRUE(input->press);
         EXPECT_TRUE(input->release);

@@ -13,14 +13,14 @@
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/gpu/PpuFifo.h"
 #include "qnemu/gb/gpu/PpuMemory.h"
+#include "qnemu/gb/gpu/PpuColorizer.h"
+#include "qnemu/gb/gpu/PpuFrameSink.h"
 #include "qnemu/gb/gpu/PpuRegisters.h"
 #include "qnemu/gb/gpu/PpuRenderer.h"
 #include "qnemu/gb/interrupt/GbInterruptHandlerInterface.h"
 
 namespace qnemu
 {
-
-class GbSgb;
 
 /**
  * Game Boy PPU.
@@ -56,7 +56,8 @@ public:
     void setExternalRead(std::function<uint8_t(uint16_t)> reader);
     void setCgb(bool cgb);
     void setDmgMode(bool dmgMode);
-    void setSgb(GbSgb* sgb);
+    void setColorizer(PpuColorizer* colorizer);
+    void setFrameSink(PpuFrameSink* frameSink);
     void enableDmgCompatibility();
 
     /// DMG OAM corruption quirk.  CGB hardware and SGB models that use the
@@ -112,7 +113,8 @@ private:
     uint16_t windowLine_ = 0;
     uint64_t frameCount_ = 0;
     bool oamBugEnabled_ = false;
-    GbSgb* sgb_ = nullptr;
+    PpuColorizer* colorizer_ = nullptr;
+    PpuFrameSink* frameSink_ = nullptr;
     int accessedOamRow_ = -1;
     bool statIrqLine_ = false;
     bool lcdJustEnabled_ = false;

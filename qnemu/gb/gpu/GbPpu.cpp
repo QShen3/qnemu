@@ -8,10 +8,8 @@
 #include <cstdint>
 #include <utility>
 
-#include "qnemu/display/SgbFrameBuffer.h"
 #include "qnemu/gb/const.h"
 #include "qnemu/gb/gpu/GbPpu.h"
-#include "qnemu/gb/sgb/GbSgb.h"
 
 namespace qnemu
 {
@@ -373,7 +371,7 @@ void GbPpu::setExternalRead(std::function<uint8_t(uint16_t)> reader)
 void GbPpu::setCgb(bool cgb)
 {
     cgb_ = cgb;
-    renderer_ = PpuRenderer(cgb, sgb_, dmgMode_);
+    renderer_ = PpuRenderer(cgb, colorizer_, dmgMode_);
     fifo_.setCgb(cgb);
     fifo_.setDmgMode(dmgMode_);
 }
@@ -385,11 +383,16 @@ void GbPpu::setDmgMode(bool dmgMode)
     fifo_.setDmgMode(dmgMode);
 }
 
-void GbPpu::setSgb(GbSgb* sgb)
+void GbPpu::setColorizer(PpuColorizer* colorizer)
 {
-    sgb_ = sgb;
-    renderer_.setSgb(sgb);
-    fifo_.setSgb(sgb);
+    colorizer_ = colorizer;
+    renderer_.setColorizer(colorizer);
+    fifo_.setColorizer(colorizer);
+}
+
+void GbPpu::setFrameSink(PpuFrameSink* frameSink)
+{
+    frameSink_ = frameSink;
 }
 
 void GbPpu::enableDmgCompatibility()
@@ -627,22 +630,15 @@ void GbPpu::stepTiming()
             interruptHandler_->requestVBlankInterrupt();
         }
         ++frameCount_;
-        if (display_) {
-            if (sgb_) {
-                if (sgb_->transferPending()) {
-                    std::array<uint8_t, 0x2000> vram {};
-                    for (std::size_t index = 0; index < vram.size(); ++index) {
-                        vram.at(index) = memory_.readVramByte(
-                            0, static_cast<uint16_t>(index));
-                    }
-                    sgb_->processTransfers(vram.data(), vram.size());
-                }
-                SgbFrameBuffer sgbFrame;
-                sgb_->renderBorder(frame_, sgbFrame);
-                display_->presentSgbFrame(sgbFrame);
-            } else {
-                display_->presentFrame(frame_);
+        if (frameSink_) {
+            std::array<uint8_t, 0x2000> vram {};
+            for (std::size_t index = 0; index < vram.size(); ++index) {
+                vram.at(index) = memory_.readVramByte(
+                    0, static_cast<uint16_t>(index));
             }
+            frameSink_->present(frame_, vram);
+        } else if (display_) {
+            display_->presentFrame(frame_);
         }
     }
 

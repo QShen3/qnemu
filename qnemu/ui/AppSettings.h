@@ -33,7 +33,8 @@ class AppSettings : public QObject
     Q_PROPERTY(QStringList screenshotFormats READ screenshotFormats CONSTANT)
     Q_PROPERTY(int scalePercent READ scalePercent WRITE setScalePercent NOTIFY scalePercentChanged)
     Q_PROPERTY(bool soundEnabled READ soundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
-    Q_PROPERTY(QString gbLaunchModel READ gbLaunchModel WRITE setGbLaunchModel NOTIFY gbLaunchModelChanged)
+    Q_PROPERTY(QString dmgOnlyLaunchPlatform READ dmgOnlyLaunchPlatform WRITE setDmgOnlyLaunchPlatform NOTIFY dmgOnlyLaunchPlatformChanged)
+    Q_PROPERTY(QString dualModeLaunchPlatform READ dualModeLaunchPlatform WRITE setDualModeLaunchPlatform NOTIFY dualModeLaunchPlatformChanged)
 
     Q_PROPERTY(QString activeKeyProfile READ activeKeyProfile WRITE setActiveKeyProfile NOTIFY activeKeyProfileChanged)
     Q_PROPERTY(QStringList profileNames READ profileNames NOTIFY keyProfilesChanged)
@@ -51,7 +52,8 @@ public:
     QStringList screenshotFormats() const { return screenshotFormatList; }
     int scalePercent() const { return scalePercentValue; }
     bool soundEnabled() const { return soundEnabledValue; }
-    QString gbLaunchModel() const { return gbLaunchModelValue; }
+    QString dmgOnlyLaunchPlatform() const { return dmgOnlyLaunchPlatformValue; }
+    QString dualModeLaunchPlatform() const { return dualModeLaunchPlatformValue; }
 
     QString activeKeyProfile() const { return activeKeyProfileValue; }
     QStringList profileNames() const;
@@ -65,7 +67,8 @@ public:
     void setScreenshotFormat(const QString& value);
     void setScalePercent(int value);
     void setSoundEnabled(bool value);
-    void setGbLaunchModel(const QString& value);
+    void setDmgOnlyLaunchPlatform(const QString& value);
+    void setDualModeLaunchPlatform(const QString& value);
     void setActiveKeyProfile(const QString& value);
 
     Q_INVOKABLE QString keyName(int key) const;
@@ -81,7 +84,8 @@ signals:
     void screenshotFormatChanged();
     void scalePercentChanged();
     void soundEnabledChanged();
-    void gbLaunchModelChanged();
+    void dmgOnlyLaunchPlatformChanged();
+    void dualModeLaunchPlatformChanged();
     void activeKeyProfileChanged();
     void keyProfilesChanged();
     void activeKeyBindingsChanged();
@@ -91,6 +95,7 @@ private:
     static QString defaultSavePath();
     static QString defaultScreenshotPath();
     static QVariantMap defaultBindings();
+    static bool isValidLaunchPlatform(const QString& value);
 
     QVariantMap bindingsForProfile(const QString& name) const;
     int profileIndex(const QString& name) const;
@@ -107,7 +112,8 @@ private:
     QStringList screenshotFormatList;
     int scalePercentValue = 200;
     bool soundEnabledValue = true;
-    QString gbLaunchModelValue = QStringLiteral("cgb");
+    QString dmgOnlyLaunchPlatformValue = QStringLiteral("gb");
+    QString dualModeLaunchPlatformValue = QStringLiteral("gbc");
 
     QVariantList keyProfilesValue;
     QString activeKeyProfileValue;

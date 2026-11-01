@@ -9,14 +9,13 @@
 #include <cstdint>
 
 #include "qnemu/display/FrameBuffer.h"
+#include "qnemu/gb/gpu/PpuColorizer.h"
 #include "qnemu/gb/gpu/PpuMemory.h"
 #include "qnemu/gb/gpu/PpuRegisters.h"
 #include "qnemu/gb/gpu/PpuRenderer.h"
 
 namespace qnemu
 {
-
-class GbSgb;
 
 /**
  * Dot-level background/window pixel FIFO.
@@ -31,13 +30,13 @@ class GbSgb;
 class PpuFifo
 {
 public:
-    explicit PpuFifo(bool cgb, bool dmgMode = false)
-        : renderer_(cgb, nullptr, dmgMode), cgb_(cgb), dmgMode_(dmgMode) {}
+    explicit PpuFifo(bool cgb, PpuColorizer* colorizer = nullptr, bool dmgMode = false)
+        : renderer_(cgb, colorizer, dmgMode), cgb_(cgb), colorizer_(colorizer), dmgMode_(dmgMode) {}
 
     void setCgb(bool cgb)
     {
         cgb_ = cgb;
-        renderer_ = PpuRenderer(cgb, sgb_, dmgMode_);
+        renderer_ = PpuRenderer(cgb, colorizer_, dmgMode_);
     }
 
     void setDmgMode(bool dmgMode)
@@ -46,10 +45,10 @@ public:
         renderer_.setDmgMode(dmgMode);
     }
 
-    void setSgb(GbSgb* sgb)
+    void setColorizer(PpuColorizer* colorizer)
     {
-        sgb_ = sgb;
-        renderer_.setSgb(sgb);
+        colorizer_ = colorizer;
+        renderer_.setColorizer(colorizer);
     }
 
     /// Resets the pipeline at the start of mode 3.
@@ -99,8 +98,8 @@ private:
 
     PpuRenderer renderer_;
     bool cgb_;
+    PpuColorizer* colorizer_ = nullptr;
     bool dmgMode_ = false;
-    GbSgb* sgb_ = nullptr;
 
     uint8_t line_ = 0;
     uint16_t windowLine_ = 0;

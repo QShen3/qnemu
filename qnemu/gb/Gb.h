@@ -14,8 +14,10 @@
 #include <utility>
 #include <vector>
 
+
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/display/FrameBuffer.h"
+#include "qnemu/gb/GbPlatform.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/input/InputInterface.h"
@@ -24,18 +26,7 @@
 namespace qnemu
 {
 
-enum class GbModel
-{
-    cgb,
-    dmg,
-    sgb,
-};
-
-class GbCpu;
-class GbCpuBus;
-class GbMmu;
-class GbPpu;
-class GbSgb;
+class GameBoyPlatform;
 class SaveManager;
 
 /**
@@ -49,7 +40,7 @@ class SaveManager;
 class Gb
 {
 public:
-    Gb(GbModel model,
+    Gb(GbPlatform platformKind,
         std::shared_ptr<DisplayInterface> display,
         std::unique_ptr<SoundInterface> sound,
         std::shared_ptr<InputInterface> input = nullptr);
@@ -66,7 +57,7 @@ public:
     void stop();
 
     /// True when the loaded cartridge is running through the CGB hardware path.
-    bool isCgbMode() const { return cgbMode; }
+    bool isCgbMode() const;
     void setPaused(bool paused);
     bool isPaused() const { return paused.load(); }
 
@@ -75,20 +66,17 @@ public:
 
     const FrameBuffer& frameBuffer() const;
 
+    /// Native output size: 160x144 for GB/GBC, 256x224 for SGB.
+    std::pair<int, int> frameSize() const;
+
 private:
     void prepareCartridgeLoad();
     void finishCartridgeLoad(const std::string& saveIdentity);
     void start();
     void run();
 
-    GbModel model;
-    bool cgbMode = false;
     std::shared_ptr<GbCartridgeInterface> cartridge;
-    std::unique_ptr<GbSgb> sgb;
-    std::unique_ptr<GbMmu> mmu;
-    std::unique_ptr<GbCpuBus> bus;
-    std::unique_ptr<GbCpu> cpu;
-    GbPpu* ppu = nullptr;
+    std::unique_ptr<GameBoyPlatform> platform;
     SoundInterface* sound = nullptr;
     const GbMbcFactory mbcFactory;
     std::shared_ptr<DisplayInterface> display;

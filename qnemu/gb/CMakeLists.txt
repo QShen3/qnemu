@@ -81,10 +81,8 @@ qnemu_add_gb_library(gb_ppu
 
 # Super Game Boy command receiver, palette and attribute state.
 qnemu_add_gb_library(gb_sgb
-    ${CMAKE_CURRENT_SOURCE_DIR}/sgb/GbSgb.cpp)
-target_link_libraries(gb_ppu
-    PRIVATE
-        gb_sgb)
+    ${CMAKE_CURRENT_SOURCE_DIR}/sgb/GbSgb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/sgb/SgbVideo.cpp)
 
 # APU and its four channels.
 qnemu_add_gb_library(gb_apu
@@ -130,7 +128,11 @@ target_link_libraries(gb_mmu
 # so this library stays independent of Qt Widgets/Multimedia (only the save
 # service pulls in Qt Core).
 qnemu_add_gb_library(gb
-    ${CMAKE_CURRENT_SOURCE_DIR}/Gb.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/Gb.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform/CgbPlatform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform/DmgPlatform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform/PlatformFactory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform/SgbPlatform.cpp)
 target_link_libraries(gb
     PUBLIC
         gb_bootrom

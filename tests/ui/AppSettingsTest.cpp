@@ -37,30 +37,42 @@ protected:
     QTemporaryDir settingsDirectory;
 };
 
-TEST_F(AppSettingsTest, MigratesLegacyLaunchModel)
+TEST_F(AppSettingsTest, UsesPlatformDefaults)
 {
-    {
-        QSettings settings;
-        settings.setValue(QStringLiteral("emulator/launchModel"), QStringLiteral("dmg"));
-        settings.sync();
-    }
-
     qnemu::AppSettings settings;
-    EXPECT_EQ(settings.gbLaunchModel(), QStringLiteral("dmg"));
 
-    QSettings stored;
-    EXPECT_EQ(stored.value(QStringLiteral("platforms/gb/launchModel")).toString(),
-        QStringLiteral("dmg"));
+    EXPECT_EQ(settings.dmgOnlyLaunchPlatform(), QStringLiteral("gb"));
+    EXPECT_EQ(settings.dualModeLaunchPlatform(), QStringLiteral("gbc"));
 }
 
-TEST_F(AppSettingsTest, PersistsGbLaunchModel)
+TEST_F(AppSettingsTest, PersistsDmgOnlyLaunchPlatform)
 {
     qnemu::AppSettings settings;
-    settings.setGbLaunchModel(QStringLiteral("sgb"));
+    settings.setDmgOnlyLaunchPlatform(QStringLiteral("sgb"));
 
     QSettings stored;
-    EXPECT_EQ(stored.value(QStringLiteral("platforms/gb/launchModel")).toString(),
+    EXPECT_EQ(stored.value(QStringLiteral("platforms/launch/dmgOnly")).toString(),
         QStringLiteral("sgb"));
+}
+
+TEST_F(AppSettingsTest, PersistsDualModeLaunchPlatform)
+{
+    qnemu::AppSettings settings;
+    settings.setDualModeLaunchPlatform(QStringLiteral("gb"));
+
+    QSettings stored;
+    EXPECT_EQ(stored.value(QStringLiteral("platforms/launch/dualMode")).toString(),
+        QStringLiteral("gb"));
+}
+
+TEST_F(AppSettingsTest, RejectsInvalidLaunchPlatform)
+{
+    qnemu::AppSettings settings;
+    settings.setDmgOnlyLaunchPlatform(QStringLiteral("cgb"));
+    settings.setDualModeLaunchPlatform(QStringLiteral("dmg"));
+
+    EXPECT_EQ(settings.dmgOnlyLaunchPlatform(), QStringLiteral("gb"));
+    EXPECT_EQ(settings.dualModeLaunchPlatform(), QStringLiteral("gbc"));
 }
 
 }  // namespace qnemuTest
