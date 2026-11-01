@@ -17,6 +17,7 @@
 #include "qnemu/gb/apu/GbChannel3.h"
 #include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/boot/GbCgbBootRom.h"
+#include "qnemu/gb/boot/GbDmgBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
@@ -141,16 +142,18 @@ void Gb::loadCartridge(const char* filePath)
         sgb->setHeader(header);
     }
     const bool hardwareCgb = model == GbModel::cgb;
-    const bool cgb = hardwareCgb && (header.cgb || bootRomEnabled);
+    const bool hardwareDmg = model == GbModel::dmg;
+    const bool cgb = hardwareCgb && (header.cgb || cgbBootRomEnabled);
     cgbMode = hardwareCgb && header.cgb;
-    // The bundled image is a CGB boot ROM.  It runs on CGB hardware even for
-    // DMG-only cartridges: the ROM switches to DMG compatibility by writing
-    // KEY0=$04, and the CPU/PPU follow that write.
-    bootRomActive = bootRomEnabled && hardwareCgb;
+    // The CGB image also runs on CGB hardware for DMG-only cartridges: the
+    // ROM switches to DMG compatibility by writing KEY0=$04.  DMG hardware
+    // uses Bootix; SGB keeps the HLE path because we do not ship an SGB ROM.
+    bootRomActive = (hardwareCgb && cgbBootRomEnabled)
+        || (hardwareDmg && dmgBootRomEnabled);
     bus->setCgb(cgb);
     bus->reset();
     ppu->setCgb(cgb);
-    mmu->setBootRom(cgbBootRom());
+    mmu->setBootRom(hardwareCgb ? cgbBootRom() : dmgBootRom());
     mmu->setBootRomActive(bootRomActive);
     mmu->reset();
     if (bootRomActive) {

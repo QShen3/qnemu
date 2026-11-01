@@ -23,7 +23,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 401 CTest cases, including 163 curated test ROMs.
+- 406 CTest cases, including 165 curated test ROMs.
 
 ## Build
 
@@ -100,38 +100,42 @@ install the `qml6-module-qtquick*` packages for your Qt version.
 
 ## Boot ROMs
 
-qnemu ships one prebuilt, free boot ROM in
-`third_party/sameboy/bootroms/`:
+qnemu ships two prebuilt, free boot ROMs:
 
 | File | Model | Notes |
 | --- | --- | --- |
-| `cgb_boot.bin` | CGB | SameBoy's CGB boot ROM with the QNEMU wordmark |
+| `dmg_boot.bin` | DMG | Bootix (CC0), 256 B; displays the cartridge-header logo |
+| `cgb_boot.bin` | CGB | SameBoy CGB reimplementation with the QNEMU wordmark |
 
-It is derived from [SameBoy](https://github.com/LIJI32/SameBoy)'s
-Expat/MIT-licensed CGB boot ROM reimplementation. See
-`third_party/sameboy/README.md` and `third_party/sameboy/LICENSE` for
-provenance, the exact modifications, and the license notice.
+The CGB image is derived from [SameBoy](https://github.com/LIJI32/SameBoy)'s
+Expat/MIT-licensed CGB boot ROM. The DMG image is derived from
+[Bootix](https://github.com/Ashiepaws/Bootix), which is CC0. See
+`third_party/sameboy/README.md`, `third_party/bootix/README.md` and their
+`LICENSE` files for provenance and the exact modifications.
 
 SameBoy's DMG and SGB boot ROMs are **not** shipped: they assemble to binaries
-that are byte-identical to Nintendo's official DMG/SGB boot ROMs. DMG and SGB
-modes keep using the HLE `--boot-model` path. Do not commit dumps of your own;
-use them locally only.
+that are byte-identical to Nintendo's official DMG/SGB boot ROMs. SGB keeps
+using the HLE `--boot-model` path. Do not commit dumps of your own; use them
+locally only.
 
-The committed CGB binary means the normal build needs **no RGBDS dependency**.
-Rebuilding is optional and only documented in
-`third_party/sameboy/src/build.sh`.
+Both binaries are committed, so the normal build needs **no RGBDS dependency**.
+Rebuilding is optional and documented in
+`third_party/sameboy/src/build.sh` and `third_party/bootix/src/build.sh`.
 
-Enable it in **Settings → Game Boy Color → Load CGB boot ROM** (default off).
-When enabled, CGB hardware starts by executing the QNEMU boot ROM: CGB-capable
-cartridges stay in CGB mode, while DMG-only cartridges switch to DMG
-compatibility through KEY0 and keep the CGB PPU registers available. Reopen the
-game after changing the setting. DMG/SGB models still use the HLE
-`--boot-model` path.
+Enable the DMG ROM in **Settings → Game Boy → Load DMG boot ROM** and the CGB
+ROM in **Settings → Game Boy Color → Load CGB boot ROM** (both default off).
+When enabled:
 
-The boot ROM passes Mooneye `boot_regs-cgb` and `boot_hwio-C`. `boot_div-cgb*`
-is not registered as a test: it asserts the official CGB boot ROM's exact cycle
-count, which SameBoy's reimplementation (and this QNEMU-logo variant) does not
-reproduce.
+- DMG runs Bootix and shows the cartridge-header logo (not a QNEMU wordmark);
+- CGB-capable cartridges stay in CGB mode, while DMG-only cartridges switch to
+  DMG compatibility through KEY0 and keep the CGB PPU registers available.
+
+Reopen the game after changing a setting.
+
+The boot ROMs pass Mooneye `boot_regs-cgb`, `boot_hwio-C`, `boot_regs-dmgABC`,
+and the corresponding acid2 image tests. `boot_div-cgb*` and
+`boot_hwio-dmgABCmgb` are not registered: they assert the official ROMs'
+exact cycle counts/DIV values, which these reimplementations do not reproduce.
 
 CI runs `tests/rom/check_official_boot_roms.py`, which rejects tracked files
 matching known official DMG/MGB/SGB/SGB2/CGB/CGB0/AGB boot ROMs.
@@ -572,7 +576,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **401/401 CTest cases**, including 163 ROM tests.
+The current set is **406/406 CTest cases**, including 165 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -741,11 +745,12 @@ fail when run directly:
   `MASK_EN` effects are not implemented yet. The command/palette/attribute
   protocol, default border, custom border transfers and colorization are
   implemented.
-- The CGB boot ROM is optional (Settings → Game Boy Color → Load CGB boot
-  ROM). When enabled, it runs the QNEMU-logo image and performs the real boot
-  hand-off; when disabled, the emulator applies the post-boot state directly.
-  DMG/SGB models always use the HLE `--boot-model` path. `boot_div-cgb*` is not
-  a pass criterion because it expects the official ROM's exact cycle count.
+- Boot ROMs are optional: **Settings → Game Boy → Load DMG boot ROM** runs
+  Bootix, and **Settings → Game Boy Color → Load CGB boot ROM** runs the
+  QNEMU-logo image. When disabled, the emulator applies the post-boot state
+  directly. SGB always uses the HLE `--boot-model` path. `boot_div-cgb*` and
+  `boot_hwio-dmgABCmgb` are not pass criteria because they expect the official
+  ROMs' exact cycle counts/DIV values.
 - The library uses references to the original ROM files. Copy/import into a
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
@@ -781,7 +786,7 @@ fail when run directly:
 | Key profiles     | ✅          | manual smoke test |
 | Model selection  | ✅          | CLI + settings |
 | CGB DMG colorization | ✅      | unit + manual |
-| CGB boot ROM     | ✅ (optional) | Mooneye boot_regs/hwio |
+| Boot ROMs        | ✅ (optional) | Mooneye boot_regs + acid2 |
 | Pause / resume   | ✅          | manual |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |
@@ -795,6 +800,7 @@ fail when run directly:
 
 - [Pan Docs](https://gbdev.io/pandocs/)
 - [SameBoy](https://github.com/LIJI32/SameBoy) (Expat/MIT boot ROM reimplementation; qnemu ships a QNEMU-logo CGB variant and uses its compatibility palette data)
+- [Bootix](https://github.com/Ashiepaws/Bootix) (CC0 copyright-free DMG boot ROM)
 - [The Cycle-Accurate Game Boy Docs](https://github.com/AntonioND/giibiiadvance/blob/master/docs/TCAGBD.pdf)
 - [gb-opcodes](https://gbdev.github.io/gb-opcodes/optables/)
 - [SingleStepTests/sm83](https://github.com/SingleStepTests/sm83)

@@ -96,6 +96,8 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
     }
     loadCgbBootRomValue = settings.value(QStringLiteral("platforms/gb/loadCgbBootRom"), false)
                               .toBool();
+    loadDmgBootRomValue = settings.value(QStringLiteral("platforms/gb/loadDmgBootRom"), false)
+                              .toBool();
 
     loadKeyProfiles();
 }
@@ -244,6 +246,16 @@ void AppSettings::setLoadCgbBootRom(bool value)
     loadCgbBootRomValue = value;
     settings.setValue(QStringLiteral("platforms/gb/loadCgbBootRom"), value);
     emit loadCgbBootRomChanged();
+}
+
+void AppSettings::setLoadDmgBootRom(bool value)
+{
+    if (value == loadDmgBootRomValue) {
+        return;
+    }
+    loadDmgBootRomValue = value;
+    settings.setValue(QStringLiteral("platforms/gb/loadDmgBootRom"), value);
+    emit loadDmgBootRomChanged();
 }
 
 QString AppSettings::keyName(int key) const

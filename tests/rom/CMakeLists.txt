@@ -262,6 +262,13 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "mooneye;boot" --model cgb --ppu --apu --boot-rom)
         endforeach()
 
+        # Bootix DMG boot ROM.  boot_hwio-dmgABCmgb is not registered because
+        # its DIV check assumes the official DMG ROM's exact cycle count;
+        # Bootix intentionally uses a different animation.
+        qnemu_add_rom_test("mooneye_bootrom_dmg_regs"
+            "${MOONEYE_ROM_ROOT}/acceptance/boot_regs-dmgABC.gb"
+            "mooneye;boot" --model dmg --ppu --apu --boot-rom)
+
         # Unused I/O bits and unmapped FFxx addresses read as 1s on DMG/SGB.
         # The APU is attached so its unused-bit masks are exercised too.
         qnemu_add_rom_test("mooneye_bits_unused_hwio_gs"
@@ -329,6 +336,15 @@ if(QNEMU_ENABLE_ROM_TESTS)
         set_tests_properties(rom_acid2_dmg PROPERTIES
             TIMEOUT 120
             LABELS "rom;acid2;ppu")
+
+        add_test(
+            NAME rom_acid2_dmg_boot_rom
+            COMMAND gb_test_runner "${ACID2_DMG_ROM}"
+                --model dmg --boot-rom --frames 240
+                --compare-image "${ACID2_DMG_REFERENCE}")
+        set_tests_properties(rom_acid2_dmg_boot_rom PROPERTIES
+            TIMEOUT 120
+            LABELS "rom;acid2;ppu;boot")
     endif()
 
     if(EXISTS "${ACID2_CGB_ROM}" AND EXISTS "${ACID2_CGB_REFERENCE}")

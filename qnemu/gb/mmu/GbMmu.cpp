@@ -34,8 +34,9 @@ GbMmu::GbMmu(std::unique_ptr<GbApu> apu,
 
 uint8_t GbMmu::read(uint16_t address) const
 {
-    if (bootRomActive && bootRom.size() >= 0x0900
-        && (address <= 0x00FF || (address >= 0x0200 && address <= 0x08FF))) {
+    if (bootRomActive && !bootRom.empty()
+        && (address <= 0x00FF
+            || (bootRom.size() >= 0x0900 && address >= 0x0200 && address <= 0x08FF))) {
         return bootRom[address];
     }
     if (address <= MemoryRomBank01End) {

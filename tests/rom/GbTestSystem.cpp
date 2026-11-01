@@ -16,6 +16,7 @@
 #include "qnemu/gb/apu/GbChannel3.h"
 #include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/boot/GbCgbBootRom.h"
+#include "qnemu/gb/boot/GbDmgBootRom.h"
 #include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "tests/rom/GbTestSystem.h"
 #include "tests/support/NullSound.h"
@@ -64,9 +65,9 @@ bool GbTestSystem::loadRomData(const std::vector<uint8_t>& romData, bool cgb,
     return finishLoad(cgb, enablePpu, enableApu);
 }
 
-void GbTestSystem::enableBootRom()
+void GbTestSystem::enableBootRom(bool cgb)
 {
-    bootRom_ = qnemu::cgbBootRom();
+    bootRom_ = cgb ? qnemu::cgbBootRom() : qnemu::dmgBootRom();
     bootRomEnabled_ = true;
 }
 
@@ -74,7 +75,7 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
 {
     cgb_ = cgb;
     cgbHardware_ = cgb;
-    bootRomActive_ = bootRomEnabled_ && cgb;
+    bootRomActive_ = bootRomEnabled_;
 
     ppu.reset();
     display.reset();
@@ -244,8 +245,9 @@ uint8_t GbTestSystem::read(uint16_t address)
         address = static_cast<uint16_t>(address - 0x2000);
     }
 
-    if (bootRomActive_ && bootRom_.size() >= 0x0900
-        && (address <= 0x00FF || (address >= 0x0200 && address <= 0x08FF))) {
+    if (bootRomActive_ && !bootRom_.empty()
+        && (address <= 0x00FF
+            || (bootRom_.size() >= 0x0900 && address >= 0x0200 && address <= 0x08FF))) {
         return bootRom_[address];
     }
 

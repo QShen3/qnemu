@@ -51,9 +51,9 @@ public:
     bool loadRomData(const std::vector<uint8_t>& romData, bool cgb,
         bool enablePpu = false, bool enableApu = false);
 
-    /// Execute the bundled QNEMU CGB boot ROM instead of applying post-boot
-    /// state.  Call before loadRom()/loadRomData().
-    void enableBootRom();
+    /// Execute the bundled CGB (QNEMU) or DMG (Bootix) boot ROM instead of
+    /// applying post-boot state.  Call before loadRom()/loadRomData().
+    void enableBootRom(bool cgb);
 
     /// Reproduce the model-specific post-boot I/O state without executing a
     /// boot ROM.  CPU registers are applied by the runner.

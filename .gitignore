@@ -18,6 +18,7 @@ coverage.*.html
 # Optional boot ROM rebuild artifacts
 third_party/sameboy/src/*.o
 third_party/sameboy/src/pb12
+third_party/bootix/src/*.o
 
 # User-supplied boot ROM dumps (never commit these)
 local-bootroms/

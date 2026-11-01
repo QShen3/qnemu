@@ -66,8 +66,12 @@ public:
 
     void setSaveDirectory(std::string directory) { saveDirectory = std::move(directory); }
     void setSoundEnabled(bool enabled);
-    void setBootRomEnabled(bool enabled) { bootRomEnabled = enabled; }
-    bool isBootRomEnabled() const { return bootRomEnabled; }
+    void setCgbBootRomEnabled(bool enabled) { cgbBootRomEnabled = enabled; }
+    void setDmgBootRomEnabled(bool enabled) { dmgBootRomEnabled = enabled; }
+    /// Backwards-compatible alias for the CGB boot ROM setting.
+    void setBootRomEnabled(bool enabled) { setCgbBootRomEnabled(enabled); }
+    bool isCgbBootRomEnabled() const { return cgbBootRomEnabled; }
+    bool isDmgBootRomEnabled() const { return dmgBootRomEnabled; }
 
     const FrameBuffer& frameBuffer() const;
 
@@ -77,7 +81,8 @@ private:
 
     GbModel model;
     bool cgbMode = false;
-    bool bootRomEnabled = false;
+    bool cgbBootRomEnabled = false;
+    bool dmgBootRomEnabled = false;
     bool bootRomActive = false;
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GbSgb> sgb;

@@ -63,6 +63,20 @@ TEST_F(AppSettingsTest, PersistsGbLaunchModel)
         QStringLiteral("sgb"));
 }
 
+TEST_F(AppSettingsTest, DmgBootRomDefaultsToOffAndPersists)
+{
+    qnemu::AppSettings settings;
+    EXPECT_FALSE(settings.loadDmgBootRom());
+
+    settings.setLoadDmgBootRom(true);
+
+    QSettings stored;
+    EXPECT_TRUE(stored.value(QStringLiteral("platforms/gb/loadDmgBootRom")).toBool());
+
+    qnemu::AppSettings reloaded;
+    EXPECT_TRUE(reloaded.loadDmgBootRom());
+}
+
 TEST_F(AppSettingsTest, CgbBootRomDefaultsToOffAndPersists)
 {
     qnemu::AppSettings settings;

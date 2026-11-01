@@ -171,6 +171,36 @@ TEST(GbTest, CgbBootRomPresentsQnemuLogo)
     EXPECT_EQ(frame.at(0, 0), qnemu::rgb(255, 255, 255));
 }
 
+TEST(GbTest, DmgBootRomRunsAndShowsCartridgeLogo)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+    const QString path = writeRom(directory, QStringLiteral("boot.gb"), 0x00);
+    ASSERT_FALSE(path.isEmpty());
+
+    auto display = std::make_shared<MemoryDisplay>();
+    qnemu::Gb system(qnemu::GbModel::dmg, display,
+        std::make_unique<NullSound>(), nullptr);
+    system.setDmgBootRomEnabled(true);
+    system.loadCartridge(path.toStdString().c_str());
+
+    for (int i = 0; i < 120 && display->frameCount < 40; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    system.stop();
+
+    ASSERT_GE(display->frameCount, 40U);
+    std::size_t nonWhite = 0;
+    const auto& frame = display->lastFrame;
+    for (const uint32_t pixel : frame.pixels) {
+        if ((pixel & 0x00FFFFFFU) != 0x00FFFFFFU) {
+            ++nonWhite;
+        }
+    }
+    EXPECT_GT(nonWhite, 100U);
+    EXPECT_EQ(frame.at(0, 0), qnemu::rgb(255, 255, 255));
+}
+
 TEST(GbTest, WiresAndClearsInputCallbacks)
 {
     auto display = std::make_shared<MemoryDisplay>();

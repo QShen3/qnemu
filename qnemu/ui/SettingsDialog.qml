@@ -542,6 +542,35 @@ ApplicationWindow {
                                     onActivated: settings.gbLaunchModel = settingsWindow.launchModels[currentIndex].value
                                 }
                             }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Load DMG boot ROM")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Run Bootix (CC0) instead of initializing the post-boot state directly. It shows the cartridge-header logo with its own animation; DMG only. Reopen the game after changing.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Switch {
+                                    checked: settings.loadDmgBootRom
+                                    onToggled: settings.loadDmgBootRom = checked
+                                }
+                            }
                         }
 
                         SettingsCard {

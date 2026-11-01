@@ -1,0 +1,31 @@
+/*
+ *  Copyright [2026] <qazxdrcssc2006@163.com>
+ *
+ * Generated from third_party/bootix/bootroms/dmg_boot.bin. Bootix is CC0;
+ * see third_party/bootix/LICENSE and third_party/bootix/README.md.
+ */
+
+#include <array>
+#include <cstdint>
+#include <span>
+
+#include "qnemu/gb/boot/GbDmgBootRom.h"
+
+namespace qnemu
+{
+
+namespace
+{
+
+constexpr std::array<uint8_t, 256> dmgBootRomData = {
+@QNEMU_DMG_BOOT_ROM_BYTES@
+};
+
+}  // namespace
+
+std::span<const uint8_t> dmgBootRom()
+{
+    return dmgBootRomData;
+}
+
+}  // namespace qnemu

@@ -25,8 +25,26 @@ configure_file(
     @ONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${QNEMU_CGB_BOOT_ROM_BIN}")
+
+# Bootix DMG boot ROM (CC0), also embedded at configure time.
+set(QNEMU_DMG_BOOT_ROM_BIN
+    "${PROJECT_SOURCE_DIR}/third_party/bootix/bootroms/dmg_boot.bin")
+if(NOT EXISTS "${QNEMU_DMG_BOOT_ROM_BIN}")
+    message(FATAL_ERROR "Missing DMG boot ROM: ${QNEMU_DMG_BOOT_ROM_BIN}")
+endif()
+file(READ "${QNEMU_DMG_BOOT_ROM_BIN}" QNEMU_DMG_BOOT_ROM_HEX HEX)
+string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1, "
+    QNEMU_DMG_BOOT_ROM_BYTES "${QNEMU_DMG_BOOT_ROM_HEX}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/boot/GbDmgBootRom.cpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GbDmgBootRom.cpp"
+    @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${QNEMU_DMG_BOOT_ROM_BIN}")
+
 qnemu_add_gb_library(gb_bootrom
-    "${CMAKE_CURRENT_BINARY_DIR}/GbCgbBootRom.cpp")
+    "${CMAKE_CURRENT_BINARY_DIR}/GbCgbBootRom.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/GbDmgBootRom.cpp")
 
 # SM83 CPU core.
 qnemu_add_gb_library(gb_cpu

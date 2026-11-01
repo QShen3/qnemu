@@ -40,7 +40,10 @@ OFFICIAL_SHA1 = {
 }
 
 BOOTROM_SIZES = {256, 2048, 2304}
-ALLOWED_DIR = Path("third_party/sameboy/bootroms")
+ALLOWED_DIRS = {
+    Path("third_party/sameboy/bootroms"),
+    Path("third_party/bootix/bootroms"),
+}
 BIN_SUFFIXES = {".bin", ".rom", ".gb", ".gbc"}
 BOOT_NAME_RE = re.compile(r"(?i)(boot|bios)")
 
@@ -79,11 +82,13 @@ def sha1(path: Path) -> str:
 
 
 def is_allowed(path: Path) -> bool:
-    try:
-        path.relative_to(ALLOWED_DIR)
-        return True
-    except ValueError:
-        return False
+    for allowed_dir in ALLOWED_DIRS:
+        try:
+            path.relative_to(allowed_dir)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def main() -> int:
@@ -117,8 +122,9 @@ def main() -> int:
             and BOOT_NAME_RE.search(path.name)
         ):
             failures.append(
-                f"{relative}: looks like a boot ROM ({size} bytes) outside "
-                f"{ALLOWED_DIR}/; move a free reimplementation there or remove it"
+                f"{relative}: looks like a boot ROM ({size} bytes) outside an "
+                f"allowed bootrom directory; move a free reimplementation "
+                f"there or remove it"
             )
 
     if failures:

@@ -253,6 +253,25 @@ TEST_F(GbMmuTest, MapsBootRomAndUnmapsOnFF50)
     EXPECT_EQ(mmu->read(0x0000), 0x00);
 }
 
+TEST_F(GbMmuTest, MapsDmgBootRomOnlyOverFirstPage)
+{
+    std::array<uint8_t, 0x100> bootRom {};
+    for (std::size_t index = 0; index < bootRom.size(); ++index) {
+        bootRom.at(index) = static_cast<uint8_t>(index ^ 0xA5);
+    }
+    mmu->setBootRom(bootRom);
+    mmu->setBootRomActive(true);
+
+    EXPECT_EQ(mmu->read(0x0000), bootRom.at(0x0000));
+    EXPECT_EQ(mmu->read(0x00FF), bootRom.at(0x00FF));
+    EXPECT_EQ(mmu->read(0x0100), 0x00);
+    EXPECT_EQ(mmu->read(0x0200), 0x00);
+
+    mmu->write(0xFF50, 0x01);
+    EXPECT_FALSE(mmu->isBootRomActive());
+    EXPECT_EQ(mmu->read(0x0000), 0x00);
+}
+
 TEST_F(GbMmuTest, DmgCompatibilityModeKeepsCgbHardwareRegisters)
 {
     mmu->setCgb(true);

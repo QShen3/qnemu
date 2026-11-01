@@ -248,8 +248,8 @@ int main(int argc, char** argv)
         std::cerr << "--boot-rom and --boot-model are mutually exclusive\n";
         return 2;
     }
-    if (enableBootRom && model != "cgb") {
-        std::cerr << "--boot-rom requires --model cgb\n";
+    if (enableBootRom && model == "sgb") {
+        std::cerr << "--boot-rom is not available for the SGB model\n";
         return 2;
     }
 
@@ -261,7 +261,7 @@ int main(int argc, char** argv)
 
     qnemuTest::GbTestSystem system;
     if (enableBootRom) {
-        system.enableBootRom();
+        system.enableBootRom(model == "cgb");
     }
     bool loaded = false;
     if (patches.empty()) {
@@ -309,7 +309,7 @@ int main(int argc, char** argv)
         registers.pc = 0x0000;
         registers.sp = 0xFFFE;
     }
-    if (model == "dmg") {
+    if (model == "dmg" && !enableBootRom) {
         auto& registers = cpu.registers();
         registers.a = 0x01;
         registers.f = 0xB0;
