@@ -4,8 +4,10 @@
 
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <QtCore/QByteArray>
 #include <QtCore/QDateTime>
@@ -16,6 +18,7 @@
 
 #include "qnemu/ui/AppController.h"
 #include "qnemu/ui/EmulatorItem.h"
+#include "qnemu/ui/RomArchive.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/input/InputInterface.h"
@@ -133,7 +136,23 @@ void AppController::openRom(const QUrl& url)
         auto input = std::shared_ptr<InputInterface>(displayItem,
             [](InputInterface*) {});
 
-        const GbCartridgeHeader header = GbCartridge::readHeader(path.toStdString());
+        const bool archived = RomArchive::isArchivePath(path);
+        GbCartridgeHeader header;
+        std::vector<uint8_t> romData;
+        QString displayName = QFileInfo(path).fileName();
+        if (archived) {
+            RomArchiveEntry archive;
+            QString error;
+            if (!RomArchive::read(path, &archive, &error)) {
+                throw std::runtime_error(error.toStdString());
+            }
+            romData.assign(archive.data.begin(), archive.data.end());
+            header = GbCartridge::readHeader(romData);
+            displayName += QStringLiteral(" / ") + archive.name;
+        } else {
+            header = GbCartridge::readHeader(path.toStdString());
+        }
+
         currentRomCgbOnly = header.cgbOnly;
         const GbModel targetModel = launchModel(currentRomCgbOnly);
 
@@ -142,7 +161,11 @@ void AppController::openRom(const QUrl& url)
             std::move(sound), input);
         system->setSaveDirectory(settingsValue->savePath().toStdString());
         system->setSoundEnabled(settingsValue->soundEnabled());
-        system->loadCartridge(path.toStdString().c_str());
+        if (archived) {
+            system->loadCartridge(romData, path.toStdString());
+        } else {
+            system->loadCartridge(path.toStdString().c_str());
+        }
 
         gb = std::move(system);
         setFrameSize(targetModel == GbModel::sgb ? 256 : 160,
@@ -150,8 +173,8 @@ void AppController::openRom(const QUrl& url)
         currentRomPath = path;
         libraryValue->addOpenedGame(path);
 
-        setWindowTitle(QFileInfo(path).fileName() + QStringLiteral(" - QNEmu"));
-        setStatusText(QStringLiteral("Loaded ") + QFileInfo(path).fileName());
+        setWindowTitle(displayName + QStringLiteral(" - QNEmu"));
+        setStatusText(QStringLiteral("Loaded ") + displayName);
         if (!showingGameValue) {
             showingGameValue = true;
             emit showingGameChanged();

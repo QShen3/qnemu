@@ -8,7 +8,9 @@ add_executable(
     ui/AppController.cpp
     ui/AppSettings.cpp
     ui/EmulatorItem.cpp
-    ui/GameLibrary.cpp)
+    ui/GameLibrary.cpp
+    ui/RomArchive.cpp
+    ui/RomDatabase.cpp)
 qt_add_resources(qnemu "qml"
     PREFIX "/qml"
     BASE ui
@@ -21,6 +23,11 @@ qt_add_resources(qnemu "qml"
         ui/SettingsCard.qml
         ui/EmptyLibrary.qml
         ui/StatusToast.qml)
+qt_add_resources(qnemu "romdb"
+    PREFIX "/data"
+    BASE data
+    FILES
+        data/romdb.json)
 target_include_directories(qnemu PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(
     qnemu
@@ -28,6 +35,7 @@ target_link_libraries(
     qnemu_warnings
     gb
     sound
+    ${QNEMU_LIBARCHIVE_TARGET}
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2

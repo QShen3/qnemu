@@ -85,6 +85,35 @@ find_package(Qt6 6.3 COMPONENTS
     Qml Quick QuickControls2 QuickDialogs2
     REQUIRED)
 
+# Homebrew keeps libarchive keg-only because macOS ships an older copy.
+# Prefer the Homebrew prefix when it is installed so local builds work without
+# an extra CMAKE_PREFIX_PATH.
+if(APPLE)
+    find_program(HOMEBREW_EXECUTABLE brew)
+    if(HOMEBREW_EXECUTABLE)
+        execute_process(
+            COMMAND ${HOMEBREW_EXECUTABLE} --prefix libarchive
+            OUTPUT_VARIABLE QNEMU_LIBARCHIVE_PREFIX
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+            RESULT_VARIABLE QNEMU_LIBARCHIVE_BREW_RESULT)
+        if(QNEMU_LIBARCHIVE_BREW_RESULT EQUAL 0
+            AND EXISTS "${QNEMU_LIBARCHIVE_PREFIX}/include/archive.h")
+            list(APPEND CMAKE_PREFIX_PATH "${QNEMU_LIBARCHIVE_PREFIX}")
+        endif()
+    endif()
+endif()
+
+find_package(LibArchive REQUIRED)
+if(TARGET LibArchive::LibArchive)
+    set(QNEMU_LIBARCHIVE_TARGET LibArchive::LibArchive)
+else()
+    add_library(qnemu_libarchive INTERFACE)
+    target_include_directories(qnemu_libarchive INTERFACE ${LibArchive_INCLUDE_DIRS})
+    target_link_libraries(qnemu_libarchive INTERFACE ${LibArchive_LIBRARIES})
+    set(QNEMU_LIBARCHIVE_TARGET qnemu_libarchive)
+endif()
+
 if(BUILD_TESTING)
     find_package(GTest REQUIRED)
 endif()

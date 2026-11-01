@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -52,6 +53,7 @@ public:
     void step() override { ++steps; }
     void reset() override { ++resets; }
     void load(const char*) override { ++loads; }
+    void load(const std::vector<uint8_t>&) override { ++loads; }
     bool isGbcCartridge() const override { return false; }
     qnemu::GbCartridgeHeader cartridgeHeader() const override { return {}; }
 

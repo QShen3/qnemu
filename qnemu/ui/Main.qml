@@ -165,14 +165,14 @@ ApplicationWindow {
     FileDialog {
         id: openDialog
         title: qsTr("Open ROM")
-        nameFilters: [qsTr("Game Boy ROMs (*.gb *.gbc *.sgb)"), qsTr("All files (*)")]
+        nameFilters: [qsTr("Game Boy ROMs and archives (*.gb *.gbc *.sgb *.zip *.7z *.rar)"), qsTr("All files (*)")]
         onAccepted: appController.openRom(selectedFile)
     }
 
     FileDialog {
         id: addGameDialog
         title: qsTr("Add Game to Library")
-        nameFilters: [qsTr("Game Boy ROMs (*.gb *.gbc *.sgb)"), qsTr("All files (*)")]
+        nameFilters: [qsTr("Game Boy ROMs and archives (*.gb *.gbc *.sgb *.zip *.7z *.rar)"), qsTr("All files (*)")]
         onAccepted: appController.addGame(selectedFile)
     }
 

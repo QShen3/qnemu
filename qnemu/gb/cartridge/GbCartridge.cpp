@@ -264,7 +264,15 @@ GbCartridgeHeader GbCartridge::readHeader(const std::string& filePath)
         throw std::runtime_error("Cartridge file is not correct!");
     }
 
-    const std::vector<uint8_t> buffer(headerBytes.begin(), headerBytes.end());
+    return readHeader(std::vector<uint8_t>(headerBytes.begin(), headerBytes.end()));
+}
+
+GbCartridgeHeader GbCartridge::readHeader(const std::vector<uint8_t>& buffer)
+{
+    if (buffer.size() < 0x150) {
+        throw std::runtime_error("Cartridge file is not correct!");
+    }
+
     GbCartridgeHeader header;
     header.cgb = (buffer.at(0x143) & 0x80) != 0;
     header.cgbOnly = buffer.at(0x143) == 0xC0;

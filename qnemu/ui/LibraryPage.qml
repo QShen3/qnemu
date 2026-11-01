@@ -20,6 +20,47 @@ Item {
         return count === 1 ? qsTr("1 game in your library") : qsTr("%1 games in your library").arg(count);
     }
 
+    function statusLabel(status) {
+        switch (status) {
+        case "official":
+            return qsTr("Official");
+        case "aftermarket":
+            return qsTr("Aftermarket");
+        case "unlicensed":
+            return qsTr("Unlicensed");
+        case "proto":
+            return qsTr("Prototype");
+        case "pirate":
+            return qsTr("Pirate");
+        case "homebrew":
+            return qsTr("Homebrew");
+        case "demo":
+            return qsTr("Demo");
+        default:
+            return "";
+        }
+    }
+
+    function statusColor(status) {
+        if (status === "official") {
+            return page.theme.accent;
+        }
+        if (status === "aftermarket" || status === "demo") {
+            return page.theme.withAlpha(page.theme.windowText, 0.14);
+        }
+        return page.theme.warning;
+    }
+
+    function statusTextColor(status) {
+        if (status === "official") {
+            return page.theme.accentText;
+        }
+        if (status === "aftermarket" || status === "demo") {
+            return page.theme.windowText;
+        }
+        return "#1b1b1b";
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.leftMargin: 16
@@ -270,18 +311,48 @@ Item {
                     Layout.fillWidth: true
                     spacing: 1
 
-                    Label {
+                    RowLayout {
                         Layout.fillWidth: true
-                        text: model.title
-                        color: page.theme.windowText
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
+                        spacing: 6
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: model.title
+                            color: page.theme.windowText
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            id: statusBadge
+
+                            visible: model.status !== "" && model.status !== "unknown"
+                                && page.statusLabel(model.status) !== ""
+                            Layout.alignment: Qt.AlignVCenter
+                            implicitWidth: statusBadgeLabel.implicitWidth + 12
+                            implicitHeight: 18
+                            radius: 9
+                            color: page.statusColor(model.status)
+
+                            Label {
+                                id: statusBadgeLabel
+
+                                anchors.centerIn: parent
+                                text: page.statusLabel(model.status)
+                                color: page.statusTextColor(model.status)
+                                font.pixelSize: 9
+                                font.weight: Font.DemiBold
+                            }
+                        }
                     }
 
                     Label {
                         Layout.fillWidth: true
-                        text: model.missing ? qsTr("File missing") : model.publisher + "  ·  " + model.region
+                        text: model.missing
+                            ? qsTr("File missing")
+                            : model.publisher + "  ·  " + model.region
+                                + (model.languages ? "  ·  " + model.languages : "")
                         color: model.missing ? page.theme.warning : page.theme.mutedText
                         font.pixelSize: 11
                         elide: Text.ElideRight
@@ -303,11 +374,165 @@ Item {
                         id: rowMenu
 
                         MenuItem {
+                            text: qsTr("Game information")
+                            onTriggered: {
+                                infoDialog.game = {
+                                    title: model.title,
+                                    databaseName: model.databaseName,
+                                    archiveEntry: model.archiveEntry,
+                                    developer: model.developer,
+                                    publisher: model.publisher,
+                                    region: model.region,
+                                    languages: model.languages,
+                                    languagesInferred: model.languagesInferred,
+                                    year: model.year,
+                                    genre: model.genre,
+                                    serial: model.serial,
+                                    status: model.status,
+                                    crc32: model.crc32,
+                                    sha1: model.sha1
+                                };
+                                infoDialog.open();
+                            }
+                        }
+
+                        MenuSeparator {}
+
+                        MenuItem {
                             text: qsTr("Remove from library")
                             onTriggered: appController.removeGame(model.path)
                         }
                     }
                 }
+            }
+        }
+    }
+
+    Dialog {
+        id: infoDialog
+
+        property var game: null
+
+        anchors.centerIn: Overlay.overlay
+        modal: true
+        padding: 16
+        width: Math.min(500, page.width - 40)
+        title: game ? game.title : qsTr("Game information")
+        standardButtons: Dialog.Close
+
+        function rows() {
+            if (!game) {
+                return [];
+            }
+            const status = !game.status || game.status === "unknown"
+                ? qsTr("Not in database")
+                : page.statusLabel(game.status);
+            const languages = game.languages
+                ? game.languages + (game.languagesInferred ? qsTr(" (inferred)") : "")
+                : qsTr("Unknown");
+            const rows = [
+                {
+                    label: qsTr("Database name"),
+                    value: game.databaseName || qsTr("Not in database")
+                },
+                {
+                    label: qsTr("Developer"),
+                    value: game.developer || qsTr("Unknown")
+                },
+                {
+                    label: qsTr("Publisher"),
+                    value: game.publisher || qsTr("Unknown")
+                },
+                {
+                    label: qsTr("Region"),
+                    value: game.region || qsTr("Unknown")
+                },
+                {
+                    label: qsTr("Languages"),
+                    value: languages
+                },
+                {
+                    label: qsTr("Release year"),
+                    value: game.year > 0 ? String(game.year) : qsTr("Unknown")
+                },
+                {
+                    label: qsTr("Genre"),
+                    value: game.genre || qsTr("Unknown")
+                },
+                {
+                    label: qsTr("Serial"),
+                    value: game.serial || qsTr("Unknown")
+                },
+                {
+                    label: qsTr("Status"),
+                    value: status
+                },
+                {
+                    label: qsTr("CRC32"),
+                    value: game.crc32 || qsTr("Unknown")
+                },
+                {
+                    label: qsTr("SHA-1"),
+                    value: game.sha1 || qsTr("Unknown")
+                }
+            ];
+            if (game.archiveEntry) {
+                rows.splice(1, 0, {
+                    label: qsTr("Archive entry"),
+                    value: game.archiveEntry
+                });
+            }
+            return rows;
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 6
+
+            Repeater {
+                model: infoDialog.rows()
+
+                delegate: RowLayout {
+                    required property var modelData
+
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Label {
+                        Layout.preferredWidth: 96
+                        text: modelData.label
+                        color: page.theme.mutedText
+                        font.pixelSize: 11
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: modelData.value
+                        color: page.theme.windowText
+                        font.pixelSize: 11
+                        wrapMode: Text.WrapAnywhere
+                    }
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                text: qsTr("Metadata: %1 · %2 entries")
+                    .arg(appController.library.databaseSource)
+                    .arg(appController.library.databaseCount)
+                color: page.theme.mutedText
+                font.pixelSize: 10
+                wrapMode: Text.Wrap
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Source: No-Intro via libretro-database · CC BY-SA 4.0\n%1")
+                    .arg(appController.library.databaseLicenseUrl
+                        || "https://creativecommons.org/licenses/by-sa/4.0/")
+                color: page.theme.faintText
+                font.pixelSize: 10
+                wrapMode: Text.Wrap
             }
         }
     }

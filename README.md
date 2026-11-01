@@ -22,8 +22,9 @@ goal is to support more consoles and handhelds with the same host layer.
   default 256×224 border and custom border transfers.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
+- ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 404 CTest cases, including 168 curated test ROMs.
+- 423 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -33,6 +34,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - CMake >= 3.16 (>= 3.20 for the bundled presets)
 - Qt >= 6.3 with Core, Gui, Multimedia, Qml, Quick, QuickControls2 and
   QuickDialogs2
+- libarchive >= 3.x (ROM archive support)
 - Google Test >= 1.10 (only when building the tests)
 
 ### Commands
@@ -84,15 +86,19 @@ This requires `gcovr` for GCC/Clang builds, or OpenCppCoverage for MSVC.
 macOS with Homebrew:
 
 ```bash
-brew install cmake ninja qt googletest
+brew install cmake ninja qt googletest libarchive
 ```
 
 Debian/Ubuntu:
 
 ```bash
 sudo apt install cmake ninja-build qt6-base-dev qt6-multimedia-dev \
-    qt6-declarative-dev libgtest-dev libgmock-dev
+    qt6-declarative-dev libarchive-dev libgtest-dev libgmock-dev
 ```
+
+Homebrew's libarchive is keg-only; CMake finds it automatically when `brew` is
+available. If you use a different prefix, pass
+`-DCMAKE_PREFIX_PATH="$(brew --prefix libarchive)"`.
 
 The Qt Quick runtime QML modules (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Dialogs`) are needed to run the GUI; on distros that split them out,
@@ -217,6 +223,40 @@ Default key bindings (each profile can be changed in **Settings → Controls**):
 | Start  | 3   |
 | Select | 2   |
 
+## Game database
+
+The library ships a No-Intro snapshot for Game Boy and Game Boy Color.  It
+replaces the cartridge header title with the canonical database title, adds
+developer/publisher/region/languages/release information, and shows an
+**Official** badge when a ROM's SHA-1 matches a licensed release.  Known
+prototype, aftermarket, unlicensed, pirate and homebrew dumps are still
+identified, but use their own badge instead of "Official".  A ROM that is not
+in the database keeps the header metadata and has no badge.
+
+The snapshot is built into the executable, so matching needs no network access.
+Open a row's **⋯ → Game information** menu to see the database name, all
+metadata, CRC32/SHA-1 and the source/license.  See
+[`doc/rom-database.md`](doc/rom-database.md) for sources, status rules,
+language inference and the regeneration workflow.
+
+## ROM archives
+
+The library also scans `.zip`, `.7z` and `.rar` files through libarchive. An
+archive must contain exactly one `.gb`, `.gbc` or `.sgb` entry; it is read into
+memory, never extracted to disk. The inner ROM is hashed and matched against
+the built-in database, so archives get the same Official badges and metadata as
+plain ROMs. Opening an archive uses the archive filename for save files, so
+`Tetris (World).zip` still produces `Tetris (World).sav`.
+
+Encrypted, corrupt, oversized and multi-ROM archives are rejected instead of
+being guessed. The library row stays unverified, and opening the archive shows
+the reason in the status toast. The first scan decompresses every archive to
+compute its checksum; later scans in the same session use an in-memory cache.
+When packaging a macOS `.app` or a Windows build, bundle libarchive (or link it
+statically), since Homebrew/vcpkg library paths are machine-specific. libarchive
+covers the common ZIP methods (store/deflate/bzip2/lzma/xz/zstd); Deflate64 and
+some AES variants are not supported.
+
 ## Project structure
 
 The host layer and the console implementation are deliberately separate:
@@ -229,6 +269,8 @@ qnemu/
 │   ├── AppController.* QML-facing C++ controller
 │   ├── AppSettings.*   persistent global/platform settings
 │   ├── GameLibrary.*   ROM scan, metadata and library models
+│   ├── RomDatabase.*   built-in No-Intro metadata index
+│   ├── RomArchive.*    libarchive-backed zip/7z/rar reader
 │   └── EmulatorItem.*  QQuickPaintedItem frame view and key mapping
 ├── display/            DisplayInterface and FrameBuffer headers
 ├── sound/              Qt Multimedia audio output (shared host service)
@@ -584,7 +626,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **404/404 CTest cases**, including 168 ROM tests.
+The current set is **423/423 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -761,7 +803,8 @@ fail when run directly:
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
 - Cover art / a game image database is not implemented yet. The library shows
-  cartridge title, publisher and region.
+  cartridge title, publisher, region and languages, plus the database status
+  badge.
 - Library paths are per platform; the save path is global for now, and key
   profiles are global. Richer overlays and a persistent window layout are
   future work.
@@ -787,6 +830,7 @@ fail when run directly:
 | HuC1             | ✅          | unit (IR not emulated) |
 | QML UI           | ✅          | manual smoke test |
 | Game library     | ✅          | manual smoke test |
+| ROM archives     | ✅          | unit + real zip scan |
 | Settings         | ✅          | manual smoke test |
 | Screenshots      | ✅          | manual smoke test |
 | Key profiles     | ✅          | manual smoke test |

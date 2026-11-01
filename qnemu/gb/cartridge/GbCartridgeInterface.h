@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 #include "qnemu/gb/GbDeviceInterface.h"
 #include "qnemu/gb/cartridge/GbCartridgeHeader.h"
 #include "qnemu/save/SaveTarget.h"
@@ -15,6 +18,7 @@ class GbCartridgeInterface : public GbDeviceInterface, public SaveTarget
 {
 public:
     virtual void load(const char* filePath) = 0;
+    virtual void load(const std::vector<uint8_t>& buffer) = 0;
     virtual bool isGbcCartridge() const = 0;
     virtual GbCartridgeHeader cartridgeHeader() const = 0;
 };

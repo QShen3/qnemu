@@ -20,6 +20,7 @@ public:
     MOCK_METHOD(void, step, (), (override));
 
     MOCK_METHOD(void, load, (const char*), (override));
+    MOCK_METHOD(void, load, (const std::vector<uint8_t>&), (override));
     MOCK_METHOD(bool, isGbcCartridge, (), (const, override));
     MOCK_METHOD(qnemu::GbCartridgeHeader, cartridgeHeader, (), (const, override));
 };

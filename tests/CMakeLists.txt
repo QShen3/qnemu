@@ -33,16 +33,21 @@ add_executable(
     ${UI_TEST_SRCS}
     ${PROJECT_SOURCE_DIR}/qnemu/ui/GameLibrary.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/AppSettings.cpp
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/RomArchive.cpp
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/RomDatabase.cpp
 )
 set_target_properties(qnemu_test PROPERTIES
     AUTOMOC ON AUTOUIC OFF AUTORCC OFF)
 target_include_directories(qnemu_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_compile_definitions(qnemu_test PRIVATE
+    QNEMU_ROMDB_PATH="${PROJECT_SOURCE_DIR}/qnemu/data/romdb.json")
 target_link_libraries(
     qnemu_test
     PRIVATE
     qnemu_warnings
     gb
     save
+    ${QNEMU_LIBARCHIVE_TARGET}
     GTest::gmock_main
     Qt6::Core
     Qt6::Gui)

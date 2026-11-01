@@ -10,6 +10,7 @@
 #include <memory>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -90,6 +91,26 @@ QString writeRom(const QTemporaryDir& directory, const QString& name, uint8_t cg
 }
 
 }  // namespace
+
+TEST(GbTest, LoadsCartridgeFromMemory)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+    const QString path = writeRom(directory, QStringLiteral("memory.gb"), 0x00);
+    ASSERT_FALSE(path.isEmpty());
+
+    QFile file(path);
+    ASSERT_TRUE(file.open(QIODevice::ReadOnly));
+    const QByteArray data = file.readAll();
+    const std::vector<uint8_t> buffer(data.begin(), data.end());
+
+    auto display = std::make_shared<MemoryDisplay>();
+    qnemu::Gb system(qnemu::GbModel::dmg, display,
+        std::make_unique<NullSound>(), nullptr);
+    system.loadCartridge(buffer, path.toStdString());
+    EXPECT_FALSE(system.isCgbMode());
+    system.stop();
+}
 
 TEST(GbTest, ConstructsWithInjectedHostInterfaces)
 {

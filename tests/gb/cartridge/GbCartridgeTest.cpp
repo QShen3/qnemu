@@ -11,6 +11,8 @@
 #pragma warning( pop )
 #endif
 
+#include <vector>
+
 #include <QtCore/QFile>
 #include <QtCore/QTemporaryDir>
 
@@ -56,6 +58,15 @@ TEST(GbCartridgeTest, ReadHeaderMetadata)
     EXPECT_EQ(header.titleBytes.at(0), static_cast<uint8_t>('T'));
     EXPECT_EQ(header.oldLicensee, 0x31);
     EXPECT_EQ(header.newLicensee.at(0), 0);
+
+    const std::vector<uint8_t> buffer(data.begin(), data.end());
+    const qnemu::GbCartridgeHeader memoryHeader =
+        qnemu::GbCartridge::readHeader(buffer);
+    EXPECT_EQ(memoryHeader.title, header.title);
+    EXPECT_EQ(memoryHeader.publisher, header.publisher);
+    EXPECT_EQ(memoryHeader.region, header.region);
+    EXPECT_EQ(memoryHeader.cgb, header.cgb);
+    EXPECT_EQ(memoryHeader.cgbOnly, header.cgbOnly);
 }
 
 TEST(GbCartridgeTest, ReadHeaderCgbOnlyFlag)

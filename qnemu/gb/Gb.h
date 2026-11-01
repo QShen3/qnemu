@@ -6,11 +6,13 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/display/FrameBuffer.h"
@@ -57,6 +59,10 @@ public:
     Gb& operator=(const Gb&) = delete;
 
     void loadCartridge(const char* filePath);
+    /// Load a ROM image already in memory.  `saveIdentity` is used for the
+    /// save-file stem; for archives this is the archive path.
+    void loadCartridge(const std::vector<uint8_t>& buffer,
+        const std::string& saveIdentity);
     void stop();
 
     /// True when the loaded cartridge is running through the CGB hardware path.
@@ -70,6 +76,8 @@ public:
     const FrameBuffer& frameBuffer() const;
 
 private:
+    void prepareCartridgeLoad();
+    void finishCartridgeLoad(const std::string& saveIdentity);
     void start();
     void run();
 

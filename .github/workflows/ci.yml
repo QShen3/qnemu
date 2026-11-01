@@ -51,6 +51,7 @@ jobs:
             qt6-base-dev \
             qt6-multimedia-dev \
             qt6-declarative-dev \
+            libarchive-dev \
             libgtest-dev \
             libgmock-dev
 
@@ -76,7 +77,7 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: brew install cmake ninja qt googletest
+        run: brew install cmake ninja qt googletest libarchive
 
       - name: Fetch Acid2 ROMs
         run: python3 tests/rom/fetch_acid2_roms.py
@@ -84,7 +85,7 @@ jobs:
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix qt);$(brew --prefix googletest)"
+            -DCMAKE_PREFIX_PATH="$(brew --prefix qt);$(brew --prefix googletest);$(brew --prefix libarchive)"
 
       - name: Build
         run: cmake --build build
@@ -113,6 +114,7 @@ jobs:
             mingw-w64-ucrt-x86_64-qt6-multimedia
             mingw-w64-ucrt-x86_64-qt6-declarative
             mingw-w64-ucrt-x86_64-gtest
+            mingw-w64-ucrt-x86_64-libarchive
 
       - name: Configure
         shell: msys2 {0}
@@ -148,16 +150,17 @@ jobs:
           modules: 'qtmultimedia'
           cache: true
 
-      - name: Install Google Test
+      - name: Install vcpkg dependencies
         shell: pwsh
-        run: '& "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install gtest:x64-windows'
+        run: '& "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install gtest:x64-windows libarchive:x64-windows'
 
       - name: Configure
         shell: pwsh
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DVCPKG_APPLOCAL_DEPS=ON
 
       - name: Build
         run: cmake --build build
@@ -192,6 +195,7 @@ jobs:
             qt6-base-dev \
             qt6-multimedia-dev \
             qt6-declarative-dev \
+            libarchive-dev \
             libgtest-dev \
             libgmock-dev
 

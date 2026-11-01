@@ -124,15 +124,32 @@ Gb::~Gb()
     }
 }
 
-void Gb::loadCartridge(const char* filePath)
+void Gb::prepareCartridgeLoad()
 {
     stop();
     if (saveManager && cartridge) {
         saveManager->save(*cartridge);
     }
     saveManager.reset();
+}
 
+void Gb::loadCartridge(const char* filePath)
+{
+    prepareCartridgeLoad();
     cartridge->load(filePath);
+    finishCartridgeLoad(filePath);
+}
+
+void Gb::loadCartridge(const std::vector<uint8_t>& buffer,
+    const std::string& saveIdentity)
+{
+    prepareCartridgeLoad();
+    cartridge->load(buffer);
+    finishCartridgeLoad(saveIdentity);
+}
+
+void Gb::finishCartridgeLoad(const std::string& saveIdentity)
+{
     // Every model runs its bundled boot ROM.  CGB hardware starts in CGB mode
     // even for DMG-only cartridges; the CGB boot ROM selects the per-game
     // compatibility palette and switches to DMG mode through KEY0.  DMG uses
@@ -157,7 +174,7 @@ void Gb::loadCartridge(const char* filePath)
     cpu->reset(hardwareCgb, true);
 
     saveManager = std::make_unique<SaveManager>(
-        saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, filePath);
+        saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, saveIdentity);
     saveManager->load(*cartridge);
 
     setPaused(false);

@@ -34,7 +34,7 @@ public:
     void load(const char* filePath) override;
     /// Load a ROM image already held in memory.  Used by the test runner to
     /// apply small, test-specific ROM patches without touching the file.
-    void load(const std::vector<uint8_t>& buffer);
+    void load(const std::vector<uint8_t>& buffer) override;
     bool isGbcCartridge() const override;
 
     /// Raw header fields for compatibility palette selection.
@@ -42,6 +42,7 @@ public:
 
     /// Lightweight header read for the game library; does not build an MBC.
     static GbCartridgeHeader readHeader(const std::string& filePath);
+    static GbCartridgeHeader readHeader(const std::vector<uint8_t>& buffer);
 
     bool hasBattery() const override;
     std::size_t ramSize() const override;
