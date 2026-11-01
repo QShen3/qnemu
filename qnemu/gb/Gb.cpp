@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <thread>
 #include <utility>
 
@@ -18,6 +19,7 @@
 #include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/boot/GbDmgBootRom.h"
+#include "qnemu/gb/boot/GbSgbBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
 #include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
@@ -143,17 +145,22 @@ void Gb::loadCartridge(const char* filePath)
     }
     const bool hardwareCgb = model == GbModel::cgb;
     const bool hardwareDmg = model == GbModel::dmg;
+    const bool hardwareSgb = model == GbModel::sgb;
     const bool cgb = hardwareCgb && (header.cgb || cgbBootRomEnabled);
     cgbMode = hardwareCgb && header.cgb;
     // The CGB image also runs on CGB hardware for DMG-only cartridges: the
-    // ROM switches to DMG compatibility by writing KEY0=$04.  DMG hardware
-    // uses Bootix; SGB keeps the HLE path because we do not ship an SGB ROM.
+    // ROM switches to DMG compatibility by writing KEY0=$04.  DMG uses Bootix
+    // and SGB uses qnemu's clean-room header-forwarding ROM.
     bootRomActive = (hardwareCgb && cgbBootRomEnabled)
-        || (hardwareDmg && dmgBootRomEnabled);
+        || (hardwareDmg && dmgBootRomEnabled)
+        || (hardwareSgb && sgbBootRomEnabled);
+    const std::span<const uint8_t> bootRom = hardwareCgb ? cgbBootRom()
+        : hardwareDmg ? dmgBootRom()
+        : sgbBootRom();
     bus->setCgb(cgb);
     bus->reset();
     ppu->setCgb(cgb);
-    mmu->setBootRom(hardwareCgb ? cgbBootRom() : dmgBootRom());
+    mmu->setBootRom(bootRom);
     mmu->setBootRomActive(bootRomActive);
     mmu->reset();
     if (bootRomActive) {

@@ -571,6 +571,35 @@ ApplicationWindow {
                                     onToggled: settings.loadDmgBootRom = checked
                                 }
                             }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Load SGB boot ROM")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: qsTr("Run qnemu's clean-room SGB header-forwarding ROM. The SGB border and boot animation still come from GbSgb's HLE; reopen the game after changing.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Switch {
+                                    checked: settings.loadSgbBootRom
+                                    onToggled: settings.loadSgbBootRom = checked
+                                }
+                            }
                         }
 
                         SettingsCard {

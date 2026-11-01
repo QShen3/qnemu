@@ -1,0 +1,31 @@
+/*
+ *  Copyright [2026] <qazxdrcssc2006@163.com>
+ *
+ * Generated from third_party/sgb-boot/bootroms/sgb_boot.bin.  The boot ROM
+ * is qnemu's clean-room implementation; see third_party/sgb-boot/LICENSE.
+ */
+
+#include <array>
+#include <cstdint>
+#include <span>
+
+#include "qnemu/gb/boot/GbSgbBootRom.h"
+
+namespace qnemu
+{
+
+namespace
+{
+
+constexpr std::array<uint8_t, 256> sgbBootRomData = {
+@QNEMU_SGB_BOOT_ROM_BYTES@
+};
+
+}  // namespace
+
+std::span<const uint8_t> sgbBootRom()
+{
+    return sgbBootRomData;
+}
+
+}  // namespace qnemu

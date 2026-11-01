@@ -23,7 +23,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 406 CTest cases, including 165 curated test ROMs.
+- 410 CTest cases, including 167 curated test ROMs.
 
 ## Build
 
@@ -100,42 +100,47 @@ install the `qml6-module-qtquick*` packages for your Qt version.
 
 ## Boot ROMs
 
-qnemu ships two prebuilt, free boot ROMs:
+qnemu ships three prebuilt, free boot ROMs:
 
 | File | Model | Notes |
 | --- | --- | --- |
 | `dmg_boot.bin` | DMG | Bootix (CC0), 256 B; displays the cartridge-header logo |
 | `cgb_boot.bin` | CGB | SameBoy CGB reimplementation with the QNEMU wordmark |
+| `sgb_boot.bin` | SGB | qnemu clean-room SGB header forwarder (MIT), 256 B |
 
 The CGB image is derived from [SameBoy](https://github.com/LIJI32/SameBoy)'s
 Expat/MIT-licensed CGB boot ROM. The DMG image is derived from
-[Bootix](https://github.com/Ashiepaws/Bootix), which is CC0. See
-`third_party/sameboy/README.md`, `third_party/bootix/README.md` and their
-`LICENSE` files for provenance and the exact modifications.
+[Bootix](https://github.com/Ashiepaws/Bootix), which is CC0. The SGB image is
+qnemu's own implementation of the documented SGB packet protocol. See
+`third_party/sameboy/README.md`, `third_party/bootix/README.md`,
+`third_party/sgb-boot/README.md` and their `LICENSE` files.
 
 SameBoy's DMG and SGB boot ROMs are **not** shipped: they assemble to binaries
-that are byte-identical to Nintendo's official DMG/SGB boot ROMs. SGB keeps
-using the HLE `--boot-model` path. Do not commit dumps of your own; use them
-locally only.
+that are byte-identical to Nintendo's official DMG/SGB boot ROMs. Do not commit
+dumps of your own; use them locally only.
 
-Both binaries are committed, so the normal build needs **no RGBDS dependency**.
-Rebuilding is optional and documented in
-`third_party/sameboy/src/build.sh` and `third_party/bootix/src/build.sh`.
+All three binaries are committed, so the normal build needs **no RGBDS
+dependency**. Rebuilding is optional and documented in the corresponding
+`src/build.sh` scripts.
 
-Enable the DMG ROM in **Settings → Game Boy → Load DMG boot ROM** and the CGB
-ROM in **Settings → Game Boy Color → Load CGB boot ROM** (both default off).
-When enabled:
+Enable them in **Settings → Game Boy → Load DMG boot ROM / Load SGB boot ROM**
+and **Settings → Game Boy Color → Load CGB boot ROM** (all default off). When
+enabled:
 
 - DMG runs Bootix and shows the cartridge-header logo (not a QNEMU wordmark);
 - CGB-capable cartridges stay in CGB mode, while DMG-only cartridges switch to
-  DMG compatibility through KEY0 and keep the CGB PPU registers available.
+  DMG compatibility through KEY0 and keep the CGB PPU registers available;
+- SGB runs the clean-room header forwarder, then hands off to the HLE SGB
+  BIOS. The border/palette menus remain HLE; this ROM does not add a fake
+  SNES-side boot animation.
 
 Reopen the game after changing a setting.
 
-The boot ROMs pass Mooneye `boot_regs-cgb`, `boot_hwio-C`, `boot_regs-dmgABC`,
-and the corresponding acid2 image tests. `boot_div-cgb*` and
-`boot_hwio-dmgABCmgb` are not registered: they assert the official ROMs'
-exact cycle counts/DIV values, which these reimplementations do not reproduce.
+The boot ROMs pass Mooneye `boot_regs-cgb`, `boot_hwio-C`,
+`boot_regs-dmgABC`, `boot_regs-sgb`, `boot_hwio-S`, and the CGB/DMG acid2
+image tests. `boot_div-*` and `boot_hwio-dmgABCmgb` are not registered: they
+assert the official ROMs' exact cycle counts/DIV values, which these
+reimplementations do not reproduce.
 
 CI runs `tests/rom/check_official_boot_roms.py`, which rejects tracked files
 matching known official DMG/MGB/SGB/SGB2/CGB/CGB0/AGB boot ROMs.
@@ -576,7 +581,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **406/406 CTest cases**, including 165 ROM tests.
+The current set is **410/410 CTest cases**, including 167 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>
@@ -736,7 +741,7 @@ boot ROM.  `--boot-model` selects `dmg0`, `dmgabc`, `mgb`, `sgb` or `sgb2`.
 
 ### Known limitations
 
-The curated CTest set registers only passing ROMs; the current 160 registered
+The curated CTest set registers only passing ROMs; the current 167 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
@@ -745,12 +750,11 @@ fail when run directly:
   `MASK_EN` effects are not implemented yet. The command/palette/attribute
   protocol, default border, custom border transfers and colorization are
   implemented.
-- Boot ROMs are optional: **Settings → Game Boy → Load DMG boot ROM** runs
-  Bootix, and **Settings → Game Boy Color → Load CGB boot ROM** runs the
-  QNEMU-logo image. When disabled, the emulator applies the post-boot state
-  directly. SGB always uses the HLE `--boot-model` path. `boot_div-cgb*` and
-  `boot_hwio-dmgABCmgb` are not pass criteria because they expect the official
-  ROMs' exact cycle counts/DIV values.
+- Boot ROMs are optional: **Settings → Game Boy** has DMG (Bootix) and SGB
+  (clean-room header forwarder) switches, and **Game Boy Color** has the
+  QNEMU-logo CGB switch. When disabled, the emulator applies the post-boot
+  state directly. `boot_div-*` and `boot_hwio-dmgABCmgb` are not pass criteria
+  because they expect the official ROMs' exact cycle counts/DIV values.
 - The library uses references to the original ROM files. Copy/import into a
   managed folder and deleting the ROM file from the UI are not implemented yet;
   the row menu only removes the library entry.
@@ -786,7 +790,7 @@ fail when run directly:
 | Key profiles     | ✅          | manual smoke test |
 | Model selection  | ✅          | CLI + settings |
 | CGB DMG colorization | ✅      | unit + manual |
-| Boot ROMs        | ✅ (optional) | Mooneye boot_regs + acid2 |
+| Boot ROMs        | ✅ (optional) | Mooneye boot_regs/hwio + acid2 |
 | Pause / resume   | ✅          | manual |
 | Battery saves    | ✅          | unit |
 | MBC3 RTC         | ✅          | unit |

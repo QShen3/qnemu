@@ -18,6 +18,7 @@
 #include "qnemu/gb/cpu/CpuBus.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
+#include "qnemu/gb/sgb/GbSgb.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "tests/support/MemoryDisplay.h"
 
@@ -45,15 +46,15 @@ class GbTestSystem : public qnemu::CpuBus
 {
 public:
     bool loadRom(const std::string& path, bool cgb, bool enablePpu = false,
-        bool enableApu = false);
+        bool enableApu = false, bool sgb = false);
 
     /// Load a ROM image from memory, with optional test-specific patches.
     bool loadRomData(const std::vector<uint8_t>& romData, bool cgb,
-        bool enablePpu = false, bool enableApu = false);
+        bool enablePpu = false, bool enableApu = false, bool sgb = false);
 
     /// Execute the bundled CGB (QNEMU) or DMG (Bootix) boot ROM instead of
     /// applying post-boot state.  Call before loadRom()/loadRomData().
-    void enableBootRom(bool cgb);
+    void enableBootRom(bool cgb, bool sgb = false);
 
     /// Reproduce the model-specific post-boot I/O state without executing a
     /// boot ROM.  CPU registers are applied by the runner.
@@ -87,7 +88,7 @@ public:
     uint64_t cycles() const { return cycles_; }
 
 private:
-    bool finishLoad(bool cgb, bool enablePpu, bool enableApu);
+    bool finishLoad(bool cgb, bool enablePpu, bool enableApu, bool sgb);
     void reset();
     void ppuTick();
 
@@ -103,6 +104,7 @@ private:
 
     std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
         std::make_shared<qnemu::GbInterruptHandler>();
+    std::unique_ptr<qnemu::GbSgb> sgb;
     std::unique_ptr<qnemu::GbTimer> timer;
 
     uint8_t lcdc_ = 0x91;

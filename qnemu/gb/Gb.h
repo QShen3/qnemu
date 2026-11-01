@@ -68,10 +68,12 @@ public:
     void setSoundEnabled(bool enabled);
     void setCgbBootRomEnabled(bool enabled) { cgbBootRomEnabled = enabled; }
     void setDmgBootRomEnabled(bool enabled) { dmgBootRomEnabled = enabled; }
+    void setSgbBootRomEnabled(bool enabled) { sgbBootRomEnabled = enabled; }
     /// Backwards-compatible alias for the CGB boot ROM setting.
     void setBootRomEnabled(bool enabled) { setCgbBootRomEnabled(enabled); }
     bool isCgbBootRomEnabled() const { return cgbBootRomEnabled; }
     bool isDmgBootRomEnabled() const { return dmgBootRomEnabled; }
+    bool isSgbBootRomEnabled() const { return sgbBootRomEnabled; }
 
     const FrameBuffer& frameBuffer() const;
 
@@ -83,6 +85,7 @@ private:
     bool cgbMode = false;
     bool cgbBootRomEnabled = false;
     bool dmgBootRomEnabled = false;
+    bool sgbBootRomEnabled = false;
     bool bootRomActive = false;
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GbSgb> sgb;

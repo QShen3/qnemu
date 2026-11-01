@@ -269,6 +269,13 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "${MOONEYE_ROM_ROOT}/acceptance/boot_regs-dmgABC.gb"
             "mooneye;boot" --model dmg --ppu --apu --boot-rom)
 
+        qnemu_add_rom_test("mooneye_bootrom_sgb_regs"
+            "${MOONEYE_ROM_ROOT}/acceptance/boot_regs-sgb.gb"
+            "mooneye;boot" --model sgb --ppu --apu --boot-rom)
+        qnemu_add_rom_test("mooneye_bootrom_sgb_hwio"
+            "${MOONEYE_ROM_ROOT}/acceptance/boot_hwio-S.gb"
+            "mooneye;boot" --model sgb --ppu --apu --boot-rom)
+
         # Unused I/O bits and unmapped FFxx addresses read as 1s on DMG/SGB.
         # The APU is attached so its unused-bit masks are exercised too.
         qnemu_add_rom_test("mooneye_bits_unused_hwio_gs"

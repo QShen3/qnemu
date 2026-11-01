@@ -17,6 +17,7 @@
 #include "qnemu/gb/apu/GbChannel4.h"
 #include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/boot/GbDmgBootRom.h"
+#include "qnemu/gb/boot/GbSgbBootRom.h"
 #include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "tests/rom/GbTestSystem.h"
 #include "tests/support/NullSound.h"
@@ -40,7 +41,7 @@ constexpr uint16_t interruptEnableAddress = 0xFFFF;
 }  // namespace
 
 bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
-    bool enableApu)
+    bool enableApu, bool sgb)
 {
     try {
         cartridge = std::make_unique<qnemu::GbCartridge>(mbcFactory);
@@ -49,11 +50,11 @@ bool GbTestSystem::loadRom(const std::string& path, bool cgb, bool enablePpu,
         cartridge.reset();
         return false;
     }
-    return finishLoad(cgb, enablePpu, enableApu);
+    return finishLoad(cgb, enablePpu, enableApu, sgb);
 }
 
 bool GbTestSystem::loadRomData(const std::vector<uint8_t>& romData, bool cgb,
-    bool enablePpu, bool enableApu)
+    bool enablePpu, bool enableApu, bool sgb)
 {
     try {
         cartridge = std::make_unique<qnemu::GbCartridge>(mbcFactory);
@@ -62,16 +63,18 @@ bool GbTestSystem::loadRomData(const std::vector<uint8_t>& romData, bool cgb,
         cartridge.reset();
         return false;
     }
-    return finishLoad(cgb, enablePpu, enableApu);
+    return finishLoad(cgb, enablePpu, enableApu, sgb);
 }
 
-void GbTestSystem::enableBootRom(bool cgb)
+void GbTestSystem::enableBootRom(bool cgb, bool sgb)
 {
-    bootRom_ = cgb ? qnemu::cgbBootRom() : qnemu::dmgBootRom();
+    bootRom_ = cgb ? qnemu::cgbBootRom()
+        : sgb ? qnemu::sgbBootRom()
+        : qnemu::dmgBootRom();
     bootRomEnabled_ = true;
 }
 
-bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
+bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu, bool sgbMode)
 {
     cgb_ = cgb;
     cgbHardware_ = cgb;
@@ -80,7 +83,13 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
     ppu.reset();
     display.reset();
     apu.reset();
+    sgb.reset();
     timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
+    if (sgbMode) {
+        sgb = std::make_unique<qnemu::GbSgb>();
+        sgb->reset();
+        sgb->setHeader(cartridge->cartridgeHeader());
+    }
     reset();
 
     if (enablePpu) {
@@ -88,6 +97,9 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu)
         const auto header = cartridge->cartridgeHeader();
         const bool ppuCgb = cgb && (bootRomActive_ || header.cgb);
         ppu = std::make_unique<qnemu::GbPpu>(ppuCgb, display, interruptHandler);
+        if (sgbMode) {
+            ppu->setSgb(sgb.get());
+        }
         if (bootRomActive_) {
             ppu->resetForBootRom();
         }
@@ -402,6 +414,9 @@ void GbTestSystem::write(uint16_t address, uint8_t value)
     }
 
     if (address == 0xFF00) {
+        if (sgb) {
+            sgb->write(value);
+        }
         joypad_ = static_cast<uint8_t>(value & 0x30);
         return;
     }

@@ -43,6 +43,7 @@ BOOTROM_SIZES = {256, 2048, 2304}
 ALLOWED_DIRS = {
     Path("third_party/sameboy/bootroms"),
     Path("third_party/bootix/bootroms"),
+    Path("third_party/sgb-boot/bootroms"),
 }
 BIN_SUFFIXES = {".bin", ".rom", ".gb", ".gbc"}
 BOOT_NAME_RE = re.compile(r"(?i)(boot|bios)")

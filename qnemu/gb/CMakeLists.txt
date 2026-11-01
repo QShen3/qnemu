@@ -42,9 +42,26 @@ configure_file(
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${QNEMU_DMG_BOOT_ROM_BIN}")
 
+# Clean-room SGB boot ROM (MIT).
+set(QNEMU_SGB_BOOT_ROM_BIN
+    "${PROJECT_SOURCE_DIR}/third_party/sgb-boot/bootroms/sgb_boot.bin")
+if(NOT EXISTS "${QNEMU_SGB_BOOT_ROM_BIN}")
+    message(FATAL_ERROR "Missing SGB boot ROM: ${QNEMU_SGB_BOOT_ROM_BIN}")
+endif()
+file(READ "${QNEMU_SGB_BOOT_ROM_BIN}" QNEMU_SGB_BOOT_ROM_HEX HEX)
+string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1, "
+    QNEMU_SGB_BOOT_ROM_BYTES "${QNEMU_SGB_BOOT_ROM_HEX}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/boot/GbSgbBootRom.cpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/GbSgbBootRom.cpp"
+    @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${QNEMU_SGB_BOOT_ROM_BIN}")
+
 qnemu_add_gb_library(gb_bootrom
     "${CMAKE_CURRENT_BINARY_DIR}/GbCgbBootRom.cpp"
-    "${CMAKE_CURRENT_BINARY_DIR}/GbDmgBootRom.cpp")
+    "${CMAKE_CURRENT_BINARY_DIR}/GbDmgBootRom.cpp"
+    "${CMAKE_CURRENT_BINARY_DIR}/GbSgbBootRom.cpp")
 
 # SM83 CPU core.
 qnemu_add_gb_library(gb_cpu

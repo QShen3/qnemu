@@ -216,7 +216,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (romPath.empty() || (model != "dmg" && model != "cgb")) {
+    if (romPath.empty() || (model != "dmg" && model != "cgb" && model != "sgb")) {
         printUsage(argv[0]);
         return 2;
     }
@@ -248,10 +248,7 @@ int main(int argc, char** argv)
         std::cerr << "--boot-rom and --boot-model are mutually exclusive\n";
         return 2;
     }
-    if (enableBootRom && model == "sgb") {
-        std::cerr << "--boot-rom is not available for the SGB model\n";
-        return 2;
-    }
+
 
     const bool frameMode = frames > 0 || !compareImage.empty() || !dumpFrame.empty();
     const bool attachPpu = frameMode || enablePpu || enableBootRom;
@@ -261,11 +258,12 @@ int main(int argc, char** argv)
 
     qnemuTest::GbTestSystem system;
     if (enableBootRom) {
-        system.enableBootRom(model == "cgb");
+        system.enableBootRom(model == "cgb", model == "sgb");
     }
     bool loaded = false;
     if (patches.empty()) {
-        loaded = system.loadRom(romPath, model == "cgb", attachPpu, enableApu);
+        loaded = system.loadRom(romPath, model == "cgb", attachPpu, enableApu,
+            model == "sgb");
     } else {
         std::ifstream input(romPath, std::ios::binary | std::ios::ate);
         if (!input) {
@@ -292,7 +290,8 @@ int main(int argc, char** argv)
             std::copy(patch.bytes.begin(), patch.bytes.end(),
                 romData.begin() + static_cast<std::ptrdiff_t>(patch.offset));
         }
-        loaded = system.loadRomData(romData, model == "cgb", attachPpu, enableApu);
+        loaded = system.loadRomData(romData, model == "cgb", attachPpu, enableApu,
+            model == "sgb");
     }
     if (!loaded) {
         std::cerr << "Failed to load ROM: " << romPath << '\n';

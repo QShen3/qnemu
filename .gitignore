@@ -19,6 +19,7 @@ coverage.*.html
 third_party/sameboy/src/*.o
 third_party/sameboy/src/pb12
 third_party/bootix/src/*.o
+third_party/sgb-boot/src/*.o
 
 # User-supplied boot ROM dumps (never commit these)
 local-bootroms/
