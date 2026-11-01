@@ -1,5 +1,5 @@
 /*
- *  Copyright [2022] <qazxdrcssc2006@163.com>
+ *  Copyright [2026] <qazxdrcssc2006@163.com>
  */
 
 #pragma once
@@ -8,25 +8,29 @@
 #include <functional>
 #include <utility>
 
-#include "qnemu/gb/cpu/CpuBus.h"
-#include "qnemu/gb/mmu/GbMmuInterface.h"
+#include "qnemu/gb/mmu/DmgCpuBus.h"
 
 namespace qnemu
 {
 
 /**
- * Adapts the 1 T-cycle GbMmu::step() interface to the CPU's M-cycle bus.
- * One CPU memory access advances every peripheral by four T-cycles, matching
- * the SM83 machine cycle.  CGB speed switching is kept here as well because it
- * changes how many peripheral dots one CPU T-cycle represents.
+ * CGB CPU bus adapter.
+ *
+ * Adds KEY0/KEY1 and the double-speed clock.  The CGB hardware registers
+ * themselves are decoded by CgbMmu; this class only owns the CPU-visible
+ * speed-switch state.
  */
-class GbCpuBus : public CpuBus
+class CgbCpuBus : public DmgCpuBus
 {
 public:
-    explicit GbCpuBus(GbMmuInterface& mmu, bool cgb = false) : mmu(mmu), cgb(cgb) {}
-    ~GbCpuBus() override = default;
+    explicit CgbCpuBus(GbMmuInterface& mmu) : DmgCpuBus(mmu) {}
+    ~CgbCpuBus() override = default;
 
-    void setCgb(bool value) { cgb = value; mmu.setCgb(value); }
+    void setCgb(bool value)
+    {
+        cgb = value;
+        mmu.setCgb(value);
+    }
 
     /// Called when the CGB boot ROM switches the CPU to DMG compatibility via
     /// KEY0.  The complete system uses this to switch the PPU renderer too.
@@ -58,14 +62,14 @@ public:
                 | (doubleSpeed ? 0x80 : 0x00)
                 | (speedSwitchArmed ? 0x01 : 0x00));
         }
-        return mmu.read(address);
+        return DmgCpuBus::read(address);
     }
 
     void write(uint16_t address, uint8_t value) override
     {
         if (address == 0xFF50) {
             key0Locked = true;
-            mmu.write(address, value);
+            DmgCpuBus::write(address, value);
             return;
         }
         if (address == 0xFF4C) {
@@ -84,12 +88,7 @@ public:
             }
             return;
         }
-        mmu.write(address, value);
-    }
-
-    bool isStalled() const override
-    {
-        return mmu.isCpuStalled();
+        DmgCpuBus::write(address, value);
     }
 
     void tick(uint8_t cycles) override
@@ -108,21 +107,6 @@ public:
         }
     }
 
-    void triggerOamBugWrite(uint16_t address, int rowOffset = 0) override
-    {
-        mmu.triggerOamBugWrite(address, rowOffset);
-    }
-
-    void triggerOamBugRead(uint16_t address) override
-    {
-        mmu.triggerOamBugRead(address);
-    }
-
-    void triggerOamBugReadIncrease(uint16_t address) override
-    {
-        mmu.triggerOamBugReadIncrease(address);
-    }
-
     bool onStop() override
     {
         if (speedSwitchArmed) {
@@ -136,8 +120,7 @@ public:
     }
 
 private:
-    GbMmuInterface& mmu;
-    bool cgb = false;
+    bool cgb = true;
     bool doubleSpeed = false;
     bool speedSwitchArmed = false;
     bool key0Locked = false;

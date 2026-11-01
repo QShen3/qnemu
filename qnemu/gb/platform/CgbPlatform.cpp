@@ -20,10 +20,10 @@
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
+#include "qnemu/gb/memory/CgbWorkRam.h"
 #include "qnemu/gb/memory/GbHighRam.h"
-#include "qnemu/gb/memory/GbWorkRam.h"
-#include "qnemu/gb/mmu/GbCpuBus.h"
-#include "qnemu/gb/mmu/GbMmu.h"
+#include "qnemu/gb/mmu/CgbCpuBus.h"
+#include "qnemu/gb/mmu/CgbMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "qnemu/input/InputInterface.h"
 #include "qnemu/sound/SoundInterface.h"
@@ -49,8 +49,7 @@ CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         true, GbApu::DefaultFadeInFrames);
 
     interruptHandler_ = std::make_shared<GbInterruptHandler>();
-    auto workRam = std::make_unique<GbWorkRam>();
-    workRam->setCgb(true);
+    auto workRam = std::make_unique<CgbWorkRam>();
     auto highRam = std::make_unique<GbHighRam>();
     auto timer = std::make_unique<GbTimer>(interruptHandler_);
     auto joypad = std::make_unique<GbJoypad>(interruptHandler_);
@@ -67,13 +66,13 @@ CgbPlatform::CgbPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
     auto ppu = std::make_unique<GbPpu>(true, display_, interruptHandler_);
     ppu_ = ppu.get();
     ppu_->setOamBugEnabled(false);
-    mmu_ = std::make_unique<GbMmu>(std::move(apu), cartridge_, std::move(ppu),
+    mmu_ = std::make_unique<CgbMmu>(std::move(apu), cartridge_, std::move(ppu),
         std::move(highRam), interruptHandler_, std::move(joypad), std::move(workRam),
         std::move(timer));
     ppu_->setExternalRead([mmuPointer = mmu_.get()](uint16_t address) {
         return mmuPointer->read(address);
     });
-    bus_ = std::make_unique<GbCpuBus>(*mmu_, true);
+    bus_ = std::make_unique<CgbCpuBus>(*mmu_);
     bus_->setCgbModeCallback([this](bool mode) {
         cgbMode_ = mode;
         ppu_->setDmgMode(!mode);

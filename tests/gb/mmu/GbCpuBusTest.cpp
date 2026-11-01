@@ -6,7 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include "qnemu/gb/mmu/GbCpuBus.h"
+#include "qnemu/gb/mmu/CgbCpuBus.h"
+#include "qnemu/gb/mmu/DmgCpuBus.h"
 
 namespace qnemuTest
 {
@@ -16,7 +17,7 @@ namespace
 class FakeMmu : public qnemu::GbMmuInterface
 {
 public:
-    uint8_t read(uint16_t) const override { return 0; }
+    uint8_t read(uint16_t) const override { return 0xFF; }
     void write(uint16_t, const uint8_t&) override {}
     void step() override { ++steps; }
     void reset() override {}
@@ -31,10 +32,10 @@ public:
 };
 }  // namespace
 
-TEST(GbCpuBusTest, CgbKeyRegistersAndSpeedSwitch)
+TEST(CgbCpuBusTest, KeyRegistersAndSpeedSwitch)
 {
     FakeMmu mmu;
-    qnemu::GbCpuBus bus(mmu, true);
+    qnemu::CgbCpuBus bus(mmu);
 
     EXPECT_EQ(bus.read(0xFF4C), 0x80);
     EXPECT_EQ(bus.read(0xFF4D), 0x7E);
@@ -53,10 +54,10 @@ TEST(GbCpuBusTest, CgbKeyRegistersAndSpeedSwitch)
     EXPECT_EQ(mmu.steps, 3);
 }
 
-TEST(GbCpuBusTest, DmgDoesNotExposeKeyRegisters)
+TEST(DmgCpuBusTest, DoesNotExposeKeyRegisters)
 {
     FakeMmu mmu;
-    qnemu::GbCpuBus bus(mmu, false);
+    qnemu::DmgCpuBus bus(mmu);
 
     EXPECT_EQ(bus.read(0xFF4C), 0xFF);
     EXPECT_EQ(bus.read(0xFF4D), 0xFF);
@@ -65,10 +66,10 @@ TEST(GbCpuBusTest, DmgDoesNotExposeKeyRegisters)
     EXPECT_EQ(bus.read(0xFF4D), 0xFF);
 }
 
-TEST(GbCpuBusTest, ResetReturnsToNormalSpeed)
+TEST(CgbCpuBusTest, ResetReturnsToNormalSpeed)
 {
     FakeMmu mmu;
-    qnemu::GbCpuBus bus(mmu, true);
+    qnemu::CgbCpuBus bus(mmu);
 
     bus.write(0xFF4D, 0x01);
     ASSERT_FALSE(bus.onStop());
@@ -83,10 +84,10 @@ TEST(GbCpuBusTest, ResetReturnsToNormalSpeed)
     EXPECT_EQ(mmu.steps, 4);
 }
 
-TEST(GbCpuBusTest, SetCgbForwardsModelToMmu)
+TEST(CgbCpuBusTest, SetCgbForwardsStateToMmu)
 {
     FakeMmu mmu;
-    qnemu::GbCpuBus bus(mmu, false);
+    qnemu::CgbCpuBus bus(mmu);
 
     bus.setCgb(true);
     EXPECT_TRUE(mmu.cgb);
@@ -94,10 +95,10 @@ TEST(GbCpuBusTest, SetCgbForwardsModelToMmu)
     EXPECT_FALSE(mmu.cgb);
 }
 
-TEST(GbCpuBusTest, Key0SwitchesToDmgCompatibility)
+TEST(CgbCpuBusTest, Key0SwitchesToDmgCompatibility)
 {
     FakeMmu mmu;
-    qnemu::GbCpuBus bus(mmu, true);
+    qnemu::CgbCpuBus bus(mmu);
 
     bus.write(0xFF4C, 0x80);
     EXPECT_EQ(bus.read(0xFF4C), 0x80);
@@ -112,10 +113,10 @@ TEST(GbCpuBusTest, Key0SwitchesToDmgCompatibility)
     EXPECT_FALSE(callbackMode);
 }
 
-TEST(GbCpuBusTest, Key0IsLockedAfterBootRomUnmap)
+TEST(CgbCpuBusTest, Key0IsLockedAfterBootRomUnmap)
 {
     FakeMmu mmu;
-    qnemu::GbCpuBus bus(mmu, true);
+    qnemu::CgbCpuBus bus(mmu);
 
     bus.write(0xFF50, 0x11);
     bus.write(0xFF4C, 0x04);

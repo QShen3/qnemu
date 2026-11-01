@@ -20,9 +20,11 @@
 #include "qnemu/gb/gpu/GbGpuInterface.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
+#include "qnemu/gb/memory/CgbWorkRam.h"
+#include "qnemu/gb/memory/DmgWorkRam.h"
 #include "qnemu/gb/memory/GbHighRam.h"
-#include "qnemu/gb/memory/GbWorkRam.h"
-#include "qnemu/gb/mmu/GbMmu.h"
+#include "qnemu/gb/mmu/CgbMmu.h"
+#include "qnemu/gb/mmu/DmgMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "tests/support/NullSound.h"
 
@@ -133,7 +135,35 @@ std::array<std::unique_ptr<qnemu::GbChannelInterface>, 4> makeChannels()
 
 }  // namespace
 
-class GbMmuTest : public testing::Test
+class CgbMmuTest : public testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        cartridge = std::make_shared<FakeCartridge>();
+        auto gpu = std::make_unique<FakeGpu>();
+        gpuPointer = gpu.get();
+        auto apu = std::make_unique<qnemu::GbApu>(
+            std::make_unique<qnemuTest::NullSound>(), makeChannels(), true);
+        auto highRam = std::make_unique<qnemu::GbHighRam>();
+        auto joypad = std::make_unique<qnemu::GbJoypad>(interruptHandler);
+        auto workRam = std::make_unique<qnemu::CgbWorkRam>();
+        auto timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
+
+        mmu = std::make_unique<qnemu::CgbMmu>(
+            std::move(apu), cartridge, std::move(gpu), std::move(highRam),
+            interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
+        mmu->setCgb(true);
+    }
+
+    std::shared_ptr<FakeCartridge> cartridge;
+    FakeGpu* gpuPointer = nullptr;
+    std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
+        std::make_shared<qnemu::GbInterruptHandler>();
+    std::unique_ptr<qnemu::CgbMmu> mmu;
+};
+
+class DmgMmuTest : public testing::Test
 {
 protected:
     void SetUp() override
@@ -145,23 +175,49 @@ protected:
             std::make_unique<qnemuTest::NullSound>(), makeChannels(), false);
         auto highRam = std::make_unique<qnemu::GbHighRam>();
         auto joypad = std::make_unique<qnemu::GbJoypad>(interruptHandler);
-        auto workRam = std::make_unique<qnemu::GbWorkRam>();
+        auto workRam = std::make_unique<qnemu::DmgWorkRam>();
         auto timer = std::make_unique<qnemu::GbTimer>(interruptHandler);
 
-        mmu = std::make_unique<qnemu::GbMmu>(
+        mmu = std::make_unique<qnemu::DmgMmu>(
             std::move(apu), cartridge, std::move(gpu), std::move(highRam),
             interruptHandler, std::move(joypad), std::move(workRam), std::move(timer));
-        mmu->setCgb(true);
     }
 
     std::shared_ptr<FakeCartridge> cartridge;
     FakeGpu* gpuPointer = nullptr;
     std::shared_ptr<qnemu::GbInterruptHandler> interruptHandler =
         std::make_shared<qnemu::GbInterruptHandler>();
-    std::unique_ptr<qnemu::GbMmu> mmu;
+    std::unique_ptr<qnemu::DmgMmu> mmu;
 };
 
-TEST_F(GbMmuTest, RoutesRomVramExternalRamAndOam)
+TEST_F(DmgMmuTest, DoesNotExposeCgbRegisters)
+{
+    EXPECT_EQ(mmu->read(0xFF4F), 0xFF);
+    EXPECT_EQ(mmu->read(0xFF51), 0xFF);
+    EXPECT_EQ(mmu->read(0xFF68), 0xFF);
+    EXPECT_EQ(mmu->read(0xFF70), 0xFF);
+    EXPECT_EQ(mmu->read(0xFF72), 0xFF);
+
+    mmu->write(0xFF4F, 0x01);
+    mmu->write(0xFF70, 0x05);
+    mmu->write(0xFF72, 0x12);
+    EXPECT_EQ(mmu->read(0xFF4F), 0xFF);
+    EXPECT_EQ(mmu->read(0xFF70), 0xFF);
+    EXPECT_EQ(mmu->read(0xFF72), 0xFF);
+}
+
+TEST_F(DmgMmuTest, UsesFixedUpperWorkRam)
+{
+    mmu->write(0xD000, 0x12);
+    EXPECT_EQ(mmu->read(0xD000), 0x12);
+    EXPECT_EQ(mmu->read(0xF000), 0x12);
+
+    mmu->write(0xFF70, 5);
+    EXPECT_EQ(mmu->read(0xD000), 0x12);
+    EXPECT_EQ(mmu->read(0xF000), 0x12);
+}
+
+TEST_F(CgbMmuTest, RoutesRomVramExternalRamAndOam)
 {
     EXPECT_EQ(mmu->read(0x0000), 0x00);
     EXPECT_EQ(mmu->read(0x1234), 0x34);
@@ -178,7 +234,7 @@ TEST_F(GbMmuTest, RoutesRomVramExternalRamAndOam)
     EXPECT_EQ(mmu->read(0xFE00), 0x7C);
 }
 
-TEST_F(GbMmuTest, RoutesGpuRegisters)
+TEST_F(CgbMmuTest, RoutesGpuRegisters)
 {
     mmu->write(0xFF47, 0xE4);
     EXPECT_EQ(mmu->read(0xFF47), 0xE4);
@@ -193,7 +249,7 @@ TEST_F(GbMmuTest, RoutesGpuRegisters)
     EXPECT_EQ(mmu->read(0xFF68), 0x80);
 }
 
-TEST_F(GbMmuTest, RoutesWorkRamEchoAndHighRam)
+TEST_F(CgbMmuTest, RoutesWorkRamEchoAndHighRam)
 {
     mmu->write(0xFF70, 0x03);
     EXPECT_EQ(mmu->read(0xFF70), 0xFB);
@@ -213,7 +269,7 @@ TEST_F(GbMmuTest, RoutesWorkRamEchoAndHighRam)
     EXPECT_EQ(mmu->read(0xFFFE), 0x44);
 }
 
-TEST_F(GbMmuTest, RoutesJoypadTimerApuAndInterrupts)
+TEST_F(CgbMmuTest, RoutesJoypadTimerApuAndInterrupts)
 {
     mmu->write(0xFF00, 0xF0);
     EXPECT_EQ(mmu->read(0xFF00), 0xFF);
@@ -231,7 +287,7 @@ TEST_F(GbMmuTest, RoutesJoypadTimerApuAndInterrupts)
     EXPECT_EQ(mmu->read(0xFF0F), 0xEF);
 }
 
-TEST_F(GbMmuTest, MapsBootRomAndUnmapsOnFF50)
+TEST_F(CgbMmuTest, MapsBootRomAndUnmapsOnFF50)
 {
     std::array<uint8_t, 0x900> bootRom {};
     for (std::size_t index = 0; index < bootRom.size(); ++index) {
@@ -255,7 +311,7 @@ TEST_F(GbMmuTest, MapsBootRomAndUnmapsOnFF50)
     EXPECT_EQ(mmu->read(0x0000), 0x00);
 }
 
-TEST_F(GbMmuTest, MapsDmgBootRomOnlyOverFirstPage)
+TEST_F(CgbMmuTest, MapsDmgBootRomOnlyOverFirstPage)
 {
     std::array<uint8_t, 0x100> bootRom {};
     for (std::size_t index = 0; index < bootRom.size(); ++index) {
@@ -274,7 +330,7 @@ TEST_F(GbMmuTest, MapsDmgBootRomOnlyOverFirstPage)
     EXPECT_EQ(mmu->read(0x0000), 0x00);
 }
 
-TEST_F(GbMmuTest, DmgCompatibilityModeKeepsCgbHardwareRegisters)
+TEST_F(CgbMmuTest, DmgCompatibilityModeKeepsCgbHardwareRegisters)
 {
     mmu->setCgb(true);
     mmu->setDmgCompatibilityMode(true);
@@ -285,13 +341,13 @@ TEST_F(GbMmuTest, DmgCompatibilityModeKeepsCgbHardwareRegisters)
     EXPECT_EQ(mmu->read(0xFF75), 0x8F);  // bits 7 and 3-0 read as 1
 }
 
-TEST_F(GbMmuTest, UnmappedReadsReturnFF)
+TEST_F(CgbMmuTest, UnmappedReadsReturnFF)
 {
     EXPECT_EQ(mmu->read(0xFF03), 0xFF);
     EXPECT_EQ(mmu->read(0xFEA0), 0xFF);
 }
 
-TEST_F(GbMmuTest, StepsAndResetsDevices)
+TEST_F(CgbMmuTest, StepsAndResetsDevices)
 {
     mmu->step();
     EXPECT_EQ(cartridge->steps, 1);

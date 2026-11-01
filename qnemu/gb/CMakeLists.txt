@@ -106,8 +106,9 @@ qnemu_add_gb_library(gb_cartridge
 
 # Internal RAM.
 qnemu_add_gb_library(gb_memory
-    ${CMAKE_CURRENT_SOURCE_DIR}/memory/GbHighRam.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/memory/GbWorkRam.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/memory/CgbWorkRam.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/memory/DmgWorkRam.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/memory/GbHighRam.cpp)
 
 # FF00 joypad matrix.
 qnemu_add_gb_library(gb_joypad
@@ -115,7 +116,8 @@ qnemu_add_gb_library(gb_joypad
 
 # Bus address decoding and the CPU bus adapter.
 qnemu_add_gb_library(gb_mmu
-    ${CMAKE_CURRENT_SOURCE_DIR}/mmu/GbMmu.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/mmu/CgbMmu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/mmu/DmgMmu.cpp)
 target_link_libraries(gb_mmu
     PRIVATE
         gb_apu

@@ -20,10 +20,10 @@
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
+#include "qnemu/gb/memory/DmgWorkRam.h"
 #include "qnemu/gb/memory/GbHighRam.h"
-#include "qnemu/gb/memory/GbWorkRam.h"
-#include "qnemu/gb/mmu/GbCpuBus.h"
-#include "qnemu/gb/mmu/GbMmu.h"
+#include "qnemu/gb/mmu/DmgCpuBus.h"
+#include "qnemu/gb/mmu/DmgMmu.h"
 #include "qnemu/gb/timer/GbTimer.h"
 #include "qnemu/input/InputInterface.h"
 #include "qnemu/sound/SoundInterface.h"
@@ -49,8 +49,7 @@ DmgPlatform::DmgPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
         false, GbApu::DefaultFadeInFrames);
 
     interruptHandler_ = std::make_shared<GbInterruptHandler>();
-    auto workRam = std::make_unique<GbWorkRam>();
-    workRam->setCgb(false);
+    auto workRam = std::make_unique<DmgWorkRam>();
     auto highRam = std::make_unique<GbHighRam>();
     auto timer = std::make_unique<GbTimer>(interruptHandler_);
     auto joypad = std::make_unique<GbJoypad>(interruptHandler_);
@@ -67,13 +66,13 @@ DmgPlatform::DmgPlatform(std::shared_ptr<GbCartridgeInterface> cartridge,
     auto ppu = std::make_unique<GbPpu>(false, display_, interruptHandler_);
     ppu_ = ppu.get();
     ppu_->setOamBugEnabled(true);
-    mmu_ = std::make_unique<GbMmu>(std::move(apu), cartridge_, std::move(ppu),
+    mmu_ = std::make_unique<DmgMmu>(std::move(apu), cartridge_, std::move(ppu),
         std::move(highRam), interruptHandler_, std::move(joypad), std::move(workRam),
         std::move(timer));
     ppu_->setExternalRead([mmuPointer = mmu_.get()](uint16_t address) {
         return mmuPointer->read(address);
     });
-    bus_ = std::make_unique<GbCpuBus>(*mmu_, false);
+    bus_ = std::make_unique<DmgCpuBus>(*mmu_);
     cpu_ = std::make_unique<GbCpu>(*bus_);
 }
 
@@ -93,7 +92,6 @@ void DmgPlatform::reset(const GbCartridgeHeader& /*header*/)
 
 void DmgPlatform::resetWithBootRom(std::span<const uint8_t> bootRom)
 {
-    bus_->setCgb(false);
     bus_->reset();
     ppu_->setCgb(false);
     mmu_->setBootRom(bootRom);

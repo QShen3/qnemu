@@ -15,11 +15,11 @@ namespace qnemu
 
 class GbCartridgeInterface;
 class GbCpu;
-class GbCpuBus;
 class GbInterruptHandler;
 class GbJoypad;
-class GbMmu;
 class GbPpu;
+class CgbCpuBus;
+class CgbMmu;
 class DisplayInterface;
 class InputInterface;
 class SoundInterface;
@@ -56,8 +56,8 @@ private:
     std::shared_ptr<DisplayInterface> display_;
     std::shared_ptr<InputInterface> input_;
     std::shared_ptr<GbInterruptHandler> interruptHandler_;
-    std::unique_ptr<GbMmu> mmu_;
-    std::unique_ptr<GbCpuBus> bus_;
+    std::unique_ptr<CgbMmu> mmu_;
+    std::unique_ptr<CgbCpuBus> bus_;
     std::unique_ptr<GbCpu> cpu_;
     GbPpu* ppu_ = nullptr;
     GbJoypad* joypad_ = nullptr;

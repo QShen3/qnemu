@@ -1,5 +1,5 @@
-/* 
- *  Copyright [2023] <qazxdrcssc2006@163.com>
+/*
+ *  Copyright [2022] <qazxdrcssc2006@163.com>
  */
 
 #include <cstdint>
@@ -7,32 +7,31 @@
 #include <utility>
 
 #include "qnemu/gb/const.h"
-#include "qnemu/gb/mmu/GbMmu.h"
+#include "qnemu/gb/mmu/DmgMmu.h"
 
 namespace qnemu
 {
 
-GbMmu::GbMmu(std::unique_ptr<GbApu> apu,
+DmgMmu::DmgMmu(std::unique_ptr<GbApu> apu,
         std::shared_ptr<GbCartridgeInterface> cartridge,
         std::unique_ptr<GbGpuInterface> gpu,
         std::unique_ptr<GbHighRam> highRam,
         std::shared_ptr<GbInterruptHandlerInterface> interruptHandler,
         std::unique_ptr<GbJoypad> joypad,
-        std::unique_ptr<GbWorkRam> workRam,
+        std::unique_ptr<DmgWorkRam> workRam,
         std::unique_ptr<GbTimer> timer) :
     apu(std::move(apu)),
     cartridge(cartridge),
-    gpu(std::move(gpu)),
+    gpu_(std::move(gpu)),
     highRam(std::move(highRam)),
     interruptHandler(interruptHandler),
     joypad(std::move(joypad)),
-    workRam(std::move(workRam)),
-    timer(std::move(timer))
+    workRam_(std::move(workRam)),
+    timer_(std::move(timer))
 {
-
 }
 
-uint8_t GbMmu::read(uint16_t address) const
+uint8_t DmgMmu::read(uint16_t address) const
 {
     if (bootRomActive && !bootRom.empty()
         && (address <= 0x00FF
@@ -42,17 +41,17 @@ uint8_t GbMmu::read(uint16_t address) const
     if (address <= MemoryRomBank01End) {
         return cartridge->read(address);
     } else if (address <= VideoRamEnd) {
-        return gpu->read(address);
+        return gpu_->read(address);
     } else if (address <= ExternalRamEnd) {
         return cartridge->read(address);
     } else if (address <= EchoRamEnd) {
-        return workRam->read(address);
+        return workRam_->read(address);
     } else if (address <= 0xFEFF) {
-        return gpu->read(address);
+        return gpu_->read(address);
     } else if (address == 0xFF00) {
         return joypad->read(address);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
-        return timer->read(address);
+        return timer_->read(address);
     } else if (address >= 0xFF10 && address <= 0xFF26) {
         return apu->read(address);
     } else if (address == 0xFF76 || address == 0xFF77) {
@@ -60,24 +59,9 @@ uint8_t GbMmu::read(uint16_t address) const
     } else if (address >= 0xFF30 && address <= 0xFF3F) {
         return apu->read(address);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
-        return gpu->read(address);
-    } else if (address == 0xFF4F) {
-        return gpu->read(address);
+        return gpu_->read(address);
     } else if (address == 0xFF50) {
         return 0xFF;
-    } else if (address >= 0xFF72 && address <= 0xFF75) {
-        if (!cgbHardware || (address == 0xFF74 && dmgMode)) {
-            return 0xFF;
-        }
-        return address == 0xFF75
-            ? static_cast<uint8_t>(0x8F | (cgbUnmappedRegisters.at(3) & 0x70))
-            : cgbUnmappedRegisters.at(address - 0xFF72);
-    } else if (address >= 0xFF51 && address <= 0xFF55) {
-        return gpu->read(address);
-    } else if (address >= 0xFF68 && address <= 0xFF6C) {
-        return gpu->read(address);
-    } else if (address == 0xFF70) {
-        return workRam->read(address);
     } else if (address >= HighRamStart && address <= HighRamEnd) {
         return highRam->read(address);
     } else if (address == 0xFF0F || address == 0xFFFF) {
@@ -87,7 +71,7 @@ uint8_t GbMmu::read(uint16_t address) const
     }
 }
 
-void GbMmu::write(uint16_t address, const uint8_t& value)
+void DmgMmu::write(uint16_t address, const uint8_t& value)
 {
     if (address == 0xFF50) {
         bootRomActive = false;
@@ -96,25 +80,25 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
     if (address <= MemoryRomBank01End) {
         cartridge->write(address, value);
     } else if (address <= VideoRamEnd) {
-        gpu->write(address, value);
+        gpu_->write(address, value);
     } else if (address <= ExternalRamEnd) {
         cartridge->write(address, value);
     } else if (address <= EchoRamEnd) {
-        workRam->write(address, value);
+        workRam_->write(address, value);
     } else if (address <= OamEnd) {
-        gpu->write(address, value);
+        gpu_->write(address, value);
     } else if (address == 0xFF00) {
         joypad->write(address, value);
     } else if (address >= 0xFF04 && address <= 0xFF07) {
-        timer->write(address, value);
-        if (timer->takeDivApuTick()) {
+        timer_->write(address, value);
+        if (timer_->takeDivApuTick()) {
             apu->divApuTick();
         }
     } else if (address >= 0xFF10 && address <= 0xFF26) {
         if (address == 0xFF26) {
             const bool wasPowered = apu->isPowered();
             apu->write(address, value);
-            if (!wasPowered && apu->isPowered() && timer->isDivApuBitHigh()) {
+            if (!wasPowered && apu->isPowered() && timer_->isDivApuBitHigh()) {
                 apu->skipNextDivApuTick();
             }
         } else {
@@ -123,93 +107,59 @@ void GbMmu::write(uint16_t address, const uint8_t& value)
     } else if (address >= 0xFF30 && address <= 0xFF3F) {
         apu->write(address, value);
     } else if (address >= 0xFF40 && address <= 0xFF4B) {
-        gpu->write(address, value);
-    } else if (address == 0xFF4F) {
-        gpu->write(address, value);
-    } else if (address >= 0xFF72 && address <= 0xFF75) {
-        if (cgbHardware) {
-            cgbUnmappedRegisters.at(address - 0xFF72) =
-                address == 0xFF75 ? static_cast<uint8_t>(value & 0x70) : value;
-        }
-    } else if (address >= 0xFF51 && address <= 0xFF55) {
-        gpu->write(address, value);
-    } else if (address >= 0xFF68 && address <= 0xFF6C) {
-        gpu->write(address, value);
-    } else if (address == 0xFF70) {
-        workRam->write(address, value);
+        gpu_->write(address, value);
     } else if (address >= HighRamStart && address <= HighRamEnd) {
         highRam->write(address, value);
     } else if (address == 0xFF0F || address == 0xFFFF) {
         interruptHandler->write(address, value);
-    } else {
-        return;
     }
 }
 
-void GbMmu::setDoubleSpeed(bool doubleSpeed)
-{
-    timer->setDoubleSpeed(doubleSpeed);
-}
-
-void GbMmu::setCgb(bool value)
-{
-    cgbHardware = value;
-    dmgMode = !value;
-    workRam->setCgb(value);
-}
-
-void GbMmu::setDmgCompatibilityMode(bool enabled)
-{
-    dmgMode = enabled;
-    workRam->setCgb(!enabled);
-}
-
-bool GbMmu::isCpuStalled() const
-{
-    return gpu->isHdmaActive();
-}
-
-void GbMmu::triggerOamBugWrite(uint16_t address, int rowOffset)
-{
-    gpu->triggerOamBugWrite(address, rowOffset);
-}
-
-void GbMmu::triggerOamBugRead(uint16_t address)
-{
-    gpu->triggerOamBugRead(address);
-}
-
-void GbMmu::triggerOamBugReadIncrease(uint16_t address)
-{
-    gpu->triggerOamBugReadIncrease(address);
-}
-
-void GbMmu::step()
+void DmgMmu::step()
 {
     apu->step();
     cartridge->step();
-    gpu->step();
-    workRam->step();
+    gpu_->step();
+    workRam_->step();
     highRam->step();
-    timer->step();
-    if (timer->takeDivApuTick()) {
+    timer_->step();
+    if (timer_->takeDivApuTick()) {
         apu->divApuTick();
     }
     joypad->step();
     interruptHandler->step();
 }
 
-void GbMmu::reset()
+void DmgMmu::reset()
 {
     apu->reset();
     cartridge->reset();
-    gpu->reset();
-    workRam->reset();
+    gpu_->reset();
+    workRam_->reset();
     highRam->reset();
-    timer->reset();
+    timer_->reset();
     joypad->reset();
     interruptHandler->reset();
-    cgbUnmappedRegisters.fill(0);
+}
+
+bool DmgMmu::isCpuStalled() const
+{
+    return gpu_->isHdmaActive();
+}
+
+void DmgMmu::triggerOamBugWrite(uint16_t address, int rowOffset)
+{
+    gpu_->triggerOamBugWrite(address, rowOffset);
+}
+
+void DmgMmu::triggerOamBugRead(uint16_t address)
+{
+    gpu_->triggerOamBugRead(address);
+}
+
+void DmgMmu::triggerOamBugReadIncrease(uint16_t address)
+{
+    gpu_->triggerOamBugReadIncrease(address);
 }
 
 }  // namespace qnemu
