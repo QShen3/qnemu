@@ -52,11 +52,12 @@ the second behaves as a slave for that transfer.
   the trade is written back to `Red.sav` and `Blue.sav`.  For two copies of the
   same ROM, give Player 2 a link save and trade through that separate save.
 - A row's `⋯` menu also has **Save data...**, a save manager for that ROM:
-  play any slot in single-player, copy between slots, create a backup, import
-  or export a `.sav`, or delete a slot.  When a save is imported or exported,
-  a sibling `.rtc` file (if present) is carried along.  Backups are written to
-  the `backups` folder inside the save directory.  To keep a link-save
-  playthrough as the normal save, copy it to **Game save**.
+  play any slot in single-player, rename the three slots, copy between slots,
+  create a backup, restore or delete backups, import or export a `.sav`, or
+  delete a slot.  When a save is imported or exported, a sibling `.rtc` file
+  (if present) is carried along.  Backups are written to the `backups` folder
+  inside the save directory and listed under **Backups** in the manager.  To
+  keep a link-save playthrough as the normal save, copy it to **Game save**.
 - `--rom A --link-rom B` starts link play directly.  It uses normal saves, and
   falls back to Link save 2 for Player 2 when the two ROMs resolve to one save.
 - Space / Ctrl+P pauses both sessions, and Back to Library destroys them after

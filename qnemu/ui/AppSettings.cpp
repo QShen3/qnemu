@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <utility>
 
+#include <QtCore/QByteArray>
 #include <QtCore/QDir>
 #include <QtCore/QStandardPaths>
 #include <QtCore/Qt>
@@ -25,6 +26,25 @@ QString makeDirectory(const QString& path)
         QDir().mkpath(path);
     }
     return path;
+}
+
+QString saveNameKey(const QString& romStem)
+{
+    // Keep QSettings keys free of slashes and other separators.
+    return QString::fromLatin1(romStem.toUtf8().toBase64(
+        QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
+}
+
+QString saveSlotKey(int slot)
+{
+    switch (slot) {
+    case 0:
+        return QStringLiteral("game");
+    case 1:
+        return QStringLiteral("link1");
+    default:
+        return QStringLiteral("link2");
+    }
 }
 
 }  // namespace
@@ -173,6 +193,32 @@ void AppSettings::setSavePath(const QString& value)
     savePathValue = path;
     settings.setValue(QStringLiteral("paths/save"), path);
     emit savePathChanged();
+}
+
+QString AppSettings::saveSlotName(const QString& romStem, int slot) const
+{
+    if (romStem.isEmpty() || slot < 0 || slot > 2) {
+        return {};
+    }
+    return settings.value(QStringLiteral("saveNames/%1/%2")
+            .arg(saveNameKey(romStem), saveSlotKey(slot)))
+        .toString();
+}
+
+void AppSettings::setSaveSlotName(const QString& romStem, int slot, const QString& name)
+{
+    if (romStem.isEmpty() || slot < 0 || slot > 2) {
+        return;
+    }
+    const QString key = QStringLiteral("saveNames/%1/%2")
+        .arg(saveNameKey(romStem), saveSlotKey(slot));
+    const QString trimmed = name.trimmed().left(40);
+    if (trimmed.isEmpty()) {
+        settings.remove(key);
+    } else {
+        settings.setValue(key, trimmed);
+    }
+    settings.sync();
 }
 
 void AppSettings::setScreenshotDirectory(const QString& value)

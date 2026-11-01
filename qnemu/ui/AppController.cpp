@@ -191,11 +191,11 @@ void AppController::openGamePath(const QString& path, int slot)
 
         QString title = loaded.displayName;
         if (slot != 0) {
-            title += QStringLiteral(" - ") + saveSlotLabel(slot);
+            title += QStringLiteral(" - ") + saveSlotLabel(path, slot);
         }
         setWindowTitle(title + QStringLiteral(" - QNEmu"));
         setStatusText(tr("Loaded %1 (%2)")
-            .arg(loaded.displayName, saveSlotLabel(slot)));
+            .arg(loaded.displayName, saveSlotLabel(path, slot)));
         showGame();
         emit hasGameChanged();
     } catch (const std::exception& error) {
@@ -220,6 +220,22 @@ void AppController::closeGame()
     }
     closeCurrentGame();
     setStatusText(tr("Game closed; save data flushed"));
+}
+
+void AppController::renameSaveSlot(const QString& romPath, int slot, const QString& name)
+{
+    if (romPath.isEmpty() || slot < 0 || slot > 2) {
+        return;
+    }
+    const QString trimmed = name.trimmed();
+    settingsValue->setSaveSlotName(saveFileStem(romPath), slot, trimmed);
+    if (trimmed.isEmpty()) {
+        setStatusText(tr("Reset save name to %1")
+            .arg(defaultSaveSlotLabel(slot)));
+    } else {
+        setStatusText(tr("Renamed %1 to %2")
+            .arg(defaultSaveSlotLabel(slot), trimmed));
+    }
 }
 
 void AppController::openLinkGame(const QUrl& first, const QUrl& second)
@@ -280,7 +296,8 @@ void AppController::startLinkGame(const QString& firstPath, const QString& secon
         libraryValue->addOpenedGame(firstPath);
         libraryValue->addOpenedGame(secondPath);
         setStatusText(tr("Link play started (%1 / %2)")
-            .arg(saveSlotLabel(firstSaveSlot), saveSlotLabel(secondSaveSlot)));
+            .arg(saveSlotLabel(firstPath, firstSaveSlot),
+                saveSlotLabel(secondPath, secondSaveSlot)));
     } catch (const std::exception& error) {
         stopLink();
         qWarning().noquote() << "Failed to start link play:" << error.what();
@@ -298,7 +315,7 @@ QVariantList AppController::saveSlots(const QString& romPath) const
         const QFileInfo rtcInfo(rtcPath);
         QVariantMap option;
         option.insert(QStringLiteral("slot"), slot);
-        option.insert(QStringLiteral("label"), saveSlotLabel(slot));
+        option.insert(QStringLiteral("label"), saveSlotLabel(romPath, slot));
         option.insert(QStringLiteral("path"), path);
         option.insert(QStringLiteral("exists"), info.exists());
         option.insert(QStringLiteral("size"), info.exists() ? info.size() : 0);
@@ -367,7 +384,7 @@ bool AppController::copySave(const QString& romPath, int fromSlot, int toSlot)
         return false;
     }
     setStatusText(tr("Copied %1 to %2")
-        .arg(saveSlotLabel(fromSlot), saveSlotLabel(toSlot)));
+        .arg(saveSlotLabel(romPath, fromSlot), saveSlotLabel(romPath, toSlot)));
     return true;
 }
 
@@ -398,7 +415,7 @@ bool AppController::deleteSave(const QString& romPath, int slot)
         setStatusText(tr("No save data to delete"));
         return false;
     }
-    setStatusText(tr("Deleted %1").arg(saveSlotLabel(slot)));
+    setStatusText(tr("Deleted %1").arg(saveSlotLabel(romPath, slot)));
     return true;
 }
 
@@ -465,7 +482,7 @@ bool AppController::importSave(const QString& romPath, int slot, const QUrl& sou
         return false;
     }
     setStatusText(tr("Imported %1 into %2")
-        .arg(sourceInfo.fileName(), saveSlotLabel(slot)));
+        .arg(sourceInfo.fileName(), saveSlotLabel(romPath, slot)));
     return true;
 }
 
@@ -502,8 +519,101 @@ bool AppController::exportSave(const QString& romPath, int slot, const QUrl& tar
         setStatusText(tr("Export failed: %1").arg(error));
         return false;
     }
-    setStatusText(tr("Exported %1 to %2").arg(saveSlotLabel(slot), targetSav));
+    setStatusText(tr("Exported %1 to %2")
+        .arg(saveSlotLabel(romPath, slot), targetSav));
     return true;
+}
+
+QVariantList AppController::saveBackups(const QString& romPath) const
+{
+    QVariantList list;
+    const QVector<SaveBackup> backups =
+        findSaveBackups(settingsValue->savePath(), romPath);
+    for (const SaveBackup& backup : backups) {
+        const QFileInfo info(backup.path);
+        QVariantMap entry;
+        entry.insert(QStringLiteral("slot"), backup.slot);
+        entry.insert(QStringLiteral("slotLabel"),
+            saveSlotLabel(romPath, backup.slot));
+        entry.insert(QStringLiteral("path"), backup.path);
+        entry.insert(QStringLiteral("rtcPath"), backup.rtcPath);
+        entry.insert(QStringLiteral("fileName"), info.fileName());
+        entry.insert(QStringLiteral("size"), info.size());
+        entry.insert(QStringLiteral("timestamp"),
+            backup.timestamp.toString(Qt::ISODate));
+        list.append(entry);
+    }
+    return list;
+}
+
+bool AppController::restoreBackup(const QString& romPath, const QString& backupPath,
+    int targetSlot)
+{
+    if (!saveDataEditable(romPath)) {
+        setStatusText(tr("Close the running game or link play before changing saves"));
+        return false;
+    }
+    if (targetSlot < 0 || targetSlot > 2 || !isBackupPath(backupPath)
+        || !QFileInfo::exists(backupPath)) {
+        setStatusText(tr("Restore failed: backup not found"));
+        return false;
+    }
+
+    const QFileInfo backupInfo(backupPath);
+    const QString backupRtc = backupInfo.absolutePath() + QLatin1Char('/')
+        + backupInfo.completeBaseName() + QStringLiteral(".rtc");
+    QString error;
+    if (!copySaveFiles(backupPath, backupRtc,
+            linkSavePath(romPath, targetSlot),
+            rtcFilePathForSlot(romPath, targetSlot), error)) {
+        setStatusText(tr("Restore failed: %1").arg(error));
+        return false;
+    }
+    setStatusText(tr("Restored backup into %1")
+        .arg(saveSlotLabel(romPath, targetSlot)));
+    return true;
+}
+
+bool AppController::deleteBackup(const QString& romPath, const QString& backupPath)
+{
+    if (!saveDataEditable(romPath)) {
+        setStatusText(tr("Close the running game or link play before changing saves"));
+        return false;
+    }
+    if (!isBackupPath(backupPath)) {
+        setStatusText(tr("Could not delete backup"));
+        return false;
+    }
+
+    const QFileInfo backupInfo(backupPath);
+    const QString backupRtc = backupInfo.absolutePath() + QLatin1Char('/')
+        + backupInfo.completeBaseName() + QStringLiteral(".rtc");
+    bool removed = false;
+    for (const QString& path : {backupPath, backupRtc}) {
+        if (!QFileInfo::exists(path)) {
+            continue;
+        }
+        QFile file(path);
+        if (!file.remove()) {
+            setStatusText(tr("Delete backup failed: %1").arg(file.errorString()));
+            return false;
+        }
+        removed = true;
+    }
+    if (!removed) {
+        setStatusText(tr("Backup not found"));
+        return false;
+    }
+    setStatusText(tr("Deleted backup %1").arg(backupInfo.fileName()));
+    return true;
+}
+
+bool AppController::isBackupPath(const QString& path) const
+{
+    const QString root = QDir::cleanPath(
+        QDir(settingsValue->savePath()).filePath(QStringLiteral("backups")));
+    const QString clean = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+    return clean.startsWith(root + QLatin1Char('/'));
 }
 
 QString AppController::linkSavePath(const QString& romPath, int slot) const
@@ -626,7 +736,14 @@ QString AppController::saveDirectoryForSlot(int slot) const
         QStringLiteral("link%1").arg(slot));
 }
 
-QString AppController::saveSlotLabel(int slot) const
+QString AppController::saveSlotLabel(const QString& romPath, int slot) const
+{
+    const QString customName =
+        settingsValue->saveSlotName(saveFileStem(romPath), slot);
+    return customName.isEmpty() ? defaultSaveSlotLabel(slot) : customName;
+}
+
+QString AppController::defaultSaveSlotLabel(int slot) const
 {
     switch (slot) {
     case 0:

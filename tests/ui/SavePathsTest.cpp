@@ -155,4 +155,42 @@ TEST(SavePathsTest, CopyRejectsMissingSourceAndSamePath)
     EXPECT_EQ(readBytes(target), QByteArray("save"));
 }
 
+TEST(SavePathsTest, FindsBackupsNewestFirst)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+
+    const QString backupDirectory =
+        QDir(directory.path()).filePath(QStringLiteral("backups"));
+    ASSERT_TRUE(QDir().mkpath(backupDirectory));
+    const QDir backups(backupDirectory);
+
+    ASSERT_TRUE(writeBytes(backups.filePath(
+                               QStringLiteral("Pokemon Red-game-20261101-120000-000.sav")),
+        QByteArray("old")));
+    ASSERT_TRUE(writeBytes(backups.filePath(
+                               QStringLiteral("Pokemon Red-game-20261101-120000-000.rtc")),
+        QByteArray("rtc")));
+    ASSERT_TRUE(writeBytes(backups.filePath(
+                               QStringLiteral("Pokemon Red-link2-20261101-130000-123.sav")),
+        QByteArray("new")));
+    ASSERT_TRUE(writeBytes(backups.filePath(
+                               QStringLiteral("Pokemon Red-weird-20261101-140000-000.sav")),
+        QByteArray("ignored")));
+    ASSERT_TRUE(writeBytes(backups.filePath(
+                               QStringLiteral("Other-game-20261101-150000-000.sav")),
+        QByteArray("ignored")));
+
+    const QVector<qnemu::SaveBackup> found =
+        qnemu::findSaveBackups(directory.path(),
+            QStringLiteral("/roms/Pokemon Red.gb"));
+    ASSERT_EQ(found.size(), 2);
+    EXPECT_EQ(found.at(0).slot, 2);
+    EXPECT_EQ(found.at(1).slot, 0);
+    EXPECT_GT(found.at(0).timestamp, found.at(1).timestamp);
+    EXPECT_EQ(found.at(0).timestamp.time().msec(), 123);
+    EXPECT_TRUE(QFileInfo::exists(found.at(1).rtcPath));
+    EXPECT_FALSE(QFileInfo::exists(found.at(0).rtcPath));
+}
+
 }  // namespace qnemuTest

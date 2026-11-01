@@ -26,7 +26,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
 - Parallel background library scan with a loading overlay, plus text search and region/language/status filters.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 458 CTest cases, including 168 curated test ROMs.
+- 460 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -260,9 +260,10 @@ dialog warns instead of letting two running games share one save file.  See
 coverage and current limitations.
 
 Each game's `⋯` menu also has **Save data...**: play any slot in single-player,
-copy between slots, create a timestamped backup, import/export a `.sav` (with
-its sibling `.rtc` when present), or delete a slot.  Backups go to the
-`backups` folder inside the save directory.
+rename the three slots, copy between slots, create a timestamped backup,
+restore or delete backups, import/export a `.sav` (with its sibling `.rtc` when
+present), or delete a slot.  Backups go to the `backups` folder inside the save
+directory and can be restored from the manager.
 
 ## ROM archives
 
@@ -688,7 +689,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **458/458 CTest cases**, including 168 ROM tests.
+The current set is **460/460 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>

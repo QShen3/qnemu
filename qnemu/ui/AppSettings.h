@@ -71,6 +71,10 @@ public:
     void setDualModeLaunchPlatform(const QString& value);
     void setActiveKeyProfile(const QString& value);
 
+    /// Per-ROM display names for the three save slots, keyed by save stem.
+    QString saveSlotName(const QString& romStem, int slot) const;
+    void setSaveSlotName(const QString& romStem, int slot, const QString& name);
+
     Q_INVOKABLE QString keyName(int key) const;
     Q_INVOKABLE void setKeyBinding(const QString& profile, const QString& button, int key);
     Q_INVOKABLE void addKeyProfile(const QString& name);

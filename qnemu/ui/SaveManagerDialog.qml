@@ -11,6 +11,7 @@ Dialog {
     property string romPath: ""
     property string romTitle: ""
     property var slots: []
+    property var backups: []
     property string blockedReason: ""
     property string message: ""
     property int pendingDeleteSlot: -1
@@ -19,6 +20,10 @@ Dialog {
     property int pendingImportSlot: -1
     property url pendingImportUrl: ""
     property int pendingExportSlot: -1
+    property int pendingRenameSlot: -1
+    property string renameText: ""
+    property var pendingRestoreBackup: null
+    property var pendingDeleteBackup: null
 
     readonly property color textColor: theme ? theme.windowText : "#000000"
     readonly property color mutedColor: theme ? theme.mutedText : "#666666"
@@ -46,6 +51,7 @@ Dialog {
     function refresh() {
         dialog.slots = controller.saveSlots(dialog.romPath);
         dialog.blockedReason = controller.saveDataBlockedReason(dialog.romPath);
+        dialog.backups = controller.saveBackups(dialog.romPath);
     }
 
     function slotAt(index) {
@@ -141,6 +147,62 @@ Dialog {
         controller.closeGame();
         dialog.message = controller.statusText;
         dialog.refresh();
+    }
+
+    function requestRename(slot) {
+        dialog.pendingRenameSlot = slot;
+        dialog.renameText = dialog.labelAt(slot);
+        renameDialog.open();
+    }
+
+    function doRename() {
+        controller.renameSaveSlot(dialog.romPath, dialog.pendingRenameSlot,
+            dialog.renameText);
+        dialog.message = controller.statusText;
+        dialog.refresh();
+        renameDialog.accept();
+    }
+
+    function requestRestore(backup) {
+        dialog.pendingRestoreBackup = backup;
+        const target = dialog.slotAt(backup.slot);
+        if (target && target.exists) {
+            restoreConfirm.open();
+        } else {
+            dialog.doRestore();
+        }
+    }
+
+    function doRestore() {
+        if (!dialog.pendingRestoreBackup) {
+            return;
+        }
+        controller.restoreBackup(dialog.romPath,
+            dialog.pendingRestoreBackup.path,
+            dialog.pendingRestoreBackup.slot);
+        dialog.message = controller.statusText;
+        dialog.refresh();
+        restoreConfirm.accept();
+    }
+
+    function requestDeleteBackup(backup) {
+        dialog.pendingDeleteBackup = backup;
+        deleteBackupConfirm.open();
+    }
+
+    function doDeleteBackup() {
+        if (!dialog.pendingDeleteBackup) {
+            return;
+        }
+        controller.deleteBackup(dialog.romPath,
+            dialog.pendingDeleteBackup.path);
+        dialog.message = controller.statusText;
+        dialog.refresh();
+        deleteBackupConfirm.accept();
+    }
+
+    function openBackups() {
+        backupDialog.open();
     }
 
     contentItem: ColumnLayout {
@@ -282,6 +344,11 @@ Dialog {
                                     onTriggered: dialog.playSlot(slotMenu.sourceSlot)
                                 }
 
+                                MenuItem {
+                                    text: qsTr("Rename...")
+                                    onTriggered: dialog.requestRename(slotMenu.sourceSlot)
+                                }
+
                                 MenuSeparator {}
 
                                 MenuItem {
@@ -359,6 +426,11 @@ Dialog {
     footer: RowLayout {
         width: dialog.width - dialog.padding * 2
         spacing: 8
+
+        Button {
+            text: qsTr("Backups (%1)").arg(dialog.backups.length)
+            onClicked: dialog.openBackups()
+        }
 
         Item {
             Layout.fillWidth: true
@@ -478,6 +550,254 @@ Dialog {
             Button {
                 text: qsTr("Overwrite")
                 onClicked: dialog.doImport()
+            }
+        }
+    }
+
+    Dialog {
+        id: renameDialog
+
+        anchors.centerIn: Overlay.overlay
+        modal: true
+        padding: 16
+        width: 400
+        title: qsTr("Rename save slot")
+
+        contentItem: ColumnLayout {
+            spacing: 8
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Display name for this save slot:")
+                color: dialog.textColor
+                font.pixelSize: 11
+            }
+
+            TextField {
+                id: renameField
+
+                Layout.fillWidth: true
+                text: dialog.renameText
+                maximumLength: 40
+                onTextEdited: dialog.renameText = text
+                onAccepted: dialog.doRename()
+            }
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Leave it blank to use the default name.")
+                color: dialog.faintColor
+                font.pixelSize: 10
+                wrapMode: Text.Wrap
+            }
+        }
+
+        onOpened: {
+            renameField.forceActiveFocus();
+            renameField.selectAll();
+        }
+
+        footer: RowLayout {
+            width: renameDialog.width - renameDialog.padding * 2
+            spacing: 8
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Button {
+                text: qsTr("Cancel")
+                onClicked: renameDialog.reject()
+            }
+
+            Button {
+                text: qsTr("Rename")
+                onClicked: dialog.doRename()
+            }
+        }
+    }
+
+    Dialog {
+        id: restoreConfirm
+
+        anchors.centerIn: Overlay.overlay
+        modal: true
+        padding: 16
+        width: 420
+        title: qsTr("Restore backup?")
+
+        contentItem: Label {
+            text: dialog.pendingRestoreBackup
+                ? qsTr("Restore the %1 backup from %2 into %3?\nThe current save will be replaced.")
+                    .arg(dialog.pendingRestoreBackup.slotLabel,
+                        dialog.pendingRestoreBackup.timestamp,
+                        dialog.labelAt(dialog.pendingRestoreBackup.slot))
+                : ""
+            color: dialog.textColor
+            wrapMode: Text.Wrap
+        }
+
+        footer: RowLayout {
+            width: restoreConfirm.width - restoreConfirm.padding * 2
+            spacing: 8
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Button {
+                text: qsTr("Cancel")
+                onClicked: restoreConfirm.reject()
+            }
+
+            Button {
+                text: qsTr("Restore")
+                onClicked: dialog.doRestore()
+            }
+        }
+    }
+
+    Dialog {
+        id: deleteBackupConfirm
+
+        anchors.centerIn: Overlay.overlay
+        modal: true
+        padding: 16
+        width: 420
+        title: qsTr("Delete backup?")
+
+        contentItem: Label {
+            text: dialog.pendingDeleteBackup
+                ? qsTr("Delete the %1 backup from %2?\nThis cannot be undone.")
+                    .arg(dialog.pendingDeleteBackup.slotLabel,
+                        dialog.pendingDeleteBackup.timestamp)
+                : ""
+            color: dialog.textColor
+            wrapMode: Text.Wrap
+        }
+
+        footer: RowLayout {
+            width: deleteBackupConfirm.width - deleteBackupConfirm.padding * 2
+            spacing: 8
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Button {
+                text: qsTr("Cancel")
+                onClicked: deleteBackupConfirm.reject()
+            }
+
+            Button {
+                text: qsTr("Delete")
+                onClicked: dialog.doDeleteBackup()
+            }
+        }
+    }
+
+    Dialog {
+        id: backupDialog
+
+        anchors.centerIn: Overlay.overlay
+        modal: true
+        padding: 16
+        width: Math.min(620, (Overlay.overlay ? Overlay.overlay.width : 800) - 80)
+        height: Math.min(460, (Overlay.overlay ? Overlay.overlay.height : 700) - 80)
+        title: qsTr("Save backups")
+
+        contentItem: ColumnLayout {
+            spacing: 8
+
+            Label {
+                Layout.fillWidth: true
+                text: qsTr("Restoring a backup replaces the save in its original slot.")
+                color: dialog.mutedColor
+                font.pixelSize: 10
+                wrapMode: Text.Wrap
+            }
+
+            ListView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                spacing: 6
+                model: dialog.backups
+                ScrollBar.vertical: ScrollBar {}
+
+                delegate: Rectangle {
+                    required property var modelData
+
+                    width: ListView.view.width
+                    implicitHeight: backupRow.implicitHeight + 16
+                    radius: 6
+                    color: dialog.cardColor
+                    border.width: 1
+                    border.color: dialog.separatorColor
+
+                    RowLayout {
+                        id: backupRow
+
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        spacing: 8
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 1
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: modelData.slotLabel + " · " + modelData.timestamp
+                                color: dialog.textColor
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                            }
+
+                            Label {
+                                Layout.fillWidth: true
+                                text: modelData.fileName + " · "
+                                    + dialog.formatSize(modelData.size)
+                                color: dialog.mutedColor
+                                font.pixelSize: 10
+                                elide: Text.ElideMiddle
+                            }
+                        }
+
+                        Button {
+                            text: qsTr("Restore")
+                            onClicked: dialog.requestRestore(modelData)
+                        }
+
+                        Button {
+                            text: qsTr("Delete")
+                            onClicked: dialog.requestDeleteBackup(modelData)
+                        }
+                    }
+                }
+            }
+
+            Label {
+                Layout.fillWidth: true
+                visible: dialog.backups.length === 0
+                text: qsTr("No backups yet. Use the “Back up” action on a save slot.")
+                color: dialog.faintColor
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+            }
+        }
+
+        footer: RowLayout {
+            width: backupDialog.width - backupDialog.padding * 2
+            spacing: 8
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            Button {
+                text: qsTr("Close")
+                onClicked: backupDialog.reject()
             }
         }
     }

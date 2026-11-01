@@ -83,8 +83,13 @@ public:
     Q_INVOKABLE bool backupSave(const QString& romPath, int slot);
     Q_INVOKABLE bool importSave(const QString& romPath, int slot, const QUrl& source);
     Q_INVOKABLE bool exportSave(const QString& romPath, int slot, const QUrl& target);
+    Q_INVOKABLE QVariantList saveBackups(const QString& romPath) const;
+    Q_INVOKABLE bool restoreBackup(const QString& romPath, const QString& backupPath,
+        int targetSlot);
+    Q_INVOKABLE bool deleteBackup(const QString& romPath, const QString& backupPath);
     Q_INVOKABLE void openGameWithSave(const QString& path, int slot);
     Q_INVOKABLE void closeGame();
+    Q_INVOKABLE void renameSaveSlot(const QString& romPath, int slot, const QString& name);
     Q_INVOKABLE QString linkSavePath(const QString& romPath, int slot) const;
     Q_INVOKABLE void stopLink();
     Q_INVOKABLE void toggleLinkPause();
@@ -137,10 +142,12 @@ private:
     void openGamePath(const QString& path, int slot);
     void closeCurrentGame();
     QString saveDirectoryForSlot(int slot) const;
-    QString saveSlotLabel(int slot) const;
+    QString saveSlotLabel(const QString& romPath, int slot) const;
+    QString defaultSaveSlotLabel(int slot) const;
     QString saveSlotSuffix(int slot) const;
     QString rtcFilePathForSlot(const QString& romPath, int slot) const;
     bool saveDataEditable(const QString& romPath) const;
+    bool isBackupPath(const QString& path) const;
 
     std::optional<GbPlatform> platformOverride;
     AppSettings* settingsValue = nullptr;

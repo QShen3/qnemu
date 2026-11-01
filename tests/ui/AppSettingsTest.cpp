@@ -75,4 +75,24 @@ TEST_F(AppSettingsTest, RejectsInvalidLaunchPlatform)
     EXPECT_EQ(settings.dualModeLaunchPlatform(), QStringLiteral("gbc"));
 }
 
+TEST_F(AppSettingsTest, PersistsNamedSaveSlots)
+{
+    qnemu::AppSettings settings;
+    EXPECT_TRUE(settings.saveSlotName(QStringLiteral("Pokemon Red"), 2).isEmpty());
+
+    settings.setSaveSlotName(QStringLiteral("Pokemon Red"), 2,
+        QStringLiteral("  Player 2  "));
+    EXPECT_EQ(settings.saveSlotName(QStringLiteral("Pokemon Red"), 2),
+        QStringLiteral("Player 2"));
+
+    qnemu::AppSettings other;
+    EXPECT_EQ(other.saveSlotName(QStringLiteral("Pokemon Red"), 2),
+        QStringLiteral("Player 2"));
+
+    other.setSaveSlotName(QStringLiteral("Pokemon Red"), 2, QStringLiteral("   "));
+    EXPECT_TRUE(settings.saveSlotName(QStringLiteral("Pokemon Red"), 2).isEmpty());
+    EXPECT_EQ(settings.saveSlotName(QStringLiteral("Pokemon Red"), 0),
+        QString());
+}
+
 }  // namespace qnemuTest
