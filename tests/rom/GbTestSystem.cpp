@@ -18,7 +18,6 @@
 #include "qnemu/gb/boot/GbCgbBootRom.h"
 #include "qnemu/gb/boot/GbDmgBootRom.h"
 #include "qnemu/gb/boot/GbSgbBootRom.h"
-#include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "tests/rom/GbTestSystem.h"
 #include "tests/support/NullSound.h"
 
@@ -104,15 +103,6 @@ bool GbTestSystem::finishLoad(bool cgb, bool enablePpu, bool enableApu, bool sgb
             ppu->resetForBootRom();
         }
         ppu->setOamBugEnabled(!cgb);
-        if (!bootRomActive_ && cgb && !header.cgb) {
-            ppu->setDmgCompatibilityPalette(qnemu::cgbCompatibilityPalette({
-                header.titleBytes,
-                header.oldLicensee,
-                header.newLicensee,
-            }));
-        } else {
-            ppu->clearDmgCompatibilityPalette();
-        }
         ppu->setExternalRead([this](uint16_t address) {
             return read(address);
         });

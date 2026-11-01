@@ -52,8 +52,10 @@ public:
     bool loadRomData(const std::vector<uint8_t>& romData, bool cgb,
         bool enablePpu = false, bool enableApu = false, bool sgb = false);
 
-    /// Execute the bundled CGB (QNEMU) or DMG (Bootix) boot ROM instead of
-    /// applying post-boot state.  Call before loadRom()/loadRomData().
+    /// Execute the model's bundled boot ROM (QNEMU CGB, Bootix DMG or the
+    /// clean-room SGB image) instead of applying post-boot state.  This is a
+    /// test-only opt-in: the emulator itself always boots.  Call before
+    /// loadRom()/loadRomData().
     void enableBootRom(bool cgb, bool sgb = false);
 
     /// Reproduce the model-specific post-boot I/O state without executing a

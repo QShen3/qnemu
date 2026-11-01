@@ -57,8 +57,6 @@ public:
     void setCgb(bool cgb);
     void setDmgMode(bool dmgMode);
     void setSgb(GbSgb* sgb);
-    void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
-    void clearDmgCompatibilityPalette();
     void enableDmgCompatibility();
 
     /// DMG OAM corruption quirk.  CGB hardware and SGB models that use the

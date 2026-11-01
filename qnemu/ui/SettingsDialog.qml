@@ -43,25 +43,6 @@ ApplicationWindow {
             label: qsTr("CGB compatibility (color)")
         }
     ]
-    readonly property var cgbPaletteOptions: [
-        { value: -1, label: qsTr("Automatic (per game)") },
-        { value: 1, label: qsTr("Right") },
-        { value: 48, label: qsTr("Left") },
-        { value: 5, label: qsTr("Up") },
-        { value: 8, label: qsTr("Down") },
-        { value: 0, label: qsTr("Right + A") },
-        { value: 40, label: qsTr("Left + A") },
-        { value: 43, label: qsTr("Up + A") },
-        { value: 3, label: qsTr("Down + A") },
-        { value: 6, label: qsTr("Right + B") },
-        { value: 7, label: qsTr("Left + B") },
-        { value: 28, label: qsTr("Up + B") },
-        { value: 49, label: qsTr("Down + B") },
-        { value: 51, label: qsTr("Right + A + B") },
-        { value: 52, label: qsTr("Left + A + B") },
-        { value: 53, label: qsTr("Up + A + B") },
-        { value: 54, label: qsTr("Down + A + B") }
-    ]
     readonly property var keyActions: [
         {
             name: "up",
@@ -144,15 +125,6 @@ ApplicationWindow {
             }
         }
         return launchModels.length - 1;
-    }
-
-    function cgbPaletteIndex(value) {
-        for (let i = 0; i < cgbPaletteOptions.length; ++i) {
-            if (cgbPaletteOptions[i].value === value) {
-                return i;
-            }
-        }
-        return 0;
     }
 
     function buttonLabel(name) {
@@ -571,62 +543,12 @@ ApplicationWindow {
                                 }
                             }
 
-                            RowLayout {
+                            Label {
                                 Layout.fillWidth: true
-                                spacing: 16
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Label {
-                                        text: qsTr("Load DMG boot ROM")
-                                        color: uiTheme.windowText
-                                        font.pixelSize: 12
-                                    }
-
-                                    Label {
-                                        Layout.fillWidth: true
-                                        text: qsTr("Run Bootix (CC0) instead of initializing the post-boot state directly. It shows the cartridge-header logo with its own animation; DMG only. Reopen the game after changing.")
-                                        color: uiTheme.mutedText
-                                        font.pixelSize: 11
-                                        wrapMode: Text.WordWrap
-                                    }
-                                }
-
-                                Switch {
-                                    checked: settings.loadDmgBootRom
-                                    onToggled: settings.loadDmgBootRom = checked
-                                }
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 16
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Label {
-                                        text: qsTr("Load SGB boot ROM")
-                                        color: uiTheme.windowText
-                                        font.pixelSize: 12
-                                    }
-
-                                    Label {
-                                        Layout.fillWidth: true
-                                        text: qsTr("Run qnemu's clean-room SGB header-forwarding ROM. The SGB border and boot animation still come from GbSgb's HLE; reopen the game after changing.")
-                                        color: uiTheme.mutedText
-                                        font.pixelSize: 11
-                                        wrapMode: Text.WordWrap
-                                    }
-                                }
-
-                                Switch {
-                                    checked: settings.loadSgbBootRom
-                                    onToggled: settings.loadSgbBootRom = checked
-                                }
+                                text: qsTr("Every model runs its bundled boot ROM at startup: Bootix for DMG, the QNEMU CGB boot ROM for CGB, and the clean-room SGB header forwarder for SGB. The SGB border and palette menus still come from the HLE BIOS.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
                             }
                         }
 
@@ -716,66 +638,12 @@ ApplicationWindow {
                                 wrapMode: Text.WordWrap
                             }
 
-                            RowLayout {
+                            Label {
                                 Layout.fillWidth: true
-                                spacing: 16
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Label {
-                                        text: qsTr("DMG compatibility palette")
-                                        color: uiTheme.windowText
-                                        font.pixelSize: 12
-                                    }
-
-                                    Label {
-                                        Layout.fillWidth: true
-                                        text: qsTr("Used for DMG-only cartridges on CGB when the CGB boot ROM is disabled. Manual entries match the boot ROM's button combinations; this setting is ignored while Load CGB boot ROM is on.")
-                                        color: uiTheme.mutedText
-                                        font.pixelSize: 11
-                                        wrapMode: Text.WordWrap
-                                    }
-                                }
-
-                                ComboBox {
-                                    Layout.preferredWidth: 210
-                                    model: settingsWindow.cgbPaletteOptions
-                                    textRole: "label"
-                                    enabled: !settings.loadCgbBootRom
-                                    currentIndex: settingsWindow.cgbPaletteIndex(settings.cgbPalette)
-                                    onActivated: settings.cgbPalette = settingsWindow.cgbPaletteOptions[currentIndex].value
-                                }
-                            }
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 16
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Label {
-                                        text: qsTr("Load CGB boot ROM")
-                                        color: uiTheme.windowText
-                                        font.pixelSize: 12
-                                    }
-
-                                    Label {
-                                        Layout.fillWidth: true
-                                        text: qsTr("Run the bundled QNEMU CGB boot ROM instead of initializing the post-boot state directly. Applies on CGB hardware, including DMG-only cartridges in compatibility mode. Reopen the game after changing.")
-                                        color: uiTheme.mutedText
-                                        font.pixelSize: 11
-                                        wrapMode: Text.WordWrap
-                                    }
-                                }
-
-                                Switch {
-                                    checked: settings.loadCgbBootRom
-                                    onToggled: settings.loadCgbBootRom = checked
-                                }
+                                text: qsTr("The CGB boot ROM runs at startup and picks the per-game compatibility palette for DMG-only cartridges. Hold a direction, optionally with A/B, while the logo is shown to choose one of the 16 manual combinations.")
+                                color: uiTheme.mutedText
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
                             }
                         }
 

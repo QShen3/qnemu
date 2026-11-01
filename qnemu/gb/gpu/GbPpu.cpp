@@ -392,16 +392,6 @@ void GbPpu::setSgb(GbSgb* sgb)
     fifo_.setSgb(sgb);
 }
 
-void GbPpu::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
-{
-    memory_.setDmgCompatibilityPalette(palette);
-}
-
-void GbPpu::clearDmgCompatibilityPalette()
-{
-    memory_.clearDmgCompatibilityPalette();
-}
-
 void GbPpu::enableDmgCompatibility()
 {
     memory_.enableDmgCompatibility();

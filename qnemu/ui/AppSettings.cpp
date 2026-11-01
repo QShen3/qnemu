@@ -94,18 +94,6 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
         && gbLaunchModelValue != QStringLiteral("sgb")) {
         gbLaunchModelValue = QStringLiteral("cgb");
     }
-    loadCgbBootRomValue = settings.value(QStringLiteral("platforms/gb/loadCgbBootRom"), false)
-                              .toBool();
-    loadDmgBootRomValue = settings.value(QStringLiteral("platforms/gb/loadDmgBootRom"), false)
-                              .toBool();
-    loadSgbBootRomValue = settings.value(QStringLiteral("platforms/gb/loadSgbBootRom"), false)
-                              .toBool();
-    cgbPaletteValue = settings.value(QStringLiteral("platforms/gbc/compatibilityPalette"), -1)
-                          .toInt();
-    if (cgbPaletteValue < -1 || cgbPaletteValue > 54) {
-        cgbPaletteValue = -1;
-    }
-
     loadKeyProfiles();
 }
 
@@ -243,49 +231,6 @@ void AppSettings::setGbLaunchModel(const QString& value)
     gbLaunchModelValue = model;
     settings.setValue(QStringLiteral("platforms/gb/launchModel"), model);
     emit gbLaunchModelChanged();
-}
-
-void AppSettings::setLoadCgbBootRom(bool value)
-{
-    if (value == loadCgbBootRomValue) {
-        return;
-    }
-    loadCgbBootRomValue = value;
-    settings.setValue(QStringLiteral("platforms/gb/loadCgbBootRom"), value);
-    emit loadCgbBootRomChanged();
-}
-
-void AppSettings::setLoadDmgBootRom(bool value)
-{
-    if (value == loadDmgBootRomValue) {
-        return;
-    }
-    loadDmgBootRomValue = value;
-    settings.setValue(QStringLiteral("platforms/gb/loadDmgBootRom"), value);
-    emit loadDmgBootRomChanged();
-}
-
-void AppSettings::setLoadSgbBootRom(bool value)
-{
-    if (value == loadSgbBootRomValue) {
-        return;
-    }
-    loadSgbBootRomValue = value;
-    settings.setValue(QStringLiteral("platforms/gb/loadSgbBootRom"), value);
-    emit loadSgbBootRomChanged();
-}
-
-void AppSettings::setCgbPalette(int value)
-{
-    if (value < -1 || value > 54) {
-        value = -1;
-    }
-    if (value == cgbPaletteValue) {
-        return;
-    }
-    cgbPaletteValue = value;
-    settings.setValue(QStringLiteral("platforms/gbc/compatibilityPalette"), value);
-    emit cgbPaletteChanged();
 }
 
 QString AppSettings::keyName(int key) const

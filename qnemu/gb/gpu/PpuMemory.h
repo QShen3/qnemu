@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include "qnemu/gb/const.h"
-#include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 
 namespace qnemu
 {
@@ -46,10 +45,6 @@ public:
     uint32_t dmgColor(uint8_t palette, uint8_t colorIndex) const;
     uint32_t cgbColor(bool object, uint8_t palette, uint8_t colorIndex) const;
 
-    /// Installs the CGB compatibility palettes used by DMG cartridges on GBC.
-    /// BGP/OBP0/OBP1 then select among these CGB palette entries.
-    void setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette);
-    void clearDmgCompatibilityPalette() { dmgCompatibility_ = false; }
     /// Keep the CGB palette RAM as-is and use it for DMG rendering.  Used
     /// after a real CGB boot ROM has written the compatibility palettes.
     void enableDmgCompatibility() { dmgCompatibility_ = true; }
@@ -58,9 +53,6 @@ public:
         uint8_t colorIndex) const;
 
 private:
-    void writePaletteBlock(std::array<uint8_t, 0x40>& destination, uint8_t palette,
-        const std::array<uint16_t, 4>& colors);
-
     std::array<std::array<uint8_t, VideoRamBankSize>, 2> videoRam_{};
     std::array<uint8_t, OamSize> oam_{};
     std::array<uint8_t, 0x40> backgroundPalette_{};

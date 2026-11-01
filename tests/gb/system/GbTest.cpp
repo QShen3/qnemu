@@ -156,7 +156,6 @@ TEST(GbTest, CgbBootRomPresentsQnemuLogo)
     auto display = std::make_shared<MemoryDisplay>();
     qnemu::Gb system(qnemu::GbModel::cgb, display,
         std::make_unique<NullSound>(), nullptr);
-    system.setBootRomEnabled(true);
     system.loadCartridge(path.toStdString().c_str());
 
     for (int i = 0; i < 120 && display->frameCount < 70; ++i) {
@@ -181,7 +180,6 @@ TEST(GbTest, DmgBootRomRunsAndShowsCartridgeLogo)
     auto display = std::make_shared<MemoryDisplay>();
     qnemu::Gb system(qnemu::GbModel::dmg, display,
         std::make_unique<NullSound>(), nullptr);
-    system.setDmgBootRomEnabled(true);
     system.loadCartridge(path.toStdString().c_str());
 
     for (int i = 0; i < 120 && display->frameCount < 40; ++i) {
@@ -211,7 +209,6 @@ TEST(GbTest, SgbBootRomRunsAndPresentsSgbFrames)
     auto display = std::make_shared<MemoryDisplay>();
     qnemu::Gb system(qnemu::GbModel::sgb, display,
         std::make_unique<NullSound>(), nullptr);
-    system.setSgbBootRomEnabled(true);
     system.loadCartridge(path.toStdString().c_str());
 
     for (int i = 0; i < 200 && display->sgbFrameCount < 10; ++i) {

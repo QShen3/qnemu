@@ -118,25 +118,6 @@ uint32_t PpuMemory::dmgColor(uint8_t palette, uint8_t colorIndex) const
 }
 
 
-void PpuMemory::setDmgCompatibilityPalette(const DmgCompatibilityPalette& palette)
-{
-    writePaletteBlock(backgroundPalette_, 0, palette.background);
-    writePaletteBlock(objectPalette_, 0, palette.object0);
-    writePaletteBlock(objectPalette_, 1, palette.object1);
-    dmgCompatibility_ = true;
-}
-
-void PpuMemory::writePaletteBlock(std::array<uint8_t, 0x40>& destination, uint8_t palette,
-    const std::array<uint16_t, 4>& colors)
-{
-    const std::size_t base = static_cast<std::size_t>(palette) * 8;
-    for (std::size_t i = 0; i < colors.size(); ++i) {
-        const uint16_t color = colors.at(i);
-        destination.at(base + i * 2) = static_cast<uint8_t>(color & 0xFF);
-        destination.at(base + i * 2 + 1) = static_cast<uint8_t>(color >> 8);
-    }
-}
-
 uint32_t PpuMemory::dmgCompatibilityColor(bool object, uint8_t palette, uint8_t dmgPalette,
     uint8_t colorIndex) const
 {

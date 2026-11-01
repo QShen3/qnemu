@@ -45,6 +45,12 @@ if(QNEMU_ENABLE_ROM_TESTS)
         endforeach()
         qnemu_add_rom_test("blargg_cpu_instrs" "${BLARGG_ROM_ROOT}/cpu_instrs/cpu_instrs.gb" "blargg")
 
+        # DMG-only cartridge on CGB hardware: the CGB boot ROM must select the
+        # compatibility palette, switch through KEY0 and hand off to DMG mode.
+        qnemu_add_rom_test("blargg_cpu_instrs_cgb_boot_rom"
+            "${BLARGG_ROM_ROOT}/cpu_instrs/individual/01-special.gb"
+            "blargg;boot" --model cgb --boot-rom)
+
         qnemu_add_rom_test("blargg_instr_timing"
             "${BLARGG_ROM_ROOT}/instr_timing/instr_timing.gb" "blargg")
 
@@ -249,7 +255,8 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "mooneye;boot" --model dmg --boot-model "${BOOT_MODEL}")
         endforeach()
 
-        # CGB boot ROM execution, instead of the HLE post-boot state.
+        # CGB boot ROM execution.  (The emulator always boots; the runner
+        # keeps --boot-rom so CPU-only tests can opt in or out.)
         # boot_div-* is intentionally not registered: it asserts the official
         # CGB boot ROM's exact cycle count, which SameBoy's reimplementation
         # (and this QNEMU-logo variant) does not reproduce.

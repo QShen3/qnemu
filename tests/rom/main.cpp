@@ -83,7 +83,7 @@ void printUsage(const char* program)
               << "  --dump-frame P      write the final frame as a binary PPM\n"
               << "  --patch OFF=HEX     patch the ROM image before loading (repeatable)\n"
               << "  --boot-model M      post-boot model: dmg0, dmgabc, mgb, sgb, sgb2\n"
-              << "  --boot-rom          execute the bundled QNEMU CGB boot ROM\n"
+              << "  --boot-rom          execute the model's bundled boot ROM\n"
               << "  --verbose           stream serial output as it is produced\n";
 }
 

@@ -22,7 +22,6 @@
 #include "qnemu/gb/boot/GbSgbBootRom.h"
 #include "qnemu/gb/cartridge/GbCartridge.h"
 #include "qnemu/gb/cpu/GbCpu.h"
-#include "qnemu/gb/gpu/CgbCompatibilityPalette.h"
 #include "qnemu/gb/gpu/GbPpu.h"
 #include "qnemu/gb/interrupt/GbInterruptHandler.h"
 #include "qnemu/gb/joypad/GbJoypad.h"
@@ -99,11 +98,10 @@ Gb::Gb(GbModel model,
         *mmu, model == GbModel::cgb && cartridge->isGbcCartridge());
     bus->setCgbModeCallback([this](bool mode) {
         // The PPU stays on CGB hardware registers in DMG compatibility mode;
-        // only its rendering mode switches to the DMG path.
+        // only its rendering mode switches to the DMG path.  The CGB boot ROM
+        // has already written the compatibility palettes into palette RAM.
         ppu->setDmgMode(!mode);
-        if (mode) {
-            ppu->clearDmgCompatibilityPalette();
-        } else {
+        if (!mode) {
             ppu->enableDmgCompatibility();
         }
     });
@@ -135,53 +133,28 @@ void Gb::loadCartridge(const char* filePath)
     saveManager.reset();
 
     cartridge->load(filePath);
-    // A CGB-capable cartridge (dual-mode 0x80 or CGB-only 0xC0) enters CGB
-    // mode on CGB hardware.  DMG-only carts use the DMG-compatible PPU/CPU
-    // state and the CGB boot compatibility palette.  DMG/SGB models always
-    // use the DMG-compatible path.
+    // Every model runs its bundled boot ROM.  CGB hardware starts in CGB mode
+    // even for DMG-only cartridges; the CGB boot ROM selects the per-game
+    // compatibility palette and switches to DMG mode through KEY0.  DMG uses
+    // Bootix and SGB uses qnemu's clean-room header-forwarding ROM.
     const GbCartridgeHeader header = cartridge->cartridgeHeader();
     if (sgb) {
         sgb->setHeader(header);
     }
     const bool hardwareCgb = model == GbModel::cgb;
-    const bool hardwareDmg = model == GbModel::dmg;
-    const bool hardwareSgb = model == GbModel::sgb;
-    const bool cgb = hardwareCgb && (header.cgb || cgbBootRomEnabled);
     cgbMode = hardwareCgb && header.cgb;
-    // The CGB image also runs on CGB hardware for DMG-only cartridges: the
-    // ROM switches to DMG compatibility by writing KEY0=$04.  DMG uses Bootix
-    // and SGB uses qnemu's clean-room header-forwarding ROM.
-    bootRomActive = (hardwareCgb && cgbBootRomEnabled)
-        || (hardwareDmg && dmgBootRomEnabled)
-        || (hardwareSgb && sgbBootRomEnabled);
     const std::span<const uint8_t> bootRom = hardwareCgb ? cgbBootRom()
-        : hardwareDmg ? dmgBootRom()
+        : model == GbModel::dmg ? dmgBootRom()
         : sgbBootRom();
-    bus->setCgb(cgb);
+    bus->setCgb(hardwareCgb);
     bus->reset();
-    ppu->setCgb(cgb);
+    ppu->setCgb(hardwareCgb);
     mmu->setBootRom(bootRom);
-    mmu->setBootRomActive(bootRomActive);
+    mmu->setBootRomActive(true);
     mmu->reset();
-    if (bootRomActive) {
-        ppu->resetForBootRom();
-    }
+    ppu->resetForBootRom();
     ppu->setDmgMode(false);
-    if (!bootRomActive && model == GbModel::cgb && !header.cgb) {
-        const qnemu::DmgCompatibilityPalette palette =
-            cgbPaletteSelection >= 0 && cgbPaletteSelection <= 54
-            ? qnemu::cgbCompatibilityPaletteForCombination(
-                static_cast<uint8_t>(cgbPaletteSelection))
-            : qnemu::cgbCompatibilityPalette({
-                header.titleBytes,
-                header.oldLicensee,
-                header.newLicensee,
-            });
-        ppu->setDmgCompatibilityPalette(palette);
-    } else {
-        ppu->clearDmgCompatibilityPalette();
-    }
-    cpu->reset(cgb, bootRomActive);
+    cpu->reset(hardwareCgb, true);
 
     saveManager = std::make_unique<SaveManager>(
         saveDirectory.empty() ? SaveManager::defaultDirectory() : saveDirectory, filePath);
