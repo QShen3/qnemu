@@ -5,10 +5,13 @@
 #include <string>
 
 #include <QtCore/QByteArray>
+#include <QtCore/QDate>
+#include <QtCore/QDateTime>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QTemporaryDir>
+#include <QtCore/QTime>
 
 #include <gtest/gtest.h>
 
@@ -191,6 +194,27 @@ TEST(SavePathsTest, FindsBackupsNewestFirst)
     EXPECT_EQ(found.at(0).timestamp.time().msec(), 123);
     EXPECT_TRUE(QFileInfo::exists(found.at(1).rtcPath));
     EXPECT_FALSE(QFileInfo::exists(found.at(0).rtcPath));
+}
+
+TEST(SavePathsTest, BackupPathMatchesDiscovery)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+
+    const QDateTime timestamp(QDate(2026, 11, 1), QTime(12, 0, 0, 123));
+    const QString path = qnemu::backupPathForSlot(directory.path(),
+        QStringLiteral("/roms/Pokemon Red.gb"), 2, timestamp);
+    EXPECT_EQ(QFileInfo(path).fileName(),
+        QStringLiteral("Pokemon Red-link2-20261101-120000-123.sav"));
+
+    ASSERT_TRUE(QDir().mkpath(QFileInfo(path).absolutePath()));
+    ASSERT_TRUE(writeBytes(path, QByteArray("backup")));
+    const QVector<qnemu::SaveBackup> found =
+        qnemu::findSaveBackups(directory.path(),
+            QStringLiteral("/roms/Pokemon Red.gb"));
+    ASSERT_EQ(found.size(), 1);
+    EXPECT_EQ(found.at(0).slot, 2);
+    EXPECT_EQ(found.at(0).timestamp.time().msec(), 123);
 }
 
 }  // namespace qnemuTest

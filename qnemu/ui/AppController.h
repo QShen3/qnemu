@@ -144,7 +144,6 @@ private:
     QString saveDirectoryForSlot(int slot) const;
     QString saveSlotLabel(const QString& romPath, int slot) const;
     QString defaultSaveSlotLabel(int slot) const;
-    QString saveSlotSuffix(int slot) const;
     QString rtcFilePathForSlot(const QString& romPath, int slot) const;
     bool saveDataEditable(const QString& romPath) const;
     bool isBackupPath(const QString& path) const;

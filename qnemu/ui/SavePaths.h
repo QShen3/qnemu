@@ -37,4 +37,8 @@ bool copySaveFiles(const QString& sourceSav, const QString& sourceRtc,
 QVector<SaveBackup> findSaveBackups(const QString& saveDirectory,
     const QString& romPath);
 
+/// Path of a new backup file for `slot` at `timestamp`.
+QString backupPathForSlot(const QString& saveDirectory, const QString& romPath,
+    int slot, const QDateTime& timestamp);
+
 }  // namespace qnemu

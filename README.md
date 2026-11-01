@@ -26,7 +26,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
 - Parallel background library scan with a loading overlay, plus text search and region/language/status filters.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 460 CTest cases, including 168 curated test ROMs.
+- 461 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -689,7 +689,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ### Curated test ROMs
 
-The current set is **460/460 CTest cases**, including 168 ROM tests.
+The current set is **461/461 CTest cases**, including 168 ROM tests.
 
 <details>
 <summary>Blargg CPU and timing tests (<code>-L blargg</code>)</summary>

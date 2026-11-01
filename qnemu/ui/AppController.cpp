@@ -352,18 +352,6 @@ QString AppController::rtcFilePathForSlot(const QString& romPath, int slot) cons
     return rtcPathForRom(saveDirectoryForSlot(slot), romPath);
 }
 
-QString AppController::saveSlotSuffix(int slot) const
-{
-    switch (slot) {
-    case 0:
-        return QStringLiteral("game");
-    case 1:
-        return QStringLiteral("link1");
-    default:
-        return QStringLiteral("link2");
-    }
-}
-
 bool AppController::copySave(const QString& romPath, int fromSlot, int toSlot)
 {
     if (!saveDataEditable(romPath)) {
@@ -435,13 +423,8 @@ bool AppController::backupSave(const QString& romPath, int slot)
         return false;
     }
 
-    const QString backupDirectory =
-        QDir(settingsValue->savePath()).filePath(QStringLiteral("backups"));
-    const QString timestamp = QDateTime::currentDateTime()
-        .toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"));
-    const QString backupSav = QDir(backupDirectory).filePath(
-        QStringLiteral("%1-%2-%3.sav")
-            .arg(saveFileStem(romPath), saveSlotSuffix(slot), timestamp));
+    const QString backupSav = backupPathForSlot(
+        settingsValue->savePath(), romPath, slot, QDateTime::currentDateTime());
     const QFileInfo backupInfo(backupSav);
     const QString backupRtc = backupInfo.absolutePath() + QLatin1Char('/')
         + backupInfo.completeBaseName() + QStringLiteral(".rtc");

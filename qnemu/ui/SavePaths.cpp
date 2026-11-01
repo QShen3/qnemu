@@ -92,8 +92,7 @@ bool copySaveFiles(const QString& sourceSav, const QString& sourceRtc,
 
 QVector<SaveBackup> findSaveBackups(const QString& saveDirectory,
     const QString& romPath)
-{
-    const QDir backupDirectory(QDir(saveDirectory).filePath(QStringLiteral("backups")));
+{    const QDir backupDirectory(QDir(saveDirectory).filePath(QStringLiteral("backups")));
     if (!backupDirectory.exists()) {
         return {};
     }
@@ -138,6 +137,19 @@ QVector<SaveBackup> findSaveBackups(const QString& saveDirectory,
             return left.path > right.path;
         });
     return backups;
+}
+
+QString backupPathForSlot(const QString& saveDirectory, const QString& romPath,
+    int slot, const QDateTime& timestamp)
+{
+    const QString suffix = slot == 0
+        ? QStringLiteral("game")
+        : (slot == 1 ? QStringLiteral("link1") : QStringLiteral("link2"));
+    const QString fileName = QStringLiteral("%1-%2-%3.sav")
+        .arg(saveFileStem(romPath), suffix,
+            timestamp.toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")));
+    return QDir::cleanPath(QDir(saveDirectory)
+        .filePath(QStringLiteral("backups/") + fileName));
 }
 
 }  // namespace qnemu
