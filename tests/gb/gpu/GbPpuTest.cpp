@@ -148,6 +148,36 @@ TEST_F(GbPpuTest, HdmaCopiesAWholeBlock)
     EXPECT_EQ(cgbPpu.read(0xFF55), 0xFF);
 }
 
+TEST_F(GbPpuTest, HdmaStartedDuringHblankCopiesFirstBlockToTheSelectedBank)
+{
+    qnemu::CgbPpu cgbPpu(display, interruptHandler);
+    cgbPpu.setExternalRead([](uint16_t address) {
+        return static_cast<uint8_t>(0xA0 | (address & 0x0F));
+    });
+    for (int i = 0; i < 400 && cgbPpu.currentMode() != 0; ++i) {
+        cgbPpu.step();
+    }
+    ASSERT_EQ(cgbPpu.currentMode(), 0);
+
+    const uint8_t bank0Value = cgbPpu.read(0x8000);
+    cgbPpu.write(0xFF4F, 0x01);
+    cgbPpu.write(0xFF51, 0x02);
+    cgbPpu.write(0xFF52, 0x00);
+    cgbPpu.write(0xFF53, 0x00);
+    cgbPpu.write(0xFF54, 0x00);
+    cgbPpu.write(0xFF55, 0x80);
+    cgbPpu.write(0xFF4F, 0x00);
+
+    EXPECT_EQ(cgbPpu.read(0xFF55), 0xFF);
+    EXPECT_EQ(cgbPpu.read(0x8000), bank0Value);
+
+    cgbPpu.write(0xFF4F, 0x01);
+    for (int i = 0; i < 16; ++i) {
+        EXPECT_EQ(cgbPpu.read(static_cast<uint16_t>(0x8000 + i)),
+            static_cast<uint8_t>(0xA0 | i));
+    }
+}
+
 TEST_F(GbPpuTest, HdmaSourceKeepsTheFullHighByte)
 {
     qnemu::CgbPpu cgbPpu(display, interruptHandler);

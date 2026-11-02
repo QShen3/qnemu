@@ -110,7 +110,7 @@ bool CgbPpuVideo::writeRegister(uint16_t address, uint8_t value,
                 | (value & 0xF0));
             return true;
         case hdma5Address:
-            writeHdma5(value);
+            writeHdma5(value, registers, memory);
             return true;
         case bgPaletteSpecAddress:
             memory.writePaletteSpec(false, value);
@@ -214,7 +214,7 @@ void CgbPpuVideo::transferHdmaBlock(PpuMemory& memory)
     }
 }
 
-void CgbPpuVideo::writeHdma5(uint8_t value)
+void CgbPpuVideo::writeHdma5(uint8_t value, PpuRegisters& registers, PpuMemory& memory)
 {
     if (hdmaActive_ && (value & 0x80) == 0) {
         hdmaActive_ = false;
@@ -229,6 +229,11 @@ void CgbPpuVideo::writeHdma5(uint8_t value)
     hdma5_ = static_cast<uint8_t>(value & 0x7F);
     hdmaActive_ = true;
     hdmaTicks_ = 0;
+    if (hdmaHblank_ && registers.lcdEnabled() && registers.mode() == 0) {
+        // An HBlank DMA started during HBlank moves its first block right
+        // away, before the CPU can change VBK for the following block.
+        transferHdmaBlock(memory);
+    }
 }
 
 }  // namespace qnemu

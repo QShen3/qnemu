@@ -56,7 +56,7 @@ public:
 
 private:
     void transferHdmaBlock(PpuMemory& memory);
-    void writeHdma5(uint8_t value);
+    void writeHdma5(uint8_t value, PpuRegisters& registers, PpuMemory& memory);
 
     PpuFifo fifo_;
     PpuRenderer renderer_;
