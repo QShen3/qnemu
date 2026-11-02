@@ -28,6 +28,7 @@
 #include "qnemu/gb/cartridge/mbc/GbMbc3.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc30.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc5.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc6.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
 #include "qnemu/gb/const.h"
@@ -55,6 +56,7 @@ const std::tuple<uint8_t, size_t> typesOfMbc[] = {
     {0x1C, typeid(qnemu::GbMbc5).hash_code()},
     {0x1D, typeid(qnemu::GbMbc5).hash_code()},
     {0x1E, typeid(qnemu::GbMbc5).hash_code()},
+    {0x20, typeid(qnemu::GbMbc6).hash_code()},
     {0xFF, typeid(qnemu::GbHuc1).hash_code()},
 };
 
@@ -110,7 +112,7 @@ TEST_F(GbMbcFactoryTest, CreateMbcWithInvalidType)
     const qnemu::GbMbcFactory gbMbcFactory;
     EXPECT_THROW({
         try {
-            gbMbcFactory.create(std::vector<std::array<uint8_t, qnemu::RomBankSize>>(), std::vector<std::array<uint8_t, qnemu::RamBankSize>>(), 0x20);
+            gbMbcFactory.create(std::vector<std::array<uint8_t, qnemu::RomBankSize>>(), std::vector<std::array<uint8_t, qnemu::RamBankSize>>(), 0x21);
         }
         catch(const std::runtime_error& e) {
             EXPECT_STREQ(e.what(), "This game is not supported!");

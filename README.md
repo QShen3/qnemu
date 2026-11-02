@@ -21,12 +21,12 @@ goal is to support more consoles and handhelds with the same host layer.
 - Serial data transfer with an in-process link cable for two- and four-player games (DMG-07 protocol), plus two-player Game Boy Color infrared.
 - Super Game Boy command protocol, palette/attribute colorization, the
   default 256×224 border and custom border transfers.
-- MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5 and HuC1 cartridge mappers.
+- MBC1, MBC1M, MBC2, MBC3, MBC30, MBC5, MBC6 and HuC1 cartridge mappers.
 - Battery-backed SRAM saves and MBC3 RTC persistence.
 - ZIP/7z/RAR ROM archives through libarchive, read in memory and matched against the built-in database.
 - Parallel background library scan with a loading overlay, plus text search and region/language/status filters.
 - Qt Quick QML shell with platform-native Quick Controls styling.
-- 471 CTest cases, including 168 curated test ROMs.
+- 478 CTest cases, including 168 curated test ROMs.
 
 ## Build
 
@@ -558,8 +558,8 @@ The MMU and memory blocks have their own tests in `tests/gb/mmu/` and
 | MBC3   | ✅ | RTC register/latch, 1 Hz tick |
 | MBC30  | ✅ | MBC3 with 64 KiB SRAM / 4 MiB ROM |
 | MBC5   | ✅ | 9-bit ROM bank, 16 RAM banks, rumble bit |
+| MBC6   | ✅ | Net de Get; dual ROM/flash windows, RAM banking, flash command set |
 | HuC1   | ✅ | ROM/RAM/battery; IR port not connected |
-| MBC6   | ❌ | not implemented |
 | MBC7   | ❌ | not implemented |
 | MMM01  | ❌ | not implemented |
 | HuC3   | ❌ | not implemented |
@@ -568,7 +568,10 @@ The MMU and memory blocks have their own tests in `tests/gb/mmu/` and
 MBC3's RTC protocol and persistence via a timestamped `.rtc` file are
 implemented. MBC30 is selected for MBC3 headers with 64 KiB SRAM (or a 4 MiB
 ROM). HuC1 reports "no light" from its IR register because no IR backend is
-connected yet.
+connected yet. MBC6 models the MX29F008 flash command set (ID, status,
+128-byte page program, sector/chip erase, sector 0 protection and the hidden
+256-byte map) in memory; Net de Get boots to its title screen, but the flash
+is not persisted yet and the Mobile Adapter download path is not emulated.
 
 ### Saves
 
@@ -583,11 +586,11 @@ the game's save format:
 On macOS the default directory is
 `~/Library/Application Support/QNEmu/saves`; Qt's `AppDataLocation` is used on
 other platforms. `.sav` files are written for battery-backed MBC1/MBC2/MBC3/
-MBC5, MBC30 and no-MBC carts. MBC3 RTC carts additionally get an `.rtc` file;
-when the ROM is loaded again, elapsed wall-clock time is applied unless the RTC
-was halted. Saves are written when a ROM is switched or the emulator closes.
-The directory is not configurable in the UI yet; a settings page will expose it
-later.
+MBC5/MBC6, MBC30 and no-MBC carts. MBC3 RTC carts additionally get an `.rtc`
+file; when the ROM is loaded again, elapsed wall-clock time is applied unless
+the RTC was halted. Saves are written when a ROM is switched or the emulator
+closes. The directory is not configurable in the UI yet; a settings page will
+expose it later.
 
 ### Input
 
@@ -864,7 +867,9 @@ The curated CTest set registers only passing ROMs; the current 168 registered
 ROM tests all pass. The following ROMs are deliberately not registered and
 fail when run directly:
 
-- MBC6, MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
+- MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented.
+- MBC6 flash contents (downloaded minigames) are not persisted, and the Mobile
+  Adapter GB serial device / HTTP server is not emulated.
 - SGB sound commands (`SOUND`/`SOU_TRN`), the SGB boot animation and visual
   `MASK_EN` effects are not implemented yet. The command/palette/attribute
   protocol, default border, custom border transfers and colorization are
@@ -903,6 +908,7 @@ fail when run directly:
 | MBC2             | ✅          | unit + Mooneye |
 | MBC3 / MBC30     | ✅          | unit + RTC tests |
 | MBC5             | ✅          | unit + Mooneye |
+| MBC6             | ✅          | unit + Net de Get boot |
 | HuC1             | ✅          | unit (IR not emulated) |
 | QML UI           | ✅          | manual smoke test |
 | Game library     | ✅          | manual smoke test |

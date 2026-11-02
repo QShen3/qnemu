@@ -16,6 +16,7 @@
 #include "qnemu/gb/cartridge/mbc/GbMbc3.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc30.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc5.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc6.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcInterface.h"
 #include "qnemu/gb/const.h"
@@ -77,6 +78,8 @@ std::unique_ptr<GbMbcInterface> GbMbcFactory::create(std::vector<std::array<uint
         }
     } else if (type >= 0x19 && type <= 0x1E) {
         mbc = std::make_unique<GbMbc5>(std::move(romBanks), std::move(ramBanks), type);
+    } else if (type == 0x20) {
+        mbc = std::make_unique<GbMbc6>(std::move(romBanks), std::move(ramBanks), type);
     } else if (type == 0xFF) {
         mbc = std::make_unique<GbHuc1>(std::move(romBanks), std::move(ramBanks), type);
     } else {
