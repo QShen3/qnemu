@@ -36,6 +36,7 @@ GbInfrared::~GbInfrared()
 uint8_t GbInfrared::read(uint16_t address) const
 {
     assert(address == 0xFF56);
+    (void)address;
     uint8_t value = static_cast<uint8_t>((control & 0xC1) | 0x3E);
     if (signalDetected()) {
         value = static_cast<uint8_t>(value & static_cast<uint8_t>(~0x02));
@@ -46,6 +47,7 @@ uint8_t GbInfrared::read(uint16_t address) const
 void GbInfrared::write(uint16_t address, const uint8_t& value)
 {
     assert(address == 0xFF56);
+    (void)address;
     control = static_cast<uint8_t>(value & 0xC1);
     if (link) {
         link->setLed((control & 0x01) != 0);

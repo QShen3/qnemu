@@ -168,8 +168,11 @@ TEST(GbLinkTest, TwoSystemsExchangeBytesThroughTheLinkCable)
         slave.loadCartridge(slaveRomPath.toStdString().c_str());
 
         // The ROMs report their result through cartridge RAM, which is
-        // flushed when the systems are destroyed.
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        // flushed when the systems are destroyed.  Wait for emulated frames
+        // instead of wall-clock time so coverage and debug builds reach the
+        // same point as fast release builds.
+        ASSERT_TRUE(masterDisplay->waitForFrames(300U));
+        ASSERT_TRUE(slaveDisplay->waitForFrames(300U));
     }
 
     const auto readResult = [](const QString& path) {

@@ -119,7 +119,7 @@ TEST(GbTest, ConstructsWithInjectedHostInterfaces)
         std::make_unique<NullSound>(), nullptr);
 
     system.stop();
-    EXPECT_EQ(display->frameCount, 0U);
+    EXPECT_EQ(display->frameCount.load(), 0U);
 }
 
 TEST(GbTest, DualModeCartridgeUsesCgbHardwareWhenAllowed)
@@ -179,12 +179,12 @@ TEST(GbTest, CgbBootRomPresentsQnemuLogo)
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
 
-    for (int i = 0; i < 120 && display->frameCount < 70; ++i) {
+    for (int i = 0; i < 120 && display->frameCount.load() < 70; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     system.stop();
 
-    ASSERT_GE(display->frameCount, 70U);
+    ASSERT_GE(display->frameCount.load(), 70U);
     const auto& frame = display->lastFrame;
     // The Q in the QNEMU wordmark is at x=34.., y=49..; its top bar is black.
     EXPECT_EQ(frame.at(37, 50), qnemu::rgb(0, 0, 0));
@@ -203,12 +203,12 @@ TEST(GbTest, DmgBootRomRunsAndShowsCartridgeLogo)
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
 
-    for (int i = 0; i < 120 && display->frameCount < 40; ++i) {
+    for (int i = 0; i < 120 && display->frameCount.load() < 40; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     system.stop();
 
-    ASSERT_GE(display->frameCount, 40U);
+    ASSERT_GE(display->frameCount.load(), 40U);
     std::size_t nonWhite = 0;
     const auto& frame = display->lastFrame;
     for (const uint32_t pixel : frame.pixels) {
@@ -232,12 +232,12 @@ TEST(GbTest, SgbBootRomRunsAndPresentsSgbFrames)
         std::make_unique<NullSound>(), nullptr);
     system.loadCartridge(path.toStdString().c_str());
 
-    for (int i = 0; i < 200 && display->sgbFrameCount < 10; ++i) {
+    for (int i = 0; i < 200 && display->sgbFrameCount.load() < 10; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     system.stop();
 
-    EXPECT_GE(display->sgbFrameCount, 10U);
+    EXPECT_GE(display->sgbFrameCount.load(), 10U);
 }
 
 TEST(GbTest, WiresAndClearsInputCallbacks)

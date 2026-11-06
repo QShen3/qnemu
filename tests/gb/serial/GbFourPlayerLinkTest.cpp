@@ -56,8 +56,12 @@ TEST(GbFourPlayerLinkTest, FourSystemsExchangePlayerIdsThroughTheAdapter)
     }
 
     // The ROM reports success by writing 1 to SRAM; the save is flushed when
-    // the systems are destroyed.
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    // the systems are destroyed.  Wait for emulated frames instead of
+    // wall-clock time so coverage and debug builds reach the same point as
+    // fast release builds.
+    for (const auto& display : displays) {
+        ASSERT_TRUE(display->waitForFrames(300U));
+    }
 
     for (auto& system : systems) {
         system.reset();

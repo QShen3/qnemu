@@ -51,8 +51,8 @@ SaveManager::SaveManager(std::string directory, std::string romPath)
 {
     directoryPath = std::move(directory);
     const std::string stem = fileNameStem(romPath);
-    ramFilePath = (std::filesystem::path(directoryPath) / (stem + ".sav")).string();
-    rtcFilePath = (std::filesystem::path(directoryPath) / (stem + ".rtc")).string();
+    ramFilePath = (std::filesystem::path(directoryPath) / (stem + ".sav")).generic_string();
+    rtcFilePath = (std::filesystem::path(directoryPath) / (stem + ".rtc")).generic_string();
 }
 
 std::string SaveManager::defaultDirectory()

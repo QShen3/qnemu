@@ -57,7 +57,8 @@ TEST(GbInfraredLinkTest, TwoCgbSystemsExchangePulses)
         sender.loadCartridge(senderRom.toStdString().c_str());
         receiver.loadCartridge(receiverRom.toStdString().c_str());
 
-        std::this_thread::sleep_for(std::chrono::seconds(4));
+        ASSERT_TRUE(senderDisplay->waitForFrames(300U));
+        ASSERT_TRUE(receiverDisplay->waitForFrames(300U));
     }
 
     const auto readResult = [](const QString& path) {
