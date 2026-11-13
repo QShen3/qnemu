@@ -290,9 +290,8 @@ if(QNEMU_ENABLE_ROM_TESTS)
             "${MOONEYE_ROM_ROOT}/acceptance/bits/unused_hwio-GS.gb"
             "mooneye;apu" --model dmg --apu)
 
-        # The runner now uses the same GbCartridge/MBC code as the emulator.
-        # MBC1M multi-cart wiring is not implemented yet, so that one is left
-        # out of the curated set.
+        # The runner now uses the same GbCartridge/MBC code as the emulator,
+        # including the MBC1M multi-cart detection (multicart_rom_8Mb).
         set(MOONEYE_MBC_TESTS
             "emulator-only/mbc1/bits_bank1.gb"
             "emulator-only/mbc1/bits_bank2.gb"
