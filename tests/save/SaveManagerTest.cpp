@@ -2,6 +2,7 @@
  *  Copyright [2026] <qazxdrcssc2006@163.com>
  */
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -11,6 +12,7 @@
 #include <QTemporaryDir>
 #include <gtest/gtest.h>
 
+#include "qnemu/gb/cartridge/mbc/GbMbc6.h"
 #include "qnemu/save/SaveManager.h"
 
 namespace qnemuTest
@@ -70,6 +72,34 @@ TEST(SaveManagerTest, RamRoundTripUsesRomStemInUnifiedDirectory)
     FakeSaveTarget loaded(std::vector<uint8_t>(4, 0));
     EXPECT_TRUE(manager.load(loaded));
     EXPECT_EQ(loaded.ram, target.ram);
+}
+
+TEST(SaveManagerTest, Mbc6SaveIncludesSramAndFlash)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+
+    const auto makeMbc6 = [] {
+        std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+        return qnemu::GbMbc6(std::move(romBanks),
+            std::vector<std::array<uint8_t, qnemu::RamBankSize>>(4), 0x20);
+    };
+
+    auto target = makeMbc6();
+    std::vector<uint8_t> expected(target.ramSize());
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+        expected.at(i) = static_cast<uint8_t>(i * 31U + 7U);
+    }
+    target.loadRam(expected);
+
+    qnemu::SaveManager manager(
+        directory.path().toStdString(), "/roms/Net de Get.gb");
+    ASSERT_TRUE(manager.save(target));
+    EXPECT_EQ(std::filesystem::file_size(manager.ramPath()), 0x8000 + 0x100000);
+
+    auto loaded = makeMbc6();
+    ASSERT_TRUE(manager.load(loaded));
+    EXPECT_EQ(loaded.dumpRam(), expected);
 }
 
 TEST(SaveManagerTest, RtcRoundTripUsesSeparateFile)

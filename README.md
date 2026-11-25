@@ -38,7 +38,7 @@ goal is to support more consoles and handhelds with the same host layer.
 | MBC2 | ✅ | built-in 512×4 RAM |
 | MBC3 / MBC30 | ✅ | RTC with `.rtc` persistence |
 | MBC5 | ✅ | 9-bit ROM bank, 16 RAM banks, rumble bit |
-| MBC6 | ✅ | Net de Get; flash not persisted yet |
+| MBC6 | ✅ | Net de Get; 32 KiB SRAM + 1 MiB flash persisted in `.sav` |
 | HuC1 | ✅ | IR port not connected |
 | MBC7, MMM01, HuC3, Camera, TAMA5 | ❌ | not implemented |
 
@@ -108,8 +108,9 @@ shared between them.
 ## Known limitations
 
 - MBC7, MMM01, HuC3, Camera and TAMA5 cartridges are not implemented.
-- MBC6 flash contents (downloaded minigames) are not persisted, and the Mobile
-  Adapter GB serial device / HTTP server is not emulated.
+- The Mobile Adapter GB serial device / HTTP server is not emulated, so
+  Net de Get's download path remains unavailable even though downloaded flash
+  contents now persist in its `.sav` file.
 - SGB sound commands (`SOUND`/`SOU_TRN`), the SGB boot animation and visual
   `MASK_EN` effects are not implemented. The command/palette/attribute
   protocol, borders and colorization are implemented.

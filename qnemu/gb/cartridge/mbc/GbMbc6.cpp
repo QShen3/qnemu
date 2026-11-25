@@ -138,7 +138,10 @@ bool GbMbc6::hasBattery() const
 
 std::size_t GbMbc6::ramSize() const
 {
-    return ramBanks.size() * RamBankSize;
+    // SaveTarget's "RAM" is the complete battery-backed cartridge payload.
+    // MBC6 stores its SRAM first and the 1 MiB flash immediately after it,
+    // matching the de-facto mGBA/FlashGBX save layout.
+    return ramBanks.size() * RamBankSize + flashSize;
 }
 
 std::vector<uint8_t> GbMbc6::dumpRam() const
@@ -148,17 +151,23 @@ std::vector<uint8_t> GbMbc6::dumpRam() const
     for (const auto& bank : ramBanks) {
         data.insert(data.end(), bank.begin(), bank.end());
     }
+    data.insert(data.end(), flash.begin(), flash.end());
     return data;
 }
 
 void GbMbc6::loadRam(const std::vector<uint8_t>& data)
 {
+    const std::size_t sramSize = ramBanks.size() * RamBankSize;
     std::size_t offset = 0;
     for (auto& bank : ramBanks) {
         for (auto& byte : bank) {
             byte = offset < data.size() ? data.at(offset++) : 0xFF;
         }
     }
+
+    assert(data.size() >= ramSize());
+    std::copy_n(data.begin() + static_cast<std::ptrdiff_t>(sramSize),
+        flash.size(), flash.begin());
 }
 
 uint8_t GbMbc6::readRomWindow(uint16_t address, uint8_t bank) const

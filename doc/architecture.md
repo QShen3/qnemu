@@ -226,7 +226,7 @@ The MMU and memory blocks have their own tests in `tests/gb/mmu/` and
 | MBC3   | ✅ | RTC register/latch, 1 Hz tick |
 | MBC30  | ✅ | MBC3 with 64 KiB SRAM / 4 MiB ROM |
 | MBC5   | ✅ | 9-bit ROM bank, 16 RAM banks, rumble bit |
-| MBC6   | ✅ | Net de Get; dual ROM/flash windows, RAM banking, flash command set |
+| MBC6   | ✅ | Net de Get; dual ROM/flash windows, RAM banking, persisted flash contents |
 | HuC1   | ✅ | ROM/RAM/battery; IR port not connected |
 | MBC7   | ❌ | not implemented |
 | MMM01  | ❌ | not implemented |
@@ -238,16 +238,18 @@ implemented. MBC30 is selected for MBC3 headers with 64 KiB SRAM (or a 4 MiB
 ROM). HuC1 reports "no light" from its IR register because no IR backend is
 connected yet. MBC6 models the MX29F008 flash command set (ID, status,
 128-byte page program, sector/chip erase, sector 0 protection and the hidden
-256-byte map) in memory; Net de Get boots to its title screen, but the flash
-is not persisted yet and the Mobile Adapter download path is not emulated.
+256-byte map) in memory; Net de Get boots to its title screen, and the SRAM
+plus 1 MiB main flash are persisted in the standard mGBA-compatible `.sav`
+layout. The hidden service region and sector-0 protection bit are not part of
+that save layout. The Mobile Adapter download path is not emulated.
 
 ## Saves
 
-Battery-backed cartridges are saved as raw cartridge RAM, without interpreting
+Battery-backed cartridges are saved as raw cartridge state, without interpreting
 the game's save format:
 
 ```text
-<save folder>/<ROM stem>.sav   raw SRAM
+<save folder>/<ROM stem>.sav   raw SRAM (plus MBC6 flash, when applicable)
 <save folder>/<ROM stem>.rtc   MBC3 RTC registers + timestamp
 ```
 

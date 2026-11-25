@@ -84,7 +84,7 @@ TEST(GbMbc6Test, RamWindowsAndSaveData)
         std::vector<std::array<uint8_t, qnemu::RamBankSize>>(4), 0x20);
 
     EXPECT_TRUE(mbc.hasBattery());
-    EXPECT_EQ(mbc.ramSize(), 0x8000);
+    EXPECT_EQ(mbc.ramSize(), 0x8000 + qnemu::GbMbc6::flashSize);
 
     // RAM is disabled after reset.
     mbc.write(0xA000, 0x11);
@@ -116,7 +116,7 @@ TEST(GbMbc6Test, RamWindowsAndSaveData)
     EXPECT_EQ(mbc.read(0xB000), 0x22);
 
     const std::vector<uint8_t> dump = mbc.dumpRam();
-    EXPECT_EQ(dump.size(), 0x8000);
+    EXPECT_EQ(dump.size(), 0x8000 + qnemu::GbMbc6::flashSize);
 
     qnemu::GbMbc6 restored(makeRomBanks(64),
         std::vector<std::array<uint8_t, qnemu::RamBankSize>>(4), 0x20);
@@ -182,6 +182,66 @@ TEST(GbMbc6Test, FlashEraseProgramAndVerify)
     flashReset(mbc);
 
     EXPECT_EQ(mbc.read(0x4000), 0x00);
+}
+
+TEST(GbMbc6Test, FlashAndSramRoundTripThroughSaveLayout)
+{
+    qnemu::GbMbc6 mbc(makeRomBanks(64),
+        std::vector<std::array<uint8_t, qnemu::RamBankSize>>(4), 0x20);
+    selectFlashA(mbc, 2);
+    mbc.write(qnemu::GbMbc6::flashWriteEnableAddress, 0x01);
+
+    // Erase sector 0, then program its first page.
+    flashUnlock(mbc);
+    flashCommand(mbc, 0x80);
+    flashUnlock(mbc);
+    mbc.write(qnemu::GbMbc6::romBankAAddress, 0);
+    mbc.write(0x4000, 0x30);
+    flashReset(mbc);
+
+    flashUnlock(mbc);
+    flashCommand(mbc, 0xA0);
+    mbc.write(qnemu::GbMbc6::romBankAAddress, 0);
+    for (std::size_t i = 0; i < qnemu::GbMbc6::flashPageSize; ++i) {
+        mbc.write(static_cast<uint16_t>(0x4000 + i),
+            static_cast<uint8_t>(0x30 + i));
+    }
+    mbc.write(0x407F, 0x00);
+    flashReset(mbc);
+
+    // Program a byte in sector 1 to verify the full 1 MiB offset.
+    flashUnlock(mbc);
+    flashCommand(mbc, 0xA0);
+    mbc.write(qnemu::GbMbc6::romBankAAddress, 16);
+    mbc.write(0x4000, 0x5A);
+    mbc.write(0x4000, 0x00);
+    flashReset(mbc);
+
+    mbc.write(qnemu::GbMbc6::ramEnableAddress, 0x0A);
+    mbc.write(0xA000, 0x11);
+
+    const std::vector<uint8_t> dump = mbc.dumpRam();
+    ASSERT_EQ(dump.size(), 0x8000 + qnemu::GbMbc6::flashSize);
+    EXPECT_EQ(dump.at(0x0000), 0x11);
+    for (std::size_t i = 0; i < qnemu::GbMbc6::flashPageSize; ++i) {
+        EXPECT_EQ(dump.at(0x8000 + i), static_cast<uint8_t>(0x30 + i));
+    }
+    EXPECT_EQ(dump.at(0x8000 + 0x20000), 0x5A);
+
+    qnemu::GbMbc6 restored(makeRomBanks(64),
+        std::vector<std::array<uint8_t, qnemu::RamBankSize>>(4), 0x20);
+    restored.loadRam(dump);
+    restored.reset();
+    selectFlashA(restored, 0);
+    restored.write(qnemu::GbMbc6::ramEnableAddress, 0x0A);
+
+    EXPECT_EQ(restored.read(0xA000), 0x11);
+    for (std::size_t i = 0; i < qnemu::GbMbc6::flashPageSize; ++i) {
+        EXPECT_EQ(restored.read(static_cast<uint16_t>(0x4000 + i)),
+            static_cast<uint8_t>(0x30 + i));
+    }
+    restored.write(qnemu::GbMbc6::romBankAAddress, 16);
+    EXPECT_EQ(restored.read(0x4000), 0x5A);
 }
 
 TEST(GbMbc6Test, FlashWriteProtection)

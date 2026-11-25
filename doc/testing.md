@@ -1,6 +1,6 @@
 # Testing QNEmu
 
-QNEmu has 315 unit tests plus 173 curated test ROMs (Blargg, Mooneye
+QNEmu has 317 unit tests plus 173 curated test ROMs (Blargg, Mooneye
 and acid2) registered with CTest. The curated set registers only passing ROMs;
 every registered ROM test passes.
 
@@ -285,8 +285,9 @@ deliberately not registered and fail when run directly:
 
 - MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented (see the README's
   cartridge table).
-- MBC6 flash contents (downloaded minigames) are not persisted, and the Mobile
-  Adapter GB serial device / HTTP server is not emulated.
+- The Mobile Adapter GB serial device / HTTP server is not emulated. MBC6
+  SRAM and main flash persistence are implemented; the hidden service region
+  and sector-0 protection bit are not part of the standard save layout.
 - `boot_div-*` and `boot_hwio-dmgABCmgb` assert the official boot ROMs' exact
   cycle counts/DIV values, which the shipped reimplementations do not
   reproduce (see [`boot-roms.md`](boot-roms.md)).

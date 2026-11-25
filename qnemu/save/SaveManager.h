@@ -14,10 +14,10 @@ namespace qnemu
 {
 
 /**
- * Saves raw cartridge RAM and RTC state in a per-user directory.
+ * Saves raw battery-backed cartridge state and RTC state in a per-user directory.
  *
  * File names are derived from the ROM stem:
- *   <stem>.sav   raw SRAM dump
+ *   <stem>.sav   raw battery-backed cartridge data
  *   <stem>.rtc   MBC3 RTC registers + wall-clock timestamp
  *
  * The directory is injected so a future settings page can change it without

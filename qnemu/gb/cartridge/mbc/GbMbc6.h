@@ -28,8 +28,10 @@ namespace qnemu
  * and the sector 0 write protection closely enough for Net de Get's
  * erase/program/verify loop.
  *
- * The flash array is currently in-memory only.  Persisting it and emulating
- * the Mobile Adapter GB download path are separate follow-ups.
+ * The flash array is persisted with the cartridge SRAM in the standard
+ * mGBA-compatible save layout: 32 KiB SRAM followed by the 1 MiB main flash.
+ * The hidden service region and sector protection are power-on state only.
+ * Emulating the Mobile Adapter GB download path remains a separate follow-up.
  */
 class GbMbc6 : public GbMbcInterface
 {
