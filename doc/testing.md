@@ -1,6 +1,6 @@
 # Testing QNEmu
 
-QNEmu has 317 unit tests plus 173 curated test ROMs (Blargg, Mooneye
+QNEmu has 325 unit tests plus 173 curated test ROMs (Blargg, Mooneye
 and acid2) registered with CTest. The curated set registers only passing ROMs;
 every registered ROM test passes.
 
@@ -283,7 +283,7 @@ and `boot_regs-sgb` / `boot_hwio-S` on SGB.
 The curated CTest set registers only passing ROMs. The following ROMs are
 deliberately not registered and fail when run directly:
 
-- MBC7, MMM01, HuC3, Camera and TAMA5 are not implemented (see the README's
+- MMM01, HuC3, Camera and TAMA5 are not implemented (see the README's
   cartridge table).
 - The Mobile Adapter GB serial device / HTTP server is not emulated. MBC6
   SRAM and main flash persistence are implemented; the hidden service region

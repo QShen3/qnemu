@@ -19,6 +19,7 @@
 #include "qnemu/display/FrameBuffer.h"
 #include "qnemu/gb/GbPlatform.h"
 #include "qnemu/gb/cartridge/GbCartridgeInterface.h"
+#include "qnemu/gb/cartridge/mbc/GbAccelerometerState.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/infrared/GbInfraredLink.h"
 #include "qnemu/gb/serial/GbSerialLink.h"
@@ -82,9 +83,10 @@ private:
     std::shared_ptr<GbCartridgeInterface> cartridge;
     std::unique_ptr<GameBoyPlatform> platform;
     SoundInterface* sound = nullptr;
-    const GbMbcFactory mbcFactory;
     std::shared_ptr<DisplayInterface> display;
     std::shared_ptr<InputInterface> input;
+    std::shared_ptr<AccelerometerState> accelerometer;
+    const GbMbcFactory mbcFactory;
     std::unique_ptr<SaveManager> saveManager;
     std::string saveDirectory;
     std::thread work;

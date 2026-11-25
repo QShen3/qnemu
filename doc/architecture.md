@@ -227,8 +227,8 @@ The MMU and memory blocks have their own tests in `tests/gb/mmu/` and
 | MBC30  | ✅ | MBC3 with 64 KiB SRAM / 4 MiB ROM |
 | MBC5   | ✅ | 9-bit ROM bank, 16 RAM banks, rumble bit |
 | MBC6   | ✅ | Net de Get; dual ROM/flash windows, RAM banking, persisted flash contents |
+| MBC7   | ✅ | Kirby Tilt 'n' Tumble; 256-byte EEPROM + latched accelerometer |
 | HuC1   | ✅ | ROM/RAM/battery; IR port not connected |
-| MBC7   | ❌ | not implemented |
 | MMM01  | ❌ | not implemented |
 | HuC3   | ❌ | not implemented |
 | Camera / TAMA5 | ❌ | not implemented |
@@ -243,26 +243,34 @@ plus 1 MiB main flash are persisted in the standard mGBA-compatible `.sav`
 layout. The hidden service region and sector-0 protection bit are not part of
 that save layout. The Mobile Adapter download path is not emulated.
 
+MBC7 models the two-stage register enable, 7-bit ROM banking, the ADXL202E
+latch sequence and the 93LC56 serial EEPROM command set. Its 256-byte EEPROM is
+battery-backed. The host updates a thread-safe normalized accelerometer state;
+`GbMbc7` samples it only after the `$55` erase / `$AA` latch sequence and maps
+the axes around `$81D0` with roughly `$70` per g.
+
 ## Saves
 
 Battery-backed cartridges are saved as raw cartridge state, without interpreting
 the game's save format:
 
 ```text
-<save folder>/<ROM stem>.sav   raw SRAM (plus MBC6 flash, when applicable)
+<save folder>/<ROM stem>.sav   raw SRAM/EEPROM (plus MBC6 flash, when applicable)
 <save folder>/<ROM stem>.rtc   MBC3 RTC registers + timestamp
 ```
 
-`.sav` files are written for battery-backed MBC1/MBC2/MBC3/MBC5/MBC6, MBC30 and
-no-MBC carts. MBC3 RTC carts additionally get an `.rtc` file; when the ROM is
-loaded again, elapsed wall-clock time is applied unless the RTC was halted.
-Saves are written when a ROM is switched or the emulator closes. The save
-folder is configured in **Settings → General**.
+`.sav` files are written for battery-backed MBC1/MBC2/MBC3/MBC5/MBC6/MBC7,
+MBC30 and no-MBC carts. MBC3 RTC carts additionally get an `.rtc` file; when the
+ROM is loaded again, elapsed wall-clock time is applied unless the RTC was
+halted. Saves are written when a ROM is switched or the emulator closes. The
+save folder is configured in **Settings → General**.
 
 ## Input
 
 Host input is separate from rendering. `EmulatorItem` implements
 `InputInterface` and maps Qt keys to `GbButton` values; `GbJoypad` only models
-the `FF00/P1` matrix and its edge-triggered interrupt. The joypad is therefore
-Qt-free, and a future gamepad, replay or network backend can feed it without
-touching the renderer.
+the `FF00/P1` matrix and its edge-triggered interrupt. The same input interface
+also carries normalized accelerometer samples. `SystemAccelerometer` uses the
+Qt Sensors backend, while configurable arrow keys provide a fallback.
+The joypad and accelerometer state remain Qt-free, so future gamepad, replay or
+network backends can feed them without touching the renderer.

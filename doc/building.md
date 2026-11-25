@@ -7,6 +7,7 @@
 - Qt >= 6.3 with Core, Gui, Multimedia, Concurrent, Qml, Quick,
   QuickControls2 and QuickDialogs2
 - libarchive >= 3.x (ROM archive support)
+- Qt Sensors (system accelerometer input for MBC7)
 - Google Test >= 1.10 (only when building the tests)
 
 ## Quick start
@@ -78,9 +79,17 @@ The Qt Quick runtime QML modules (`QtQuick`, `QtQuick.Controls`,
 `QtQuick.Dialogs`) are needed to run the GUI; on distros that split them out,
 install the `qml6-module-qtquick*` packages for your Qt version.
 
+Qt Sensors is a required build dependency. System accelerometer availability
+still depends on the host having a motion sensor; without one, the setting is
+locked off and MBC7 games use the keyboard tilt bindings instead.
+
 ## Packaging notes
 
 When packaging a macOS `.app` or a Windows build, bundle libarchive (or link it
 statically), since Homebrew/vcpkg library paths are machine-specific. libarchive
 covers the common ZIP methods (store/deflate/bzip2/lzma/xz/zstd); Deflate64 and
 some AES variants are not supported.
+
+When Qt Sensors is linked, also deploy the Sensors library and sensor plugins.
+macOS/iOS app bundles need a motion-usage description
+(`NSMotionUsageDescription`) for system accelerometer access.

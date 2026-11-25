@@ -11,6 +11,8 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include "qnemu/ui/SystemAccelerometer.h"
+
 namespace qnemu
 {
 
@@ -33,6 +35,8 @@ class AppSettings : public QObject
     Q_PROPERTY(QStringList screenshotFormats READ screenshotFormats CONSTANT)
     Q_PROPERTY(int scalePercent READ scalePercent WRITE setScalePercent NOTIFY scalePercentChanged)
     Q_PROPERTY(bool soundEnabled READ soundEnabled WRITE setSoundEnabled NOTIFY soundEnabledChanged)
+    Q_PROPERTY(bool systemAccelerometerAvailable READ systemAccelerometerAvailable CONSTANT)
+    Q_PROPERTY(bool useSystemAccelerometer READ useSystemAccelerometer WRITE setUseSystemAccelerometer NOTIFY useSystemAccelerometerChanged)
     Q_PROPERTY(QString dmgOnlyLaunchPlatform READ dmgOnlyLaunchPlatform WRITE setDmgOnlyLaunchPlatform NOTIFY dmgOnlyLaunchPlatformChanged)
     Q_PROPERTY(QString dualModeLaunchPlatform READ dualModeLaunchPlatform WRITE setDualModeLaunchPlatform NOTIFY dualModeLaunchPlatformChanged)
 
@@ -42,7 +46,8 @@ class AppSettings : public QObject
     Q_PROPERTY(QVariantMap activeKeyBindings READ activeKeyBindings NOTIFY activeKeyBindingsChanged)
 
 public:
-    explicit AppSettings(QObject* parent = nullptr);
+    explicit AppSettings(QObject* parent = nullptr,
+        bool systemAccelerometerAvailable = SystemAccelerometer::available());
 
     QString gbLibraryPath() const { return gbLibraryPathValue; }
     QString gbcLibraryPath() const { return gbcLibraryPathValue; }
@@ -52,6 +57,8 @@ public:
     QStringList screenshotFormats() const { return screenshotFormatList; }
     int scalePercent() const { return scalePercentValue; }
     bool soundEnabled() const { return soundEnabledValue; }
+    bool systemAccelerometerAvailable() const { return systemAccelerometerAvailableValue; }
+    bool useSystemAccelerometer() const { return useSystemAccelerometerValue; }
     QString dmgOnlyLaunchPlatform() const { return dmgOnlyLaunchPlatformValue; }
     QString dualModeLaunchPlatform() const { return dualModeLaunchPlatformValue; }
 
@@ -67,6 +74,7 @@ public:
     void setScreenshotFormat(const QString& value);
     void setScalePercent(int value);
     void setSoundEnabled(bool value);
+    void setUseSystemAccelerometer(bool value);
     void setDmgOnlyLaunchPlatform(const QString& value);
     void setDualModeLaunchPlatform(const QString& value);
     void setActiveKeyProfile(const QString& value);
@@ -88,6 +96,7 @@ signals:
     void screenshotFormatChanged();
     void scalePercentChanged();
     void soundEnabledChanged();
+    void useSystemAccelerometerChanged();
     void dmgOnlyLaunchPlatformChanged();
     void dualModeLaunchPlatformChanged();
     void activeKeyProfileChanged();
@@ -116,6 +125,8 @@ private:
     QStringList screenshotFormatList;
     int scalePercentValue = 200;
     bool soundEnabledValue = true;
+    bool systemAccelerometerAvailableValue = false;
+    bool useSystemAccelerometerValue = false;
     QString dmgOnlyLaunchPlatformValue = QStringLiteral("gb");
     QString dualModeLaunchPlatformValue = QStringLiteral("gbc");
 

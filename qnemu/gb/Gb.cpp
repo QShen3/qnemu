@@ -26,12 +26,18 @@ Gb::Gb(GbPlatform platformKind,
         std::shared_ptr<GbSerialLink> serialLink,
         std::shared_ptr<GbInfraredLink> infraredLink) :
     display(std::move(displayInterface)),
-    input(std::move(inputInterface))
+    input(std::move(inputInterface)),
+    accelerometer(std::make_shared<AccelerometerState>()),
+    mbcFactory(accelerometer)
 {
     sound = soundInterface.get();
     cartridge = std::make_shared<GbCartridge>(mbcFactory);
     platform = createPlatform(platformKind, cartridge, display, std::move(soundInterface),
         input, std::move(serialLink), std::move(infraredLink));
+    if (input) {
+        input->setAccelerometerCallback(
+            [state = accelerometer](float x, float y) { state->set(x, y); });
+    }
 }
 
 Gb::~Gb()
@@ -48,6 +54,7 @@ Gb::~Gb()
     if (input) {
         input->setButtonPressCallback({});
         input->setButtonReleaseCallback({});
+        input->setAccelerometerCallback({});
     }
 }
 

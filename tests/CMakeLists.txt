@@ -41,6 +41,7 @@ add_executable(
     ${PROJECT_SOURCE_DIR}/qnemu/ui/RomArchive.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/RomDatabase.cpp
     ${PROJECT_SOURCE_DIR}/qnemu/ui/SavePaths.cpp
+    ${PROJECT_SOURCE_DIR}/qnemu/ui/SystemAccelerometer.cpp
 )
 set_target_properties(qnemu_test PROPERTIES
     AUTOMOC ON AUTOUIC OFF AUTORCC OFF)
@@ -60,7 +61,8 @@ target_link_libraries(
     GTest::gmock_main
     Qt6::Concurrent
     Qt6::Core
-    Qt6::Gui)
+    Qt6::Gui
+    Qt6::Sensors)
 
 include(GoogleTest)
 gtest_discover_tests(qnemu_test DISCOVERY_TIMEOUT 30)

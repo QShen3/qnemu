@@ -20,6 +20,7 @@
 
 #include "qnemu/display/DisplayInterface.h"
 #include "qnemu/input/InputInterface.h"
+#include "qnemu/ui/SystemAccelerometer.h"
 
 namespace qnemu
 {
@@ -48,9 +49,13 @@ public:
 
     void setButtonPressCallback(std::function<void(GbButton)> callback) override;
     void setButtonReleaseCallback(std::function<void(GbButton)> callback) override;
+    void setAccelerometerCallback(std::function<void(float, float)> callback) override;
 
     /// Replaces the host-key to Game Boy button mapping.
     void setKeyBindings(const QVariantMap& bindings);
+
+    /// Uses the host sensor when available; keyboard tilt is the fallback.
+    void setSystemAccelerometerEnabled(bool enabled);
 
     /// Releases every key currently held in this view (window deactivation).
     Q_INVOKABLE void releaseAllButtons();
@@ -74,6 +79,9 @@ protected:
 private:
     void presentPixels(const uint32_t* pixels, int width, int height);
     std::optional<GbButton> buttonForQtKey(int key) const;
+    int tiltForQtKey(int key) const;
+    void updateKeyboardTilt();
+    void emitAccelerometer(float x, float y);
 
     mutable std::mutex frameMutex;
     QImage frameImage;
@@ -82,9 +90,14 @@ private:
     std::atomic_bool updatePending {false};
     QHash<int, GbButton> keyBindings;
     QSet<int> pressedKeys;
+    QHash<int, int> tiltBindings;
+    QSet<int> pressedTiltKeys;
+    bool systemAccelerometerEnabled_ = false;
+    SystemAccelerometer systemAccelerometer_;
 
     std::function<void(GbButton)> buttonPressCallback;
     std::function<void(GbButton)> buttonReleaseCallback;
+    std::function<void(float, float)> accelerometerCallback;
 };
 
 }  // namespace qnemu

@@ -12,7 +12,8 @@ add_executable(
     ui/LaunchPolicy.cpp
     ui/RomArchive.cpp
     ui/RomDatabase.cpp
-    ui/SavePaths.cpp)
+    ui/SavePaths.cpp
+    ui/SystemAccelerometer.cpp)
 qt_add_resources(qnemu "qml"
     PREFIX "/qml"
     BASE ui
@@ -46,4 +47,5 @@ target_link_libraries(
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2
-    Qt6::QuickDialogs2)
+    Qt6::QuickDialogs2
+    Qt6::Sensors)

@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include "qnemu/gb/cartridge/mbc/GbMbc6.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc7.h"
 #include "qnemu/save/SaveManager.h"
 
 namespace qnemuTest
@@ -98,6 +99,33 @@ TEST(SaveManagerTest, Mbc6SaveIncludesSramAndFlash)
     EXPECT_EQ(std::filesystem::file_size(manager.ramPath()), 0x8000 + 0x100000);
 
     auto loaded = makeMbc6();
+    ASSERT_TRUE(manager.load(loaded));
+    EXPECT_EQ(loaded.dumpRam(), expected);
+}
+
+TEST(SaveManagerTest, Mbc7SaveContainsEeprom)
+{
+    QTemporaryDir directory;
+    ASSERT_TRUE(directory.isValid());
+
+    const auto makeMbc7 = [] {
+        std::vector<std::array<uint8_t, qnemu::RomBankSize>> romBanks(2);
+        return qnemu::GbMbc7(std::move(romBanks), {}, 0x22);
+    };
+
+    auto target = makeMbc7();
+    std::vector<uint8_t> expected(0x100);
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+        expected.at(i) = static_cast<uint8_t>(i ^ 0xA5);
+    }
+    target.loadRam(expected);
+
+    qnemu::SaveManager manager(
+        directory.path().toStdString(), "/roms/Kirby Tilt 'n' Tumble.gb");
+    ASSERT_TRUE(manager.save(target));
+    EXPECT_EQ(std::filesystem::file_size(manager.ramPath()), 0x100);
+
+    auto loaded = makeMbc7();
     ASSERT_TRUE(manager.load(loaded));
     EXPECT_EQ(loaded.dumpRam(), expected);
 }

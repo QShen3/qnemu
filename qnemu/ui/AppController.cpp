@@ -87,6 +87,7 @@ AppController::AppController(std::optional<GbPlatform> cliPlatformOverride, QObj
         this, launchPlatformChanged);
     connect(settingsValue, &AppSettings::activeKeyBindingsChanged, this, &AppController::applyKeyBindings);
     connect(settingsValue, &AppSettings::activeKeyProfileChanged, this, &AppController::applyKeyBindings);
+    connect(settingsValue, &AppSettings::useSystemAccelerometerChanged, this, &AppController::applyKeyBindings);
 }
 
 AppController::~AppController()
@@ -988,10 +989,12 @@ void AppController::applyKeyBindings()
 {
     if (displayItem) {
         displayItem->setKeyBindings(settingsValue->activeKeyBindings());
+        displayItem->setSystemAccelerometerEnabled(settingsValue->useSystemAccelerometer());
     }
     for (EmulatorItem* item : linkDisplayItems) {
         if (item) {
             item->setKeyBindings(settingsValue->activeKeyBindings());
+            item->setSystemAccelerometerEnabled(settingsValue->useSystemAccelerometer());
         }
     }
 }

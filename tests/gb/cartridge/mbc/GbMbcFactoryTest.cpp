@@ -29,6 +29,7 @@
 #include "qnemu/gb/cartridge/mbc/GbMbc30.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc5.h"
 #include "qnemu/gb/cartridge/mbc/GbMbc6.h"
+#include "qnemu/gb/cartridge/mbc/GbMbc7.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactory.h"
 #include "qnemu/gb/cartridge/mbc/GbMbcFactoryInterface.h"
 #include "qnemu/gb/const.h"
@@ -57,6 +58,7 @@ const std::tuple<uint8_t, size_t> typesOfMbc[] = {
     {0x1D, typeid(qnemu::GbMbc5).hash_code()},
     {0x1E, typeid(qnemu::GbMbc5).hash_code()},
     {0x20, typeid(qnemu::GbMbc6).hash_code()},
+    {0x22, typeid(qnemu::GbMbc7).hash_code()},
     {0xFF, typeid(qnemu::GbHuc1).hash_code()},
 };
 

@@ -75,6 +75,22 @@ ApplicationWindow {
         {
             name: "start",
             label: qsTr("Start")
+        },
+        {
+            name: "tiltLeft",
+            label: qsTr("Tilt left")
+        },
+        {
+            name: "tiltRight",
+            label: qsTr("Tilt right")
+        },
+        {
+            name: "tiltUp",
+            label: qsTr("Tilt up")
+        },
+        {
+            name: "tiltDown",
+            label: qsTr("Tilt down")
         }
     ]
 
@@ -354,6 +370,43 @@ ApplicationWindow {
                                 Switch {
                                     checked: settings.soundEnabled
                                     onToggled: settings.soundEnabled = checked
+                                }
+                            }
+                        }
+
+                        SettingsCard {
+                            theme: uiTheme
+                            title: qsTr("Accelerometer")
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 16
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Label {
+                                        text: qsTr("Use system accelerometer")
+                                        color: uiTheme.windowText
+                                        font.pixelSize: 12
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: settings.systemAccelerometerAvailable
+                                            ? qsTr("A system motion sensor was detected. Disable this to use the keyboard tilt bindings instead.")
+                                            : qsTr("No system motion sensor was detected. Keyboard tilt bindings are available on the Controls page.")
+                                        color: uiTheme.mutedText
+                                        font.pixelSize: 11
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                Switch {
+                                    enabled: settings.systemAccelerometerAvailable
+                                    checked: settings.useSystemAccelerometer
+                                    onToggled: settings.useSystemAccelerometer = checked
                                 }
                             }
                         }

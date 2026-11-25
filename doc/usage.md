@@ -87,9 +87,9 @@ add a game or open the settings.
 The settings window is a sidebar layout with grouped cards:
 
 - **General**: game-window scale (100/150/200%), audio enable, the startup
-  platform for grey and dual-mode cartridges, save folder, screenshot folder
-  and format (the format list comes from Qt's image writers). The library
-  window is not affected by the scale setting.
+  platform for grey and dual-mode cartridges, system accelerometer, save
+  folder, screenshot folder and format (the format list comes from Qt's image
+  writers). The library window is not affected by the scale setting.
 - **Game Boy**: the ROM folder scanned for the GB library (grey and dual-mode
   cartridges), with a live count and a rescan button.
 - **Game Boy Color**: the GBC-only ROM folder, with a live count and a rescan
@@ -97,6 +97,11 @@ The settings window is a sidebar layout with grouped cards:
   per-type preference for them.
 - **Controls**: named key profiles, profile creation/deletion, and
   click-to-capture key bindings. Changes apply immediately.
+
+The **Use system accelerometer** switch is available only when Qt Sensors
+detects a system motion sensor. It defaults on in that case; without a sensor it
+is forced off and disabled. Turning it off (or having no sensor) selects the
+keyboard tilt bindings for MBC7 games.
 
 All paths, scale, audio, screenshot settings and key profiles persist through
 `QSettings`; key bindings apply to the game view immediately. Library paths are
@@ -116,6 +121,10 @@ Each profile can be changed in **Settings → Controls**:
 | B      | K   |
 | Start  | 3   |
 | Select | 2   |
+| Tilt left | Left arrow |
+| Tilt right | Right arrow |
+| Tilt up | Up arrow |
+| Tilt down | Down arrow |
 
 ## Game database
 

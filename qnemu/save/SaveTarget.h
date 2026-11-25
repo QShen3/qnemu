@@ -15,7 +15,7 @@ namespace qnemu
  * Cartridge persistence interface used by SaveManager.
  *
  * The emulator never interprets the game's save data: it only dumps or loads
- * the raw battery-backed cartridge state (SRAM and mapper-owned flash).
+ * the raw battery-backed cartridge state (SRAM, EEPROM and mapper-owned flash).
  */
 class SaveTarget
 {

@@ -75,6 +75,46 @@ TEST_F(AppSettingsTest, RejectsInvalidLaunchPlatform)
     EXPECT_EQ(settings.dualModeLaunchPlatform(), QStringLiteral("gbc"));
 }
 
+TEST_F(AppSettingsTest, SystemAccelerometerDefaultsOnOnlyWhenAvailable)
+{
+    qnemu::AppSettings unavailable(nullptr, false);
+    EXPECT_FALSE(unavailable.systemAccelerometerAvailable());
+    EXPECT_FALSE(unavailable.useSystemAccelerometer());
+    unavailable.setUseSystemAccelerometer(true);
+    EXPECT_FALSE(unavailable.useSystemAccelerometer());
+
+    qnemu::AppSettings available(nullptr, true);
+    EXPECT_TRUE(available.systemAccelerometerAvailable());
+    EXPECT_TRUE(available.useSystemAccelerometer());
+    available.setUseSystemAccelerometer(false);
+    EXPECT_FALSE(available.useSystemAccelerometer());
+
+    qnemu::AppSettings restored(nullptr, true);
+    EXPECT_FALSE(restored.useSystemAccelerometer());
+}
+
+TEST_F(AppSettingsTest, ExistingKeyProfilesGainTiltDefaults)
+{
+    QSettings stored;
+    QVariantList profiles;
+    profiles.append(QVariantMap {
+        {QStringLiteral("name"), QStringLiteral("Old")},
+        {QStringLiteral("bindings"), QVariantMap {
+            {QStringLiteral("up"), static_cast<int>(Qt::Key_W)},
+        }},
+    });
+    stored.setValue(QStringLiteral("keys/profiles"), profiles);
+    stored.setValue(QStringLiteral("keys/activeProfile"), QStringLiteral("Old"));
+
+    qnemu::AppSettings settings;
+    const QVariantMap bindings = settings.activeKeyBindings();
+    EXPECT_EQ(bindings.value(QStringLiteral("up")).toInt(), Qt::Key_W);
+    EXPECT_EQ(bindings.value(QStringLiteral("tiltLeft")).toInt(), Qt::Key_Left);
+    EXPECT_EQ(bindings.value(QStringLiteral("tiltRight")).toInt(), Qt::Key_Right);
+    EXPECT_EQ(bindings.value(QStringLiteral("tiltUp")).toInt(), Qt::Key_Up);
+    EXPECT_EQ(bindings.value(QStringLiteral("tiltDown")).toInt(), Qt::Key_Down);
+}
+
 TEST_F(AppSettingsTest, PersistsNamedSaveSlots)
 {
     qnemu::AppSettings settings;

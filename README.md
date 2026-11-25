@@ -22,8 +22,8 @@ goal is to support more consoles and handhelds with the same host layer.
   Game Boy Color infrared.
 - Super Game Boy command protocol, palette/attribute colorization and custom
   borders.
-- Battery-backed SRAM saves with named slots, backups and import/export, plus
-  MBC3 RTC persistence.
+- Battery-backed SRAM/EEPROM saves with named slots, backups and import/export,
+  plus MBC3 RTC and MBC6 flash persistence.
 - ZIP/7z/RAR ROM archives, a built-in No-Intro game database, parallel library
   scanning and text/region/language filters.
 - Qt Quick QML shell with platform-native styling.
@@ -39,8 +39,9 @@ goal is to support more consoles and handhelds with the same host layer.
 | MBC3 / MBC30 | ✅ | RTC with `.rtc` persistence |
 | MBC5 | ✅ | 9-bit ROM bank, 16 RAM banks, rumble bit |
 | MBC6 | ✅ | Net de Get; 32 KiB SRAM + 1 MiB flash persisted in `.sav` |
+| MBC7 | ✅ | Kirby Tilt 'n' Tumble; EEPROM save + accelerometer |
 | HuC1 | ✅ | IR port not connected |
-| MBC7, MMM01, HuC3, Camera, TAMA5 | ❌ | not implemented |
+| MMM01, HuC3, Camera, TAMA5 | ❌ | not implemented |
 
 ## Build
 
@@ -52,7 +53,10 @@ ctest --test-dir build --output-on-failure
 
 The executable is written to `build/qnemu/qnemu`. Requires a C++20 compiler,
 CMake >= 3.16, Qt >= 6.3 and libarchive; Google Test is needed for the test
-build. CMake presets (`debug`, `release`, `coverage`, `analyze`), dependency
+build. Qt Sensors is required for system accelerometer input; MBC7 games use
+keyboard tilt controls when no motion sensor is detected or the system sensor
+is disabled.
+CMake presets (`debug`, `release`, `coverage`, `analyze`), dependency
 install commands and packaging notes are in [`doc/building.md`](doc/building.md).
 
 ## Quick start
@@ -66,9 +70,10 @@ install commands and packaging notes are in [`doc/building.md`](doc/building.md)
 The GUI opens a library window with the GB and GBC collections; clicking a row
 starts the game in a separate game window at the configured scale. Settings
 cover the startup platform, library folders, save and screenshot folders, audio,
-game scale and named key profiles (defaults: WASD, J/K for A/B, 3/2 for
-Start/Select). Screenshots save the current frame at 160×144, or 256×224 with
-the SGB border.
+system accelerometer, game scale and named key profiles. MBC7 games default to
+the system motion sensor when one is detected; otherwise the option is locked
+off and the configurable arrow-key tilt bindings are used. Screenshots save the
+current frame at 160×144, or 256×224 with the SGB border.
 
 See [`doc/usage.md`](doc/usage.md) for the full tour: launch platform
 semantics, the library, ROM archives, the game database, searching and save
@@ -107,7 +112,7 @@ shared between them.
 
 ## Known limitations
 
-- MBC7, MMM01, HuC3, Camera and TAMA5 cartridges are not implemented.
+- MMM01, HuC3, Camera and TAMA5 cartridges are not implemented.
 - The Mobile Adapter GB serial device / HTTP server is not emulated, so
   Net de Get's download path remains unavailable even though downloaded flash
   contents now persist in its `.sav` file.
@@ -123,8 +128,8 @@ shared between them.
 - Link play: adapter chaining / 16-player FaceBall, external IR devices
   (Pokémon Pikachu 2 etc.) and exact DMG-07 microsecond timing are not
   emulated (see [`doc/serial-link.md`](doc/serial-link.md)).
-- Gamepad, replay and network input backends are future work; input is
-  keyboard-mapped only.
+- Gamepad, replay and network input backends are future work; keyboard and
+  optional system motion-sensor input are supported.
 
 ## Feature matrix
 
@@ -134,7 +139,7 @@ shared between them.
 | OAM DMA / HDMA | ✅ unit + Mooneye |
 | Serial link (2/4 players) | ✅ unit + ROM tests |
 | Infrared link | ✅ unit + two-instance ROM test |
-| MBC1–MBC6, HuC1, MBC30 | ✅ (see cartridge table) |
+| MBC1–MBC7, HuC1, MBC30 | ✅ (see cartridge table) |
 | Boot ROMs (DMG/CGB/SGB) | ✅ Mooneye boot tests + acid2 |
 | CGB DMG colorization | ✅ unit + manual |
 | Battery saves / save manager / MBC3 RTC | ✅ unit |

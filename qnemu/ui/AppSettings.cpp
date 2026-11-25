@@ -13,6 +13,7 @@
 #include <QtGui/QKeySequence>
 
 #include "qnemu/ui/AppSettings.h"
+#include "qnemu/ui/SystemAccelerometer.h"
 
 namespace qnemu
 {
@@ -51,7 +52,7 @@ QString saveSlotKey(int slot)
 
 }  // namespace
 
-AppSettings::AppSettings(QObject* parent) : QObject(parent)
+AppSettings::AppSettings(QObject* parent, bool systemAccelerometerAvailable) : QObject(parent)
 {
     const QList<QByteArray> formats = QImageWriter::supportedImageFormats();
     for (const QByteArray& format : formats) {
@@ -98,6 +99,9 @@ AppSettings::AppSettings(QObject* parent) : QObject(parent)
     scalePercentValue = std::clamp(settings.value(QStringLiteral("ui/scalePercent"), 200).toInt(),
         100, 200);
     soundEnabledValue = settings.value(QStringLiteral("audio/enabled"), true).toBool();
+    systemAccelerometerAvailableValue = systemAccelerometerAvailable;
+    useSystemAccelerometerValue = systemAccelerometerAvailableValue
+        && settings.value(QStringLiteral("accelerometer/useSystem"), true).toBool();
     dmgOnlyLaunchPlatformValue = settings.value(QStringLiteral("platforms/launch/dmgOnly"))
                                      .toString()
                                      .toLower();
@@ -161,6 +165,10 @@ QVariantMap AppSettings::defaultBindings()
         {QStringLiteral("b"), static_cast<int>(Qt::Key_K)},
         {QStringLiteral("select"), static_cast<int>(Qt::Key_2)},
         {QStringLiteral("start"), static_cast<int>(Qt::Key_3)},
+        {QStringLiteral("tiltLeft"), static_cast<int>(Qt::Key_Left)},
+        {QStringLiteral("tiltRight"), static_cast<int>(Qt::Key_Right)},
+        {QStringLiteral("tiltUp"), static_cast<int>(Qt::Key_Up)},
+        {QStringLiteral("tiltDown"), static_cast<int>(Qt::Key_Down)},
     };
 }
 
@@ -266,6 +274,16 @@ void AppSettings::setSoundEnabled(bool value)
     emit soundEnabledChanged();
 }
 
+void AppSettings::setUseSystemAccelerometer(bool value)
+{
+    if (!systemAccelerometerAvailableValue || value == useSystemAccelerometerValue) {
+        return;
+    }
+    useSystemAccelerometerValue = value;
+    settings.setValue(QStringLiteral("accelerometer/useSystem"), value);
+    emit useSystemAccelerometerChanged();
+}
+
 void AppSettings::setDmgOnlyLaunchPlatform(const QString& value)
 {
     const QString platform = value.toLower();
@@ -310,11 +328,16 @@ QStringList AppSettings::profileNames() const
 
 QVariantMap AppSettings::bindingsForProfile(const QString& name) const
 {
+    QVariantMap bindings = defaultBindings();
     const int index = profileIndex(name);
-    if (index < 0) {
-        return defaultBindings();
+    if (index >= 0) {
+        const QVariantMap stored = keyProfilesValue.at(index)
+            .toMap().value(QStringLiteral("bindings")).toMap();
+        for (auto it = stored.constBegin(); it != stored.constEnd(); ++it) {
+            bindings.insert(it.key(), it.value());
+        }
     }
-    return keyProfilesValue.at(index).toMap().value(QStringLiteral("bindings")).toMap();
+    return bindings;
 }
 
 int AppSettings::profileIndex(const QString& name) const
