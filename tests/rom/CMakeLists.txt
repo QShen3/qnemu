@@ -96,6 +96,11 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${BLARGG_ROM_ROOT}/dmg_sound/rom_singles/${NAME}.gb"
                 "blargg;sound" --model dmg --apu)
         endforeach()
+        # The full suite runs all 12 subtests in sequence and needs more than
+        # the default 300M cycle budget used by qnemu_add_rom_test.
+        qnemu_add_rom_test("blargg_dmg_sound"
+            "${BLARGG_ROM_ROOT}/dmg_sound/dmg_sound.gb"
+            "blargg;sound" --model dmg --apu --max-cycles 1500000000)
 
         set(BLARGG_CGB_SOUND_TESTS
             "01-registers"
@@ -116,6 +121,9 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "${BLARGG_ROM_ROOT}/cgb_sound/rom_singles/${NAME}.gb"
                 "blargg;sound" --model cgb --apu)
         endforeach()
+        qnemu_add_rom_test("blargg_cgb_sound"
+            "${BLARGG_ROM_ROOT}/cgb_sound/cgb_sound.gb"
+            "blargg;sound" --model cgb --apu --max-cycles 1500000000)
         # OAM corruption: causes, scanline timing and the effect-pattern tests.
         set(BLARGG_OAM_BUG_TESTS
             "1-lcd_sync"
@@ -139,6 +147,9 @@ if(QNEMU_ENABLE_ROM_TESTS)
         qnemu_add_rom_test("blargg_oam_bug_7-timing_effect"
             "${BLARGG_ROM_ROOT}/oam_bug/rom_singles/7-timing_effect.gb"
             "blargg;ppu" --model dmg --ppu --patch 0x4401=000000)
+        qnemu_add_rom_test("blargg_oam_bug"
+            "${BLARGG_ROM_ROOT}/oam_bug/oam_bug.gb"
+            "blargg;ppu" --model dmg --ppu)
     endif()
 
     set(MOONEYE_ROM_ROOT "${QNEMU_TEST_ROM_ROOT}/mooneye-test-roms")
@@ -270,6 +281,12 @@ if(QNEMU_ENABLE_ROM_TESTS)
                 "mooneye;boot" --model cgb --ppu --apu --boot-rom)
         endforeach()
 
+        # This DMG-only ROM must boot on CGB hardware so the runner attaches
+        # CgbPpu and the boot ROM selects DMG compatibility mode.
+        qnemu_add_rom_test("mooneye_vblank_stat_intr_c"
+            "${MOONEYE_ROM_ROOT}/misc/ppu/vblank_stat_intr-C.gb"
+            "mooneye;ppu;boot" --model cgb --ppu --boot-rom)
+
         # Bootix DMG boot ROM.  boot_hwio-dmgABCmgb is not registered because
         # its DIV check assumes the official DMG ROM's exact cycle count;
         # Bootix intentionally uses a different animation.
@@ -289,6 +306,9 @@ if(QNEMU_ENABLE_ROM_TESTS)
         qnemu_add_rom_test("mooneye_bits_unused_hwio_gs"
             "${MOONEYE_ROM_ROOT}/acceptance/bits/unused_hwio-GS.gb"
             "mooneye;apu" --model dmg --apu)
+        qnemu_add_rom_test("mooneye_bits_unused_hwio_c"
+            "${MOONEYE_ROM_ROOT}/misc/bits/unused_hwio-C.gb"
+            "mooneye;apu;boot" --model cgb --apu --ppu --boot-rom)
 
         # The runner now uses the same GbCartridge/MBC code as the emulator,
         # including the MBC1M multi-cart detection (multicart_rom_8Mb).

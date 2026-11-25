@@ -34,6 +34,7 @@ public:
     void stepHdma(PpuMemory& memory) override;
     void onMode0(PpuMemory& memory) override;
     bool isHdmaActive() const override { return hdmaActive_ && !hdmaHblank_; }
+    bool mode2InterruptPrecedesVBlank() const override { return true; }
 
     void startLine(PpuRegisters& registers, PpuMemory& memory,
         uint8_t line, uint16_t windowLine) override;

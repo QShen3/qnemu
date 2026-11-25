@@ -58,13 +58,13 @@ bool CgbPpuVideo::readRegister(uint16_t address, const PpuRegisters& registers,
             value = 0xFF;
             return true;
         case hdma5Address:
-            value = hdma5_;
+            value = dmgMode_ ? 0xFF : hdma5_;
             return true;
         case bgPaletteSpecAddress:
             value = memory.readPaletteSpec(false);
             return true;
         case bgPaletteDataAddress:
-            value = (registers.mode() == 3 && registers.lcdEnabled())
+            value = (dmgMode_ || (registers.mode() == 3 && registers.lcdEnabled()))
                 ? 0xFF
                 : memory.readPaletteData(false);
             return true;
@@ -72,12 +72,14 @@ bool CgbPpuVideo::readRegister(uint16_t address, const PpuRegisters& registers,
             value = memory.readPaletteSpec(true);
             return true;
         case objPaletteDataAddress:
-            value = (registers.mode() == 3 && registers.lcdEnabled())
+            value = (dmgMode_ || (registers.mode() == 3 && registers.lcdEnabled()))
                 ? 0xFF
                 : memory.readPaletteData(true);
             return true;
         case objectPriorityAddress:
-            value = static_cast<uint8_t>(0xFE | (registers.opri & 0x01));
+            // FF6C (OPRI) exists in native CGB mode, but is unmapped in DMG
+            // compatibility mode.
+            value = dmgMode_ ? 0xFF : static_cast<uint8_t>(0xFE | (registers.opri & 0x01));
             return true;
         default:
             return false;
@@ -87,6 +89,10 @@ bool CgbPpuVideo::readRegister(uint16_t address, const PpuRegisters& registers,
 bool CgbPpuVideo::writeRegister(uint16_t address, uint8_t value,
     PpuRegisters& registers, PpuMemory& memory)
 {
+    if (dmgMode_ && address >= hdma1Address && address <= hdma5Address) {
+        return true;
+    }
+
     switch (address) {
         case vramBankAddress:
             memory.setVramBank(value);
@@ -116,7 +122,7 @@ bool CgbPpuVideo::writeRegister(uint16_t address, uint8_t value,
             memory.writePaletteSpec(false, value);
             return true;
         case bgPaletteDataAddress:
-            if (!(registers.mode() == 3 && registers.lcdEnabled())) {
+            if (!dmgMode_ && !(registers.mode() == 3 && registers.lcdEnabled())) {
                 memory.writePaletteData(false, value);
             }
             return true;
@@ -124,12 +130,14 @@ bool CgbPpuVideo::writeRegister(uint16_t address, uint8_t value,
             memory.writePaletteSpec(true, value);
             return true;
         case objPaletteDataAddress:
-            if (!(registers.mode() == 3 && registers.lcdEnabled())) {
+            if (!dmgMode_ && !(registers.mode() == 3 && registers.lcdEnabled())) {
                 memory.writePaletteData(true, value);
             }
             return true;
         case objectPriorityAddress:
-            registers.opri = static_cast<uint8_t>(value & 0x01);
+            if (!dmgMode_) {
+                registers.opri = static_cast<uint8_t>(value & 0x01);
+            }
             return true;
         default:
             return false;

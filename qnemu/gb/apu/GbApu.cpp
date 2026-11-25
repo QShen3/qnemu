@@ -102,8 +102,9 @@ uint8_t GbApu::read(uint16_t address) const
         return nr51;
     }
     if (address == 0xFF76 || address == 0xFF77) {
-        // PCM12/PCM34 are CGB-only.  The boot ROM leaves the channels silent,
-        // so both nibbles read as zero; DMG hardware reads $FF.
+        // PCM12/PCM34 are read-only channel amplitude monitors on CGB.  The
+        // channels are silent after reset, so both registers read as zero;
+        // DMG hardware leaves these addresses unmapped and reads $FF.
         return cgb ? 0x00 : 0xFF;
     }
 

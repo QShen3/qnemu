@@ -517,6 +517,12 @@ void GbPpu::stepTiming()
         accessedOamRow_ = -1;
     }
 
+    if (registers_.ly == 143 && dot_ + 1 == lineLength_
+        && video_->mode2InterruptPrecedesVBlank()) {
+        // CGB pulses mode-2 STAT one dot before the line-144 VBlank edge.
+        updateStatIrq();
+    }
+
     ++dot_;
     if (dot_ >= lineLength_) {
         dot_ = 0;
@@ -641,9 +647,14 @@ void GbPpu::updateStatIrq()
     const bool signal = ((registers_.stat & StatBits::mode0Interrupt) && mode == 0)
         || ((registers_.stat & StatBits::mode1Interrupt) && mode == 1)
         || ((registers_.stat & StatBits::mode2Interrupt) && mode == 2)
-        // DMG also raises the mode-2 STAT line at the start of VBlank.
+        // DMG raises the mode-2 STAT line at the start of VBlank.
         || ((registers_.stat & StatBits::mode2Interrupt)
+            && !video_->mode2InterruptPrecedesVBlank()
             && mode == 1 && registers_.ly == 144)
+        // CGB raises it on the final dot of line 143 instead.
+        || ((registers_.stat & StatBits::mode2Interrupt)
+            && video_->mode2InterruptPrecedesVBlank()
+            && registers_.ly == 143 && dot_ + 1 == lineLength_)
         || ((registers_.stat & StatBits::lycInterrupt) && registers_.lycCoincidence());
 
     if (signal && !statIrqLine_) {

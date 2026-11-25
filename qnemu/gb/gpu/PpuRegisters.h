@@ -49,7 +49,7 @@ struct PpuRegisters
     uint8_t bgp = 0xFC;
     uint8_t obp0 = 0xFF;
     uint8_t obp1 = 0xFF;
-    uint8_t opri = 0x00;  // FF6C, CGB object priority mode
+    uint8_t opri = 0x00;  // FF6C, native CGB object priority mode
 
     bool lcdEnabled() const { return (lcdc & LcdcBits::lcdEnable) != 0; }
     bool bgWindowEnabled() const { return (lcdc & LcdcBits::bgWindowEnable) != 0; }

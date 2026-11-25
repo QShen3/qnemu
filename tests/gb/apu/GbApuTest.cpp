@@ -95,6 +95,15 @@ TEST_F(GbApuTest, WaveRamSurvivesPowerOff)
     EXPECT_EQ(apu->read(0xFF30), 0x5A);
 }
 
+TEST_F(GbApuTest, CgbPcmRegistersAreReadOnly)
+{
+    apu->write(0xFF76, 0xFF);
+    apu->write(0xFF77, 0xFF);
+
+    EXPECT_EQ(apu->read(0xFF76), 0x00);
+    EXPECT_EQ(apu->read(0xFF77), 0x00);
+}
+
 TEST_F(GbApuTest, GlobalRegisterReadBack)
 {
     apu->write(0xFF24, 0xFF);

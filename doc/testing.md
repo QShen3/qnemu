@@ -1,6 +1,6 @@
 # Testing QNEmu
 
-QNEmu has a 300-case unit suite plus 168 curated test ROMs (Blargg, Mooneye
+QNEmu has 315 unit tests plus 173 curated test ROMs (Blargg, Mooneye
 and acid2) registered with CTest. The curated set registers only passing ROMs;
 every registered ROM test passes.
 
@@ -106,7 +106,7 @@ python3 tests/rom/run_test_roms.py third_party/mooneye-test-roms/acceptance \
 
 ## Curated test ROMs
 
-The current set registers 164 ROM tests from the submodules plus 4 acid2
+The current set registers 169 ROM tests from the submodules plus 4 acid2
 image tests, all passing.
 
 <details>
@@ -143,6 +143,7 @@ DMG (`--model dmg`):
 - `10-wave trigger while on`
 - `11-regs after power`
 - `12-wave write while on`
+- `dmg_sound/dmg_sound` (full suite, 1.5B cycle budget)
 
 CGB (`--model cgb`):
 
@@ -158,6 +159,7 @@ CGB (`--model cgb`):
 - `10-wave trigger while on`
 - `11-regs after power`
 - `12-wave`
+- `cgb_sound/cgb_sound` (full suite, 1.5B cycle budget)
 
 </details>
 
@@ -174,6 +176,7 @@ DMG (`--model dmg`):
 - `6-timing_no_bug`
 - `7-timing_effect`
 - `8-instr_effect`
+- `oam_bug/oam_bug` (full suite)
 
 `7-timing_effect` is run with a small ROM patch that disables the ROM's
 optional `write_text_out` log.  The log grows past the 8 KiB cartridge
@@ -226,6 +229,7 @@ serial clock phase and I/O register values without executing a copyrighted
 boot ROM.  `--boot-model` selects `dmg0`, `dmgabc`, `mgb`, `sgb` or `sgb2`.
 
 - `bits/unused_hwio-GS` (DMG, with `--apu`)
+- `misc/bits/unused_hwio-C` (CGB, with `--apu --ppu --boot-rom`)
 - `boot_div-dmg0`, `boot_div-dmgABCmgb`, `boot_div-S`, `boot_div2-S`
 - `boot_hwio-dmg0`, `boot_hwio-dmgABCmgb`, `boot_hwio-S`
 - `boot_regs-dmg0`, `boot_regs-dmgABC`, `boot_regs-mgb`, `boot_regs-sgb`, `boot_regs-sgb2`
@@ -261,6 +265,7 @@ and `boot_regs-sgb` / `boot_hwio-S` on SGB.
 - `ppu/stat_irq_blocking`
 - `ppu/stat_lyc_onoff`
 - `ppu/vblank_stat_intr-GS`
+- `misc/ppu/vblank_stat_intr-C` (CGB, with `--ppu --boot-rom`)
 
 </details>
 

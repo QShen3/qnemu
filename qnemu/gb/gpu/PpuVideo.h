@@ -45,6 +45,10 @@ public:
     virtual void onMode0(PpuMemory& memory) = 0;
     virtual bool isHdmaActive() const = 0;
 
+    /// CGB raises the mode-2 STAT line one dot before VBlank; DMG/SGB raise
+    /// it at the VBlank boundary instead.
+    virtual bool mode2InterruptPrecedesVBlank() const { return false; }
+
     virtual void startLine(PpuRegisters& registers, PpuMemory& memory,
         uint8_t line, uint16_t windowLine) = 0;
     virtual void step(PpuRegisters& registers, PpuMemory& memory,

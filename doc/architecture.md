@@ -148,7 +148,9 @@ The PPU is split into four Qt-free pieces under `qnemu/gb/gpu`:
   fetches and the final object-compositing pass.
 
 STAT interrupts use an edge/blocking line rather than firing on every mode
-change. `GbCpuBus` also implements CGB `KEY0`/`KEY1` and double-speed switching,
+change. On CGB, the mode-2 STAT source is pulsed on the final dot of line 143,
+one dot before VBlank; DMG/SGB pulse it at the VBlank boundary instead.
+`GbCpuBus` also implements CGB `KEY0`/`KEY1` and double-speed switching,
 including halving the number of peripheral dots per CPU T-cycle. Object fetch
 penalties follow the tile-wait rule from Pan Docs; sprites at the left edge
 share one alignment cost derived from `OAM X & 7`.

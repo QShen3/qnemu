@@ -27,7 +27,7 @@ goal is to support more consoles and handhelds with the same host layer.
 - ZIP/7z/RAR ROM archives, a built-in No-Intro game database, parallel library
   scanning and text/region/language filters.
 - Qt Quick QML shell with platform-native styling.
-- 300+ unit tests and 168 curated test ROMs (Blargg, Mooneye, acid2) in CTest.
+- 300+ unit tests and 173 curated test ROMs (Blargg, Mooneye, acid2) in CTest.
 
 ## Cartridge support
 

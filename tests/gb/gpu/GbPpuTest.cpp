@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -199,6 +200,81 @@ TEST_F(GbPpuTest, HdmaSourceKeepsTheFullHighByte)
 
     EXPECT_EQ(source, 0xD00F);
     EXPECT_EQ(cgbPpu.read(0x8000), 0x5A);
+}
+
+TEST_F(GbPpuTest, CgbCompatibilityModeLocksPaletteDataAndObjectPriority)
+{
+    qnemu::CgbPpu cgbPpu(display, interruptHandler);
+    cgbPpu.write(0xFF40, 0x00);
+
+    for (const auto [spec, data] : {
+             std::pair<uint16_t, uint16_t> {0xFF68, 0xFF69},
+             std::pair<uint16_t, uint16_t> {0xFF6A, 0xFF6B}}) {
+        cgbPpu.write(spec, 0x00);
+        cgbPpu.write(data, 0x5A);
+        EXPECT_EQ(cgbPpu.read(data), 0x5A);
+    }
+
+    cgbPpu.write(0xFF6C, 0x01);
+    EXPECT_EQ(cgbPpu.read(0xFF6C), 0xFF);
+
+    cgbPpu.setDmgMode(true);
+    EXPECT_EQ(cgbPpu.read(0xFF69), 0xFF);
+    EXPECT_EQ(cgbPpu.read(0xFF6B), 0xFF);
+    EXPECT_EQ(cgbPpu.read(0xFF6C), 0xFF);
+
+    cgbPpu.write(0xFF69, 0xA5);
+    cgbPpu.write(0xFF6B, 0xA5);
+    cgbPpu.write(0xFF6C, 0x00);
+    cgbPpu.write(0xFF55, 0x00);
+    cgbPpu.setDmgMode(false);
+
+    EXPECT_EQ(cgbPpu.read(0xFF69), 0x5A);
+    EXPECT_EQ(cgbPpu.read(0xFF6B), 0x5A);
+    EXPECT_EQ(cgbPpu.read(0xFF6C), 0xFF);
+    EXPECT_EQ(cgbPpu.read(0xFF55), 0xFF);
+}
+
+TEST_F(GbPpuTest, CgbMode2StatInterruptPrecedesVBlankByOneDot)
+{
+    qnemu::CgbPpu cgbPpu(display, interruptHandler);
+    cgbPpu.write(0xFF41, 0x20);
+
+    while (cgbPpu.read(0xFF44) != 143) {
+        cgbPpu.step();
+    }
+    for (int i = 0; i < 455; ++i) {
+        cgbPpu.step();
+    }
+
+    interruptHandler->write(0xFF0F, 0x00);
+    cgbPpu.step();
+    EXPECT_NE(interruptHandler->read(0xFF0F) & 0x02, 0);
+    EXPECT_EQ(cgbPpu.frameCount(), 0U);
+
+    cgbPpu.step();
+    EXPECT_EQ(cgbPpu.frameCount(), 1U);
+}
+
+TEST_F(GbPpuTest, DmgMode2StatInterruptStartsWithVBlank)
+{
+    ppu->write(0xFF41, 0x20);
+
+    while (ppu->read(0xFF44) != 143) {
+        ppu->step();
+    }
+    for (int i = 0; i < 455; ++i) {
+        ppu->step();
+    }
+
+    interruptHandler->write(0xFF0F, 0x00);
+    ppu->step();
+    EXPECT_EQ(interruptHandler->read(0xFF0F) & 0x02, 0);
+    EXPECT_EQ(ppu->frameCount(), 0U);
+
+    ppu->step();
+    EXPECT_NE(interruptHandler->read(0xFF0F) & 0x02, 0);
+    EXPECT_EQ(ppu->frameCount(), 1U);
 }
 
 TEST_F(GbPpuTest, LycInterruptIsRequestedOnCoincidence)
